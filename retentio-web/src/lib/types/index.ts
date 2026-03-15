@@ -336,6 +336,58 @@ export interface Meta {
   sdr: { id: string; name: string } | null;
 }
 
+// ─── RESEND / EMAIL TRACKING ─────────────
+
+export interface ResendConfig {
+  id: string;
+  from_email: string;
+  from_name: string | null;
+  daily_limit: number;
+  sent_today: number;
+  active: boolean;
+  last_reset_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmailEvent {
+  id: string;
+  type: string;
+  link: string | null;
+  created_at: string;
+}
+
+export interface EmailAuditItem {
+  id: string;
+  lead_id: string;
+  type: InteractionType;
+  source: InteractionSource;
+  external_id: string | null;
+  subject: string | null;
+  body: string | null;
+  status: string | null;
+  created_at: string;
+  lead: {
+    id: string;
+    company_name: string;
+    contact_name: string | null;
+    email: string | null;
+  };
+  email_events: EmailEvent[];
+}
+
+export interface EmailStats {
+  period_days: number;
+  total_sent: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  bounced: number;
+  open_rate: number;
+  click_rate: number;
+  bounce_rate: number;
+}
+
 // ─── FUNNEL CONFIG ─────────────
 
 export const FUNNEL_COLUMNS: { status: LeadStatus; label: string; color: string }[] = [

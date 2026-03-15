@@ -86,6 +86,7 @@ export function startCadenceStepWorker() {
       const { cadence_step } = lcs;
       const channel = cadence_step.channel;
       let interactionStatus = 'sent';
+      let resendMessageId: string | null = null;
 
       // ── 3. Executa por canal ──
       try {
@@ -109,7 +110,7 @@ export function startCadenceStepWorker() {
           const renderedBody = bodyFn(context);
           const renderedSubject = subjectFn ? subjectFn(context) : `${cadence_step.cadence_id} — Step ${cadence_step.step_order}`;
 
-          await resendService.sendEmail(resendConfig, {
+          resendMessageId = await resendService.sendEmail(resendConfig, {
             to: lead.email,
             subject: renderedSubject,
             html: renderedBody,
@@ -144,6 +145,7 @@ export function startCadenceStepWorker() {
             lead_id: lead.id,
             type: channel as 'EMAIL' | 'WHATSAPP' | 'LIGACAO' | 'LINKEDIN',
             source: 'CADENCIA',
+            external_id: resendMessageId,
             subject: cadence_step.template?.subject ?? undefined,
             body: cadence_step.instructions ?? cadence_step.template?.body ?? undefined,
             status: interactionStatus,

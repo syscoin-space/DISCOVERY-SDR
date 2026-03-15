@@ -18,6 +18,8 @@ const sdrNav = [
   { href: "/dashboard", label: "Dashboard", icon: "📈" },
   { href: "/cadencias", label: "Cadências", icon: "⚡" },
   { href: "/templates", label: "Templates", icon: "📝" },
+  { href: "/emails", label: "Emails", icon: "📧" },
+  { href: "/configuracoes", label: "Configurações", icon: "⚙️" },
 ];
 
 const gestorNav = [

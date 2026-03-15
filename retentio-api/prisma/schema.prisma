@@ -379,7 +379,8 @@ model Interaction {
   metadata    Json?
   created_at  DateTime         @default(now())
 
-  lead        Lead             @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  lead          Lead             @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  email_events  EmailEvent[]
 
   @@index([lead_id, created_at(sort: Desc)])
   @@index([type])
@@ -464,6 +465,24 @@ model ResendConfig {
   user                User     @relation(fields: [user_id], references: [id])
 
   @@map("resend_configs")
+}
+
+model EmailEvent {
+  id              String   @id @default(uuid())
+  interaction_id  String?
+  resend_email_id String
+  type            String   // email.sent | email.delivered | email.opened | email.clicked | email.bounced | email.complained
+  data            Json?    // payload completo do webhook
+  link            String?  // URL clicada (se type = clicked)
+  created_at      DateTime @default(now())
+
+  interaction     Interaction? @relation(fields: [interaction_id], references: [id])
+
+  @@index([resend_email_id])
+  @@index([interaction_id])
+  @@index([type])
+  @@index([created_at(sort: Desc)])
+  @@map("email_events")
 }
 
 model AuditLog {
