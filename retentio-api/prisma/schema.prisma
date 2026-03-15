@@ -1,0 +1,526 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────
+
+enum Role {
+  SDR
+  GESTOR
+  CLOSER
+}
+
+enum LeadStatus {
+  CONTA_FRIA
+  EM_PROSPECCAO
+  REUNIAO_AGENDADA
+  OPORTUNIDADE_QUALIFICADA
+  NUTRICAO
+  SEM_PERFIL
+}
+
+enum PrrTier {
+  A
+  B
+  C
+}
+
+enum IcpTier {
+  FORA
+  PARCIAL
+  QUENTE
+  CONTRATO_CERTO
+}
+
+enum BloqueioStatus {
+  LIMPO
+  ALERTA
+  CONFIRMADO
+  IGNORADO
+}
+
+enum MomentoCompra {
+  URGENTE
+  PESQUISANDO
+  FUTURO
+  SEM_TIMING
+}
+
+enum CadenceType {
+  STANDARD
+  REATIVACAO
+  FAST_TRACK
+}
+
+enum StepChannel {
+  EMAIL
+  WHATSAPP
+  LIGACAO
+  LINKEDIN
+}
+
+enum StepStatus {
+  PENDENTE
+  EXECUTADO
+  PULADO
+  ATRASADO
+  CANCELADO
+}
+
+enum InteractionType {
+  EMAIL
+  WHATSAPP
+  LIGACAO
+  LINKEDIN
+  REUNIAO
+  NOTA
+}
+
+enum InteractionSource {
+  CADENCIA
+  MANUAL
+  WEBHOOK
+}
+
+enum HandoffStatus {
+  PENDENTE
+  ACEITO
+  DEVOLVIDO
+}
+
+enum IntegrabilityScore {
+  ALTA
+  MEDIA
+  DIFICIL
+}
+
+enum RecompraSignal {
+  ALTA
+  MEDIA
+  BAIXA
+}
+
+// DailyTaskStatus removed — status is now a free-form String to allow custom statuses
+
+// ─── MODELS ──────────────
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password_hash   String
+  name            String
+  role            Role
+  active          Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  leads           Lead[]
+  daily_tasks     DailyTask[]
+  metas           Meta[]
+  handoffs_sent   HandoffBriefing[] @relation("HandoffSdr")
+  handoffs_received HandoffBriefing[] @relation("HandoffCloser")
+  resend_config   ResendConfig?
+  audit_logs      AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Lead {
+  id                    String          @id @default(uuid())
+  sdr_id                String
+  status                LeadStatus      @default(CONTA_FRIA)
+
+  domain                String?
+  company_name          String
+  niche                 String?
+  company_size          String?
+  cnpj                  String?         @unique
+  contact_name          String?
+  contact_role          String?
+  email                 String?
+  phone                 String?
+  whatsapp              String?
+  instagram_handle      String?
+  linkedin_url          String?
+  website_url           String?
+  state                 String?
+  city                  String?
+  ecommerce_platform    String?
+  estimated_base_size   Int?
+  avg_ticket_estimated  Float?
+  lead_status_origin    String?
+  notes_import          String?         @db.Text
+  source                String?
+  processed_at          DateTime?
+  imported_at           DateTime?
+
+  prr_score             Float?
+  prr_tier              PrrTier?
+
+  icp_score             Int?
+  icp_tier              IcpTier?
+
+  bloqueio_status       BloqueioStatus  @default(LIMPO)
+  bloqueio_motivos      Json?
+
+  momento_compra        MomentoCompra?
+  recompra_signal       RecompraSignal?
+  recompra_cycle        String?
+  company_type          String?
+  integrability_level   String?
+  integrability         IntegrabilityScore?
+
+  created_at            DateTime        @default(now())
+  updated_at            DateTime        @updatedAt
+
+  sdr                   User            @relation(fields: [sdr_id], references: [id])
+  prr_inputs            PrrInputs?
+  icp_answers           IcpAnswer[]
+  discovered_stack      DiscoveredStack[]
+  lead_cadences         LeadCadence[]
+  interactions          Interaction[]
+  daily_tasks           DailyTask[]
+  handoffs              HandoffBriefing[]
+  block_events          BlockEvent[]
+  audit_logs            AuditLog[]
+
+  @@index([sdr_id])
+  @@index([status])
+  @@index([prr_tier])
+  @@index([icp_tier])
+  @@index([sdr_id, status])
+  @@index([sdr_id, prr_score(sort: Desc)])
+  @@index([company_name])
+  @@index([bloqueio_status])
+  @@unique([domain, sdr_id])
+  @@unique([email, sdr_id])
+  @@map("leads")
+}
+
+model PrrInputs {
+  id                    String   @id @default(uuid())
+  lead_id               String   @unique
+  base_size_estimated   Int?
+  recompra_cycle_days   Int?
+  avg_ticket_estimated  Float?
+  inactive_base_pct     Float?
+  integrability_score   Int?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  lead                  Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+
+  @@map("prr_inputs")
+}
+
+model PrrWeight {
+  id          String   @id @default(uuid())
+  dimension   String   @unique
+  weight      Float
+  min_value   Float?
+  max_value   Float?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("prr_weights")
+}
+
+model IcpCriteria {
+  id          String     @id @default(uuid())
+  order       Int
+  label       String
+  type        String
+  options     Json?
+  weight      Int        @default(1)
+  active      Boolean    @default(true)
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  answers     IcpAnswer[]
+
+  @@index([active, order])
+  @@map("icp_criteria")
+}
+
+model IcpAnswer {
+  id            String      @id @default(uuid())
+  lead_id       String
+  criteria_id   String
+  answer_value  String
+  score_points  Int         @default(0)
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  lead          Lead        @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  criteria      IcpCriteria @relation(fields: [criteria_id], references: [id])
+
+  @@unique([lead_id, criteria_id])
+  @@map("icp_answers")
+}
+
+model DiscoveredStack {
+  id          String   @id @default(uuid())
+  lead_id     String
+  category    String
+  tool_name   String
+  created_at  DateTime @default(now())
+
+  lead        Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+
+  @@unique([lead_id, category, tool_name])
+  @@index([lead_id])
+  @@map("discovered_stacks")
+}
+
+model Cadence {
+  id          String      @id @default(uuid())
+  name        String
+  type        CadenceType @default(STANDARD)
+  description String?
+  active      Boolean     @default(true)
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+
+  steps       CadenceStep[]
+  lead_cadences LeadCadence[]
+
+  @@map("cadences")
+}
+
+model CadenceStep {
+  id            String       @id @default(uuid())
+  cadence_id    String
+  step_order    Int
+  day_offset    Int
+  channel       StepChannel
+  template_id   String?
+  instructions  String?      @db.Text
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+
+  cadence       Cadence      @relation(fields: [cadence_id], references: [id], onDelete: Cascade)
+  template      Template?    @relation(fields: [template_id], references: [id])
+  lead_steps    LeadCadenceStep[]
+
+  @@unique([cadence_id, step_order])
+  @@map("cadence_steps")
+}
+
+model LeadCadence {
+  id          String   @id @default(uuid())
+  lead_id     String
+  cadence_id  String
+  started_at  DateTime @default(now())
+  status      String   @default("active")
+  paused_at   DateTime?
+  completed_at DateTime?
+
+  lead        Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  cadence     Cadence  @relation(fields: [cadence_id], references: [id])
+  steps       LeadCadenceStep[]
+
+  @@unique([lead_id, cadence_id])
+  @@index([status])
+  @@map("lead_cadences")
+}
+
+model LeadCadenceStep {
+  id                String     @id @default(uuid())
+  lead_cadence_id   String
+  cadence_step_id   String
+  scheduled_at      DateTime
+  executed_at       DateTime?
+  status            StepStatus @default(PENDENTE)
+  skip_reason       String?
+
+  lead_cadence      LeadCadence @relation(fields: [lead_cadence_id], references: [id], onDelete: Cascade)
+  cadence_step      CadenceStep @relation(fields: [cadence_step_id], references: [id])
+
+  @@unique([lead_cadence_id, cadence_step_id])
+  @@index([status, scheduled_at])
+  @@map("lead_cadence_steps")
+}
+
+model Template {
+  id          String   @id @default(uuid())
+  name        String
+  subject     String?
+  body        String   @db.Text
+  channel     StepChannel @default(EMAIL)
+  variables   Json?
+  version     Int      @default(1)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  cadence_steps CadenceStep[]
+
+  @@index([channel, active])
+  @@map("templates")
+}
+
+model Interaction {
+  id          String           @id @default(uuid())
+  lead_id     String
+  type        InteractionType
+  source      InteractionSource @default(MANUAL)
+  channel     String?
+  external_id String?
+  subject     String?
+  body        String?          @db.Text
+  status      String?
+  metadata    Json?
+  created_at  DateTime         @default(now())
+
+  lead        Lead             @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+
+  @@index([lead_id, created_at(sort: Desc)])
+  @@index([type])
+  @@index([external_id])
+  @@map("interactions")
+}
+
+model HandoffBriefing {
+  id              String        @id @default(uuid())
+  lead_id         String
+  sdr_id          String
+  closer_id       String?
+  status          HandoffStatus @default(PENDENTE)
+  briefing_data   Json
+  accepted_at     DateTime?
+  returned_at     DateTime?
+  return_reason   String?
+  return_reentry_status LeadStatus?
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  lead            Lead          @relation(fields: [lead_id], references: [id])
+  sdr             User          @relation("HandoffSdr", fields: [sdr_id], references: [id])
+  closer          User?         @relation("HandoffCloser", fields: [closer_id], references: [id])
+
+  @@index([sdr_id])
+  @@index([closer_id])
+  @@index([status])
+  @@map("handoff_briefings")
+}
+
+model BlockRule {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  condition     Json
+  justificativa String
+  active        Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  events        BlockEvent[]
+
+  @@map("block_rules")
+}
+
+model BlockEvent {
+  id            String   @id @default(uuid())
+  lead_id       String
+  rule_id       String?
+  detectado_at  DateTime @default(now())
+  confirmado    Boolean  @default(false)
+  confirmado_at DateTime?
+  confirmado_by String?
+  ignorado      Boolean  @default(false)
+  ignorado_at   DateTime?
+  ignorado_by   String?
+  justificativa String?
+  motivos       Json?
+
+  lead          Lead      @relation(fields: [lead_id], references: [id])
+  rule          BlockRule? @relation(fields: [rule_id], references: [id])
+
+  @@index([lead_id])
+  @@index([confirmado, ignorado])
+  @@map("block_events")
+}
+
+model ResendConfig {
+  id                  String   @id @default(uuid())
+  user_id             String   @unique
+  from_email          String
+  from_name           String?
+  encrypted_api_key   String
+  daily_limit         Int      @default(50)
+  sent_today          Int      @default(0)
+  last_reset_at       DateTime @default(now())
+  active              Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  user                User     @relation(fields: [user_id], references: [id])
+
+  @@map("resend_configs")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  user_id     String?
+  lead_id     String?
+  action      String
+  entity_type String
+  entity_id   String
+  old_value   Json?
+  new_value   Json?
+  ip_address  String?
+  created_at  DateTime @default(now())
+
+  user        User?    @relation(fields: [user_id], references: [id])
+  lead        Lead?    @relation(fields: [lead_id], references: [id])
+
+  @@index([entity_type, entity_id])
+  @@index([user_id])
+  @@index([created_at(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model DailyTask {
+  id              String          @id @default(uuid())
+  lead_id         String
+  sdr_id          String
+  date            DateTime        @default(now()) @db.Date
+  status          String          @default("PENDENTE")
+  resultado       String?
+  proximo_contato DateTime?
+  canal           String?
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+
+  lead Lead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  sdr  User @relation(fields: [sdr_id], references: [id])
+
+  @@unique([lead_id, sdr_id, date])
+  @@index([sdr_id, date])
+  @@index([status])
+  @@map("daily_tasks")
+}
+
+model Meta {
+  id          String   @id @default(uuid())
+  sdr_id      String?
+  tipo        String   // reunioes_semana | handoffs_mes | atividades_dia
+  valor       Int
+  periodo     String   // dia | semana | mes
+  ativo       Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  sdr         User?    @relation(fields: [sdr_id], references: [id])
+
+  @@index([sdr_id])
+  @@index([tipo])
+  @@map("metas")
+}
