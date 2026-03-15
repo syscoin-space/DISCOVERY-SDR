@@ -3,23 +3,48 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, CalendarCheck, Search, Zap, Menu } from "lucide-react";
+import { BarChart3, CalendarCheck, Search, Zap, Menu, LayoutDashboard } from "lucide-react";
 import { MenuSheet } from "./MenuSheet";
 import { SearchSheet } from "./SearchSheet";
 
-const NAV_ITEMS = [
+type NavItem =
+  | { href: string; label: string; icon: typeof BarChart3 }
+  | { id: string; label: string; icon: typeof Search };
+
+const SDR_ITEMS: NavItem[] = [
   { href: "/pipeline", label: "Pipeline", icon: BarChart3 },
   { href: "/hoje", label: "Hoje", icon: CalendarCheck },
   { id: "search", label: "Busca", icon: Search },
   { href: "/cadencias", label: "Cadências", icon: Zap },
   { id: "menu", label: "Mais", icon: Menu },
-] as const;
+];
+
+const GESTOR_ITEMS: NavItem[] = [
+  { href: "/gestor", label: "Painel", icon: LayoutDashboard },
+  { href: "/pipeline", label: "Pipeline", icon: BarChart3 },
+  { id: "search", label: "Busca", icon: Search },
+  { href: "/hoje", label: "Hoje", icon: CalendarCheck },
+  { id: "menu", label: "Mais", icon: Menu },
+];
 
 export function BottomNav() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [tapped, setTapped] = useState<string | null>(null);
+  const [isGestor, setIsGestor] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("retentio_user");
+      if (raw) {
+        const user = JSON.parse(raw);
+        setIsGestor(user.role === "GESTOR");
+      }
+    } catch {}
+  }, []);
+
+  const NAV_ITEMS = isGestor ? GESTOR_ITEMS : SDR_ITEMS;
 
   // Spring animation on tap
   useEffect(() => {
