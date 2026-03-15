@@ -36,7 +36,6 @@ import {
   useGoogleConnect,
   useGoogleDisconnect,
 } from "@/hooks/use-google";
-import { useSearchParams } from "next/navigation";
 
 export default function ConfiguracoesPage() {
   const { data: config, isLoading: loadingConfig } = useResendConfig();
@@ -45,8 +44,13 @@ export default function ConfiguracoesPage() {
   const testConnection = useTestResendConnection();
 
   // Google OAuth
-  const searchParams = useSearchParams();
-  const googleJustConnected = searchParams.get("google") === "connected";
+  const [googleJustConnected, setGoogleJustConnected] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setGoogleJustConnected(params.get("google") === "connected");
+    }
+  }, []);
   const { data: googleStatus, isLoading: loadingGoogle } = useGoogleStatus();
   const googleConnect = useGoogleConnect();
   const googleDisconnect = useGoogleDisconnect();
