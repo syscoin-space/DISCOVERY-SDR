@@ -280,6 +280,55 @@ export async function listCalendarEvents(userId: string, leadId?: string) {
   });
 }
 
+// ─── Calendar: List Events from Google ────────────────────────────────
+
+export interface GoogleCalEvent {
+  id: string;
+  summary: string;
+  description?: string;
+  start: string; // ISO
+  end: string;   // ISO
+  meetLink?: string;
+  attendees: string[];
+}
+
+export async function listGoogleCalendarEventsForUser(
+  userId: string,
+  timeMin: Date,
+  timeMax: Date,
+): Promise<GoogleCalEvent[]> {
+  try {
+    const client = await getClientForUser(userId);
+    const calendar = google.calendar({ version: 'v3', auth: client });
+
+    const { data } = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 200,
+    });
+
+    return (data.items ?? [])
+      .filter((e) => e.start?.dateTime) // Only timed events
+      .map((e) => ({
+        id: e.id!,
+        summary: e.summary ?? '(Sem título)',
+        description: e.description ?? undefined,
+        start: e.start!.dateTime!,
+        end: e.end!.dateTime!,
+        meetLink: e.conferenceData?.entryPoints?.find(
+          (ep) => ep.entryPointType === 'video',
+        )?.uri ?? undefined,
+        attendees: (e.attendees ?? []).map((a) => a.email!).filter(Boolean),
+      }));
+  } catch (err) {
+    logger.warn('Failed to fetch Google Calendar events for user', { userId, err });
+    return [];
+  }
+}
+
 // ─── Gmail: Send Email ────────────────────────────────────────────────
 
 export async function sendGmailEmail(params: {

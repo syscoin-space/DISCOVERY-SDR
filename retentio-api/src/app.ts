@@ -19,6 +19,7 @@ import { gestorRouter } from './modules/gestor/gestor.routes';
 import { notificationRouter } from './modules/notifications/notification.routes';
 import { brandRouter } from './modules/brand/brand.routes';
 import { googleRouter } from './modules/google/google.routes';
+import { agendaRouter } from './modules/agenda/agenda.routes';
 import { authGuard, roleGuard } from './middlewares/auth';
 
 export const app = express();
@@ -59,6 +60,7 @@ app.use('/api/notifications', notificationRouter);
 app.use('/api/gestor', authGuard, roleGuard('GESTOR'), gestorRouter);
 app.use('/api/brand', brandRouter);
 app.use('/api/google', googleRouter);
+app.use('/api/agenda', authGuard, agendaRouter);
 
 // ── Error Handler (must be last) ──
 app.use(errorHandler);

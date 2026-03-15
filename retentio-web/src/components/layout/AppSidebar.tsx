@@ -7,6 +7,7 @@ import { ThemeToggle } from "../shared/ThemeToggle";
 import { NotificationBell } from "../shared/NotificationBell";
 import { BrandLogo } from "../shared/BrandLogo";
 import { UserAvatar } from "../shared/UserAvatar";
+import { useUnreadCount } from "@/hooks/use-notifications";
 import { useEffect, useState } from "react";
 
 interface StoredUser {
@@ -19,10 +20,12 @@ interface StoredUser {
 const sdrNav = [
   { href: "/pipeline", label: "Pipeline", icon: "📊" },
   { href: "/hoje", label: "Hoje", icon: "📋" },
+  { href: "/agenda", label: "Agenda", icon: "📅" },
   { href: "/dashboard", label: "Dashboard", icon: "📈" },
   { href: "/cadencias", label: "Cadências", icon: "⚡" },
   { href: "/templates", label: "Templates", icon: "📝" },
   { href: "/emails", label: "Emails", icon: "📧" },
+  { href: "/notificacoes", label: "Notificações", icon: "🔔", hasBadge: true },
   { href: "/glossario", label: "Glossário", icon: "📖" },
   { href: "/configuracoes", label: "Configurações", icon: "⚙️" },
 ];
@@ -47,6 +50,7 @@ export function AppSidebar() {
   }, []);
 
   const isGestor = user?.role === "GESTOR";
+  const unreadCount = useUnreadCount();
 
   function handleLogout() {
     localStorage.removeItem("accessToken");
@@ -113,6 +117,11 @@ export function AppSidebar() {
             >
               <span className="text-base">{item.icon}</span>
               {item.label}
+              {"hasBadge" in item && item.hasBadge && unreadCount > 0 && (
+                <span className="ml-auto flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </Link>
           );
         })}

@@ -12,7 +12,10 @@ import {
   Target,
   Palette,
   ChevronRight,
+  Settings,
+  CalendarDays,
 } from "lucide-react";
+import { useUnreadCount } from "@/hooks/use-notifications";
 
 interface StoredUser {
   name: string;
@@ -21,10 +24,12 @@ interface StoredUser {
 }
 
 const MENU_ITEMS = [
+  { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
   { href: "/templates", label: "Templates", icon: FileText },
   { href: "/glossario", label: "Glossário", icon: BookOpen },
-  { href: "/configuracoes", label: "Notificações", icon: Bell },
+  { href: "/notificacoes", label: "Notificações", icon: Bell, hasBadge: true },
+  { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
 const GESTOR_ITEMS = [
@@ -51,6 +56,7 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
   }, []);
 
   const isGestor = user?.role === "GESTOR";
+  const unreadCount = useUnreadCount();
 
   function navigate(path: string) {
     onOpenChange(false);
@@ -74,8 +80,10 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
           <div className="overflow-y-auto px-4 pb-safe">
             {/* Main items */}
             <div className="rounded-xl border border-border bg-surface-raised/50 divide-y divide-border mb-3">
-              {MENU_ITEMS.map(({ href, label, icon: Icon }) => {
+              {MENU_ITEMS.map((item) => {
+                const { href, label, icon: Icon } = item;
                 const isActive = pathname === href || pathname.startsWith(href + "/");
+                const showBadge = "hasBadge" in item && item.hasBadge && unreadCount > 0;
                 return (
                   <button
                     key={href}
@@ -84,11 +92,16 @@ export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                        className={`relative flex h-8 w-8 items-center justify-center rounded-lg ${
                           isActive ? "bg-accent/10 text-accent" : "bg-surface text-foreground"
                         }`}
                       >
                         <Icon className="h-4 w-4" />
+                        {showBadge && (
+                          <span className="absolute -top-1 -right-1 flex min-w-[16px] h-[16px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                          </span>
+                        )}
                       </div>
                       <span
                         className={`text-sm ${

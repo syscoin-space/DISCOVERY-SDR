@@ -1,3 +1,5 @@
+"use client";
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 
@@ -13,21 +15,59 @@ export interface AppNotification {
   lead_id: string | null;
 }
 
-export function useNotifications() {
-  return useQuery<AppNotification[]>({
-    queryKey: ["notifications"],
+interface NotificationsResponse {
+  data: AppNotification[];
+  meta: { total: number; page: number; limit: number; pages: number };
+}
+
+// ─── Unread count (dedicated endpoint, polls every 30s) ──
+
+export function useUnreadCount() {
+  const { data } = useQuery<{ count: number }>({
+    queryKey: ["notifications", "unread-count"],
     queryFn: async () => {
-      const { data } = await api.get("/notifications");
+      const { data } = await api.get("/notifications/unread-count");
+      return data;
+    },
+    refetchInterval: 30_000,
+  });
+  return data?.count ?? 0;
+}
+
+// ─── List notifications (paginated, filterable) ──
+
+export function useNotifications(params?: {
+  lida?: "true" | "false";
+  tipo?: string;
+  page?: number;
+  limit?: number;
+}) {
+  return useQuery<NotificationsResponse>({
+    queryKey: ["notifications", "list", params],
+    queryFn: async () => {
+      const { data } = await api.get("/notifications", { params });
       return data;
     },
     refetchInterval: 30_000,
   });
 }
 
-export function useUnreadCount() {
-  const { data } = useNotifications();
-  return data?.filter((n) => !n.lida).length ?? 0;
+// ─── Preview (top 5 for popover) ──
+
+export function useNotificationPreview() {
+  return useQuery<NotificationsResponse>({
+    queryKey: ["notifications", "list", { limit: 5, page: 1 }],
+    queryFn: async () => {
+      const { data } = await api.get("/notifications", {
+        params: { limit: 5, page: 1 },
+      });
+      return data;
+    },
+    refetchInterval: 30_000,
+  });
 }
+
+// ─── Mark one as read ──
 
 export function useMarkAsRead() {
   const qc = useQueryClient();
@@ -40,6 +80,8 @@ export function useMarkAsRead() {
     },
   });
 }
+
+// ─── Mark all as read ──
 
 export function useMarkAllAsRead() {
   const qc = useQueryClient();

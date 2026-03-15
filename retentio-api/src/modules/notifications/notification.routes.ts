@@ -70,19 +70,56 @@ notificationRouter.delete(
   }),
 );
 
-// ── List notifications ──
+// ── Unread count ──
+notificationRouter.get(
+  '/unread-count',
+  asyncHandler(async (req, res) => {
+    const count = await prisma.notification.count({
+      where: { user_id: req.user!.sub, lida: false },
+    });
+    res.json({ count });
+  }),
+);
+
+// ── List notifications (with filters + pagination) ──
 notificationRouter.get(
   '/',
   asyncHandler(async (req, res) => {
     const userId = req.user!.sub;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const skip = (page - 1) * limit;
 
-    const notifications = await prisma.notification.findMany({
-      where: { user_id: userId },
-      orderBy: { enviada_at: 'desc' },
-      take: 50,
+    const where: Record<string, unknown> = { user_id: userId };
+
+    // Filter by read status
+    if (req.query.lida === 'false') where.lida = false;
+    if (req.query.lida === 'true') where.lida = true;
+
+    // Filter by category
+    const tipoFilter = req.query.tipo as string | undefined;
+    if (tipoFilter === 'leads') {
+      where.tipo = { in: ['tier_a_parado', 'proximo_contato', 'bloqueio'] };
+    } else if (tipoFilter === 'cadencias') {
+      where.tipo = { in: ['step_atrasado'] };
+    } else if (tipoFilter === 'gestor') {
+      where.tipo = { in: ['meta_batida', 'ritmo_ruim', 'sdr_destaque'] };
+    }
+
+    const [notifications, total] = await Promise.all([
+      prisma.notification.findMany({
+        where,
+        orderBy: { enviada_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.notification.count({ where }),
+    ]);
+
+    res.json({
+      data: notifications,
+      meta: { total, page, limit, pages: Math.ceil(total / limit) },
     });
-
-    res.json(notifications);
   }),
 );
 

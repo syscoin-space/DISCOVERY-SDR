@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell } from "lucide-react";
-import { useNotifications, useMarkAsRead, useMarkAllAsRead } from "@/hooks/use-notifications";
+import { Bell, ArrowRight } from "lucide-react";
+import {
+  useUnreadCount,
+  useNotificationPreview,
+  useMarkAsRead,
+  useMarkAllAsRead,
+} from "@/hooks/use-notifications";
 import type { AppNotification } from "@/hooks/use-notifications";
 import { useRouter } from "next/navigation";
 
@@ -17,26 +22,39 @@ const TIPO_ICONS: Record<string, string> = {
   reuniao_agendada: "\uD83D\uDCC5",
 };
 
+const TIPO_COLORS: Record<string, string> = {
+  tier_a_parado: "text-red-500",
+  step_atrasado: "text-orange-500",
+  proximo_contato: "text-amber-500",
+  reuniao_agendada: "text-emerald-500",
+  bloqueio: "text-orange-500",
+  meta_batida: "text-emerald-500",
+  ritmo_ruim: "text-red-500",
+  sdr_destaque: "text-yellow-500",
+};
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return "agora";
-  if (minutes < 60) return `${minutes}min`;
+  if (minutes < 60) return `há ${minutes}min`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
+  if (hours < 24) return `há ${hours}h`;
   const days = Math.floor(hours / 24);
-  return `${days}d`;
+  if (days === 1) return "ontem";
+  return `há ${days}d`;
 }
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { data: notifications } = useNotifications();
+  const unreadCount = useUnreadCount();
+  const { data: preview } = useNotificationPreview();
   const markRead = useMarkAsRead();
   const markAllRead = useMarkAllAsRead();
 
-  const unreadCount = notifications?.filter((n) => !n.lida).length ?? 0;
+  const notifications = preview?.data ?? [];
 
   // Close on outside click
   useEffect(() => {
@@ -66,35 +84,35 @@ export function NotificationBell() {
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white animate-pulse">
+          <span className="absolute -top-1 -right-1 flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white animate-pulse">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900 overflow-hidden">
+        <div className="absolute right-0 top-10 z-50 w-[360px] rounded-xl border border-border bg-surface shadow-xl overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h3 className="text-sm font-bold text-foreground">
               Notificações
             </h3>
             {unreadCount > 0 && (
               <button
                 onClick={() => markAllRead.mutate()}
-                className="text-[11px] text-blue-500 hover:text-blue-600 font-medium"
+                className="text-[11px] text-accent hover:text-accent-hover font-medium transition-colors"
               >
-                Marcar todas como lidas
+                Marcar todas
               </button>
             )}
           </div>
 
           {/* List */}
-          <div className="max-h-[360px] overflow-y-auto">
-            {!notifications?.length ? (
+          <div className="max-h-[380px] overflow-y-auto">
+            {notifications.length === 0 ? (
               <div className="py-10 text-center">
-                <Bell className="h-8 w-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-                <p className="text-sm text-gray-400 dark:text-gray-500">
+                <Bell className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">
                   Nenhuma notificação
                 </p>
               </div>
@@ -103,29 +121,46 @@ export function NotificationBell() {
                 <button
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
-                  className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                  className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-border/50 transition-colors ${
                     !n.lida
-                      ? "bg-blue-50/50 dark:bg-blue-500/5 border-l-2 border-l-blue-500"
-                      : "opacity-70"
+                      ? "bg-accent/5 hover:bg-accent/10"
+                      : "opacity-60 hover:bg-surface-raised"
                   }`}
                 >
-                  <span className="text-lg shrink-0 mt-0.5">
+                  <span className={`text-lg shrink-0 mt-0.5 ${TIPO_COLORS[n.tipo] ?? ""}`}>
                     {TIPO_ICONS[n.tipo] || "\uD83D\uDD14"}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    <p className="text-xs font-semibold text-foreground truncate">
                       {n.titulo}
                     </p>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
                       {n.corpo}
                     </p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-1">
+                      {timeAgo(n.enviada_at)}
+                    </p>
                   </div>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0 mt-0.5">
-                    {timeAgo(n.enviada_at)}
-                  </span>
+                  {!n.lida && (
+                    <span className="mt-1 h-2 w-2 rounded-full bg-accent shrink-0" />
+                  )}
                 </button>
               ))
             )}
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-border">
+            <button
+              onClick={() => {
+                router.push("/notificacoes");
+                setOpen(false);
+              }}
+              className="flex w-full items-center justify-center gap-1.5 px-4 py-3 text-xs font-medium text-accent hover:bg-accent/5 transition-colors"
+            >
+              Ver todas as notificações
+              <ArrowRight className="h-3 w-3" />
+            </button>
           </div>
         </div>
       )}
