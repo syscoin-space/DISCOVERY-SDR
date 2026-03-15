@@ -26,25 +26,28 @@ export function BrandLogo({ size = "md", showName = true }: BrandLogoProps) {
         <img
           src={logoUrl}
           alt={appName}
-          className={`${sizeClass} rounded-lg object-contain`}
+          className="object-contain"
+          style={{ width: 200, height: 70, borderRadius: 8 }}
         />
       ) : (
-        <div
-          className={`${sizeClass} flex items-center justify-center rounded-lg text-sm font-bold text-white`}
-          style={{
-            background: `linear-gradient(135deg, ${brand?.color_accent ?? "#2E86AB"}, ${brand?.color_green ?? "#1A7A5E"})`,
-          }}
-        >
-          {appName.charAt(0).toUpperCase()}
-        </div>
-      )}
-      {showName && (
-        <span
-          className="text-base font-semibold dark:text-gray-100"
-          style={{ color: brand?.color_navy ?? "#1E3A5F" }}
-        >
-          {appName}
-        </span>
+        <>
+          <div
+            className={`${sizeClass} flex items-center justify-center rounded-lg text-sm font-bold text-white`}
+            style={{
+              background: `linear-gradient(135deg, ${brand?.color_accent ?? "#2E86AB"}, ${brand?.color_green ?? "#1A7A5E"})`,
+            }}
+          >
+            {appName.charAt(0).toUpperCase()}
+          </div>
+          {showName && (
+            <span
+              className="text-base font-semibold dark:text-gray-100"
+              style={{ color: brand?.color_navy ?? "#1E3A5F" }}
+            >
+              {appName}
+            </span>
+          )}
+        </>
       )}
     </div>
   );
