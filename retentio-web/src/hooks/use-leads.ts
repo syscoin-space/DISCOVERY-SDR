@@ -124,6 +124,27 @@ export function useCreateInteraction() {
   });
 }
 
+export function useUpdateLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      leadId,
+      payload,
+    }: {
+      leadId: string;
+      payload: Partial<Lead>;
+    }) => {
+      const { data } = await api.patch<Lead>(`/leads/${leadId}`, payload);
+      return data;
+    },
+    onSuccess: (_, { leadId }) => {
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY, leadId] });
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY] });
+    },
+  });
+}
+
 export function useCalculatePrr() {
   const queryClient = useQueryClient();
 

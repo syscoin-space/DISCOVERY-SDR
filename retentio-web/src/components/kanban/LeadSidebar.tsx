@@ -1,27 +1,118 @@
 "use client";
 
-import { useLead, useInteractions, useCreateInteraction, useCalculatePrr } from "@/hooks/use-leads";
+import { useLead, useInteractions, useCreateInteraction, useCalculatePrr, useUpdateLead } from "@/hooks/use-leads";
 import { PRRBadge } from "@/components/shared/PRRBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
 import { ChannelIcons } from "@/components/shared/ChannelIcons";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import Link from "next/link";
+import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle } from "lucide-react";
 
 interface LeadSidebarProps {
   leadId: string | null;
   onClose: () => void;
 }
+
+// ─── Inline Editable Field ──────────────────────────────────────────
+
+function EditableField({
+  label,
+  value,
+  field,
+  leadId,
+  type = "text",
+  placeholder = "—",
+}: {
+  label: string;
+  value: string | null | undefined;
+  field: string;
+  leadId: string;
+  type?: string;
+  placeholder?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value ?? "");
+  const updateLead = useUpdateLead();
+
+  const handleSave = useCallback(async () => {
+    if (editValue !== (value ?? "")) {
+      await updateLead.mutateAsync({
+        leadId,
+        payload: { [field]: editValue || null },
+      });
+    }
+    setEditing(false);
+  }, [editValue, value, field, leadId, updateLead]);
+
+  const handleCancel = () => {
+    setEditValue(value ?? "");
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div>
+        <label className="text-[10px] text-muted-foreground uppercase font-medium">{label}</label>
+        <div className="flex items-center gap-1 mt-0.5">
+          <input
+            type={type}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") handleCancel();
+            }}
+            autoFocus
+            className="flex-1 rounded border border-accent/40 bg-surface-raised px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+          <button onClick={handleSave} className="text-green-500 hover:text-green-600 p-0.5">
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={handleCancel} className="text-red-400 hover:text-red-500 p-0.5">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group cursor-pointer" onClick={() => { setEditValue(value ?? ""); setEditing(true); }}>
+      <label className="text-[10px] text-muted-foreground uppercase font-medium">{label}</label>
+      <div className="flex items-center gap-1.5 mt-0.5">
+        <p className="text-sm font-medium text-foreground truncate">
+          {value || <span className="text-muted-foreground italic">{placeholder}</span>}
+        </p>
+        <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Interaction type config ────────────────────────────────────────
+
+const INTERACTION_ICONS: Record<string, { icon: typeof Mail; color: string }> = {
+  EMAIL: { icon: Mail, color: "text-blue-500 border-blue-500/30 bg-blue-500/10" },
+  WHATSAPP: { icon: MessageCircle, color: "text-green-500 border-green-500/30 bg-green-500/10" },
+  LIGACAO: { icon: Phone, color: "text-amber-500 border-amber-500/30 bg-amber-500/10" },
+  LINKEDIN: { icon: Linkedin, color: "text-blue-700 border-blue-700/30 bg-blue-700/10" },
+  REUNIAO: { icon: ExternalLink, color: "text-purple-500 border-purple-500/30 bg-purple-500/10" },
+  NOTA: { icon: Pencil, color: "text-gray-500 border-gray-500/30 bg-gray-500/10" },
+};
+
+// ─── Main Component ─────────────────────────────────────────────────
 
 export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
   const { data: lead, isLoading } = useLead(leadId ?? undefined);
@@ -46,45 +137,54 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
       <SheetContent className="w-[450px] sm:w-[540px] overflow-y-auto p-0">
         {isLoading && (
           <div className="flex flex-col items-center justify-center h-full py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#2E86AB] border-t-transparent" />
-            <p className="mt-4 text-sm text-gray-500 font-medium">Carregando detalhes...</p>
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            <p className="mt-4 text-sm text-muted-foreground font-medium">Carregando detalhes...</p>
           </div>
         )}
 
         {!isLoading && !lead && leadId && (
           <div className="flex flex-col items-center justify-center h-full py-20 px-10 text-center">
             <div className="text-4xl mb-4">🔍</div>
-            <h3 className="text-lg font-bold text-[#1E3A5F]">Lead não encontrado</h3>
-            <p className="text-sm text-gray-500 mt-2">
-              Não conseguimos carregar as informações deste lead. Ele pode ter sido removido ou você não tem permissão para visualizá-lo.
+            <h3 className="text-lg font-bold text-foreground">Lead não encontrado</h3>
+            <p className="text-sm text-muted-foreground mt-2">
+              Não conseguimos carregar as informações deste lead.
             </p>
             <Button variant="outline" className="mt-6" onClick={onClose}>
-              Fechar Sidebar
+              Fechar
             </Button>
           </div>
         )}
 
         {lead && (
           <>
-            <SheetHeader className="px-6 py-6 border-b">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
-                  {lead.status.replace(/_/g, " ")}
-                </Badge>
-                {lead.bloqueio_status === "ALERTA" && (
-                  <Badge variant="destructive" className="animate-pulse">⚠️ ALERTA</Badge>
-                )}
+            <SheetHeader className="px-6 py-5 border-b border-border">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
+                    {lead.status.replace(/_/g, " ")}
+                  </Badge>
+                  {lead.bloqueio_status === "ALERTA" && (
+                    <Badge variant="destructive" className="animate-pulse text-[10px]">ALERTA</Badge>
+                  )}
+                </div>
+                <Link
+                  href={`/leads/${lead.id}`}
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-accent hover:bg-accent/10 transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Ver página
+                </Link>
               </div>
-              <SheetTitle className="text-2xl font-bold text-[#1E3A5F]">
+              <SheetTitle className="text-xl font-bold text-foreground">
                 {lead.company_name}
               </SheetTitle>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>{lead.niche}</span>
                 {lead.city && <span>• {lead.city}, {lead.state}</span>}
               </div>
             </SheetHeader>
 
-            <Tabs defaultValue="perfil" className="mt-6">
+            <Tabs defaultValue="perfil" className="mt-4">
               <div className="px-6">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="perfil">Perfil</TabsTrigger>
@@ -92,50 +192,53 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 </TabsList>
               </div>
 
-              <TabsContent value="perfil" className="space-y-6 pt-4 px-6 pb-10">
-                {/* Badges Section */}
+              <TabsContent value="perfil" className="space-y-5 pt-4 px-6 pb-10">
+                {/* Score Badges */}
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="flex flex-col items-center p-3 rounded-lg bg-gray-50 border border-gray-100">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">PRR Score</span>
-                    <span className="text-xl font-bold text-[#1E3A5F]">{lead.prr_score ?? "—"}</span>
+                  <div className="flex flex-col items-center p-3 rounded-lg bg-surface-raised border border-border">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase mb-1">PRR Score</span>
+                    <span className="text-xl font-bold text-foreground">{lead.prr_score ?? "—"}</span>
                     <PRRBadge tier={lead.prr_tier} score={lead.prr_score} />
                   </div>
-                  <div className="flex flex-col items-center p-3 rounded-lg bg-gray-50 border border-gray-100">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">ICP Score</span>
-                    <span className="text-xl font-bold text-[#1E3A5F]">{lead.icp_score}/14</span>
+                  <div className="flex flex-col items-center p-3 rounded-lg bg-surface-raised border border-border">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase mb-1">ICP Score</span>
+                    <span className="text-xl font-bold text-foreground">{lead.icp_score}/14</span>
                     <ICPBadge score={lead.icp_score} />
                   </div>
-                  <div className="flex flex-col items-center p-3 rounded-lg bg-gray-50 border border-gray-100">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase mb-1">Plataforma</span>
-                    <span className="text-sm font-bold text-[#1E3A5F] truncate w-full text-center">
+                  <div className="flex flex-col items-center p-3 rounded-lg bg-surface-raised border border-border">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Plataforma</span>
+                    <span className="text-sm font-bold text-foreground truncate w-full text-center">
                       {lead.ecommerce_platform ?? "N/A"}
                     </span>
                     <IntegrabilityBadge level={lead.integrability} />
                   </div>
                 </div>
 
-                {/* Info Grid */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-[#1E3A5F] uppercase tracking-wider">Informações Gerais</h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <label className="text-xs text-gray-400">CNPJ</label>
-                      <p className="font-medium">{lead.cnpj ?? "Não informado"}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-400">Email</label>
-                      <p className="font-medium truncate">{lead.email ?? "—"}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-400">WhatsApp</label>
-                      <p className="font-medium">{lead.whatsapp ?? "—"}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-400">Contato</label>
-                      <p className="font-medium">{lead.contact_name ?? "—"}</p>
-                    </div>
+                {/* Decision Maker Section */}
+                <div className="space-y-3 rounded-lg border border-accent/20 bg-accent/5 p-4">
+                  <h4 className="text-xs font-bold text-accent uppercase tracking-wider flex items-center gap-1.5">
+                    👤 Decisor / Contato Ideal
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <EditableField label="Nome" value={lead.contact_name} field="contact_name" leadId={lead.id} placeholder="Quem é o decisor?" />
+                    <EditableField label="Cargo" value={lead.contact_role} field="contact_role" leadId={lead.id} placeholder="Ex: Head de E-commerce" />
+                    <EditableField label="Email" value={lead.email} field="email" leadId={lead.id} type="email" placeholder="email@empresa.com" />
+                    <EditableField label="WhatsApp" value={lead.whatsapp} field="whatsapp" leadId={lead.id} type="tel" placeholder="(11) 99999-9999" />
+                    <EditableField label="LinkedIn" value={lead.linkedin_url} field="linkedin_url" leadId={lead.id} placeholder="linkedin.com/in/..." />
+                    <EditableField label="Telefone" value={lead.phone} field="phone" leadId={lead.id} type="tel" placeholder="(11) 3333-3333" />
                   </div>
-                  <div className="pt-2">
+                </div>
+
+                {/* Company Info */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Informações da Empresa</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <EditableField label="CNPJ" value={lead.cnpj} field="cnpj" leadId={lead.id} placeholder="Não informado" />
+                    <EditableField label="Website" value={lead.website_url} field="website_url" leadId={lead.id} placeholder="www.empresa.com" />
+                    <EditableField label="Instagram" value={lead.instagram_handle} field="instagram_handle" leadId={lead.id} placeholder="@empresa" />
+                    <EditableField label="Nicho" value={lead.niche} field="niche" leadId={lead.id} />
+                  </div>
+                  <div className="pt-1">
                     <ChannelIcons
                       whatsapp={lead.whatsapp}
                       email={lead.email}
@@ -145,27 +248,27 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   </div>
                 </div>
 
-                {/* Diagnóstico */}
-                <div className="space-y-4 pt-4 border-t">
-                  <h4 className="text-sm font-bold text-[#1E3A5F] uppercase tracking-wider">Diagnóstico Comercial</h4>
+                {/* Commercial Diagnosis */}
+                <div className="space-y-3 pt-3 border-t border-border">
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Diagnóstico Comercial</h4>
                   <div className="grid grid-cols-1 gap-3">
-                    <div className="flex justify-between items-center p-3 rounded-lg border">
+                    <div className="flex justify-between items-center p-3 rounded-lg border border-border">
                        <div>
-                         <p className="text-xs text-gray-400">Base Estimada</p>
-                         <p className="font-bold">{lead.estimated_base_size?.toLocaleString('pt-BR') ?? "—"} contatos</p>
+                         <p className="text-[10px] text-muted-foreground uppercase">Base Estimada</p>
+                         <p className="font-bold text-foreground">{lead.estimated_base_size?.toLocaleString('pt-BR') ?? "—"} contatos</p>
                        </div>
                        <div className="text-right">
-                         <p className="text-xs text-gray-400">Ticket Médio</p>
-                         <p className="font-bold">R$ {lead.avg_ticket_estimated?.toLocaleString('pt-BR') ?? "—"}</p>
+                         <p className="text-[10px] text-muted-foreground uppercase">Ticket Médio</p>
+                         <p className="font-bold text-foreground">R$ {lead.avg_ticket_estimated?.toLocaleString('pt-BR') ?? "—"}</p>
                        </div>
                     </div>
-                    <div className="p-3 rounded-lg border">
-                      <p className="text-xs text-gray-400">Ciclo de Recompra</p>
-                      <p className="font-bold">{lead.prr_inputs?.recompra_cycle_days ? `${lead.prr_inputs.recompra_cycle_days} dias` : "Não informado"}</p>
+                    <div className="p-3 rounded-lg border border-border">
+                      <p className="text-[10px] text-muted-foreground uppercase">Ciclo de Recompra</p>
+                      <p className="font-bold text-foreground">{lead.prr_inputs?.recompra_cycle_days ? `${lead.prr_inputs.recompra_cycle_days} dias` : "Não informado"}</p>
                     </div>
                   </div>
-                  <Button 
-                    className="w-full bg-[#2E86AB] hover:bg-[#256e8f]"
+                  <Button
+                    className="w-full bg-accent hover:bg-accent-hover"
                     onClick={() => calculatePrr.mutate(lead.id)}
                     disabled={calculatePrr.isPending}
                   >
@@ -174,25 +277,26 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 </div>
               </TabsContent>
 
-              <TabsContent value="historico" className="pt-4 space-y-6 px-6 pb-10">
-                {/* Registrar Interação */}
-                <div className="p-4 rounded-lg bg-gray-50 border space-y-3">
-                  <h4 className="text-xs font-bold text-[#1E3A5F] uppercase">Registrar Interação</h4>
+              <TabsContent value="historico" className="pt-4 space-y-4 px-6 pb-10">
+                {/* Register Interaction */}
+                <div className="p-4 rounded-lg bg-surface-raised border border-border space-y-3">
+                  <h4 className="text-xs font-bold text-foreground uppercase">Registrar Interação</h4>
                   <div className="flex gap-2">
-                    <select 
-                      value={type} 
+                    <select
+                      value={type}
                       onChange={(e) => setType(e.target.value)}
-                      className="text-xs border rounded p-1 bg-white"
+                      className="text-xs border border-border rounded px-2 py-1.5 bg-surface text-foreground"
                     >
                       <option value="NOTA">Nota</option>
                       <option value="EMAIL">Email</option>
                       <option value="WHATSAPP">WhatsApp</option>
                       <option value="LIGACAO">Ligação</option>
+                      <option value="REUNIAO">Reunião</option>
                     </select>
-                    <input 
-                      type="text" 
-                      placeholder="Descreva a interação..." 
-                      className="flex-1 text-xs border rounded p-1"
+                    <input
+                      type="text"
+                      placeholder="Descreva a interação..."
+                      className="flex-1 text-xs border border-border rounded px-2 py-1.5 bg-surface text-foreground placeholder:text-muted-foreground"
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleCreateInteraction()}
@@ -204,24 +308,47 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 </div>
 
                 {/* Timeline */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {interactions?.length === 0 ? (
-                    <p className="text-center py-8 text-sm text-gray-400 italic">Nenhuma interação registrada ainda</p>
+                    <p className="text-center py-8 text-sm text-muted-foreground italic">Nenhuma interação registrada ainda</p>
                   ) : (
-                    interactions?.map((inter) => (
-                      <div key={inter.id} className="relative pl-6 border-l-2 border-gray-100 pb-4 last:pb-0">
-                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white border-2 border-[#2E86AB]" />
-                        <div className="flex justify-between items-start mb-1">
-                          <Badge variant="outline" className="text-[9px] font-bold">
-                            {inter.type}
-                          </Badge>
-                          <span className="text-[10px] text-gray-400">
-                            {format(new Date(inter.created_at), "dd MMM, HH:mm", { locale: ptBR })}
-                          </span>
+                    interactions?.map((inter) => {
+                      const config = INTERACTION_ICONS[inter.type] ?? INTERACTION_ICONS.NOTA;
+                      const Icon = config.icon;
+                      return (
+                        <div key={inter.id} className="relative pl-8 border-l-2 border-border pb-4 last:pb-0">
+                          <div className={`absolute -left-[13px] top-0 flex h-6 w-6 items-center justify-center rounded-full border ${config.color}`}>
+                            <Icon className="h-3 w-3" />
+                          </div>
+                          <div className="flex justify-between items-start mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-foreground">{inter.type}</span>
+                              {inter.source === "CADENCIA" && (
+                                <span className="text-[9px] bg-accent/10 text-accent px-1.5 py-0.5 rounded font-medium">Auto</span>
+                              )}
+                              {inter.status && inter.type === "EMAIL" && (
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                                  inter.status === "clicked" ? "bg-purple-500/10 text-purple-500" :
+                                  inter.status === "opened" ? "bg-green-500/10 text-green-500" :
+                                  inter.status === "delivered" ? "bg-blue-500/10 text-blue-500" :
+                                  inter.status === "bounced" ? "bg-red-500/10 text-red-500" :
+                                  "bg-gray-500/10 text-gray-500"
+                                }`}>
+                                  {inter.status}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">
+                              {format(new Date(inter.created_at), "dd MMM, HH:mm", { locale: ptBR })}
+                            </span>
+                          </div>
+                          {inter.subject && (
+                            <p className="text-xs font-medium text-foreground/80 mb-0.5">{inter.subject}</p>
+                          )}
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{inter.body}</p>
                         </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{inter.body}</p>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </TabsContent>
