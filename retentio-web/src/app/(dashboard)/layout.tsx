@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { BrandProvider } from "@/components/shared/BrandProvider";
+import { ToastProvider } from "@/components/shared/Toast";
 
 export default function DashboardLayout({
   children,
@@ -9,6 +10,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
+    <ToastProvider>
     <div className="flex h-screen overflow-hidden">
       <BrandProvider />
       {/* Desktop sidebar */}
@@ -26,5 +28,6 @@ export default function DashboardLayout({
       {/* Mobile bottom nav */}
       <BottomNav />
     </div>
+    </ToastProvider>
   );
 }

@@ -1,15 +1,17 @@
 import { Router } from 'express';
 import multer from 'multer';
+import Handlebars from 'handlebars';
 import { asyncHandler, validate, authGuard } from '../../middlewares';
 import { leadService } from './lead.service';
 import { prisma } from '../../config/prisma';
-import { LeadStatus, BloqueioStatus, InteractionSource } from '@prisma/client';
+import { LeadStatus, BloqueioStatus, InteractionSource, InteractionType } from '@prisma/client';
 import { createLeadSchema, updateLeadSchema, updateLeadStatusSchema, leadFiltersSchema, blockDecisionSchema, createInteractionSchema } from './lead.schema';
 import { importLeadsFromCsv } from './csv-import.service';
 import { AppError } from '../../shared/types';
 import { checkAndApplyBlocks } from './block.service';
 import { enqueuePRRRecalculation } from '../../config/queues';
 import { prrService } from '../prr/prr.service';
+import { resendService, decryptApiKey } from '../cadences/resend.service';
 import { z } from 'zod';
 
 import { importFromBuffer } from './lead.import';
@@ -304,6 +306,84 @@ leadRouter.delete(
 
     await prisma.discoveredStack.delete({ where: { id: req.params.stackId as string } });
     res.status(204).send();
+  }),
+);
+
+// ─── Send Email via Resend ──────────────────────────────────────────
+
+const sendEmailSchema = z.object({
+  subject: z.string().min(1),
+  body: z.string().min(1),
+  template_id: z.string().uuid().optional(),
+});
+
+leadRouter.post(
+  '/:id/send-email',
+  validate(sendEmailSchema),
+  asyncHandler(async (req, res) => {
+    const sdrId = req.user!.sub;
+    const leadId = req.params.id as string;
+
+    // Verify lead exists
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, sdr_id: sdrId },
+      select: { id: true, email: true, company_name: true, contact_name: true, niche: true },
+    });
+    if (!lead) throw new AppError(404, 'Lead não encontrado');
+    if (!lead.email) throw new AppError(400, 'Lead não tem email cadastrado', 'NO_EMAIL');
+
+    // Get SDR's resend config
+    const config = await prisma.resendConfig.findUnique({ where: { user_id: sdrId } });
+    if (!config) throw new AppError(400, 'Configure seu email em Configurações', 'NO_RESEND_CONFIG');
+    if (!config.active) throw new AppError(400, 'Configuração de email desativada', 'CONFIG_INACTIVE');
+
+    const { subject, body, template_id } = req.body;
+
+    // Render Handlebars variables in subject/body
+    const context = {
+      empresa: lead.company_name,
+      contato: lead.contact_name ?? '',
+      nicho: lead.niche ?? '',
+      email: lead.email,
+    };
+    let renderedSubject = subject;
+    let renderedBody = body;
+    try {
+      renderedSubject = Handlebars.compile(subject)(context);
+      renderedBody = Handlebars.compile(body)(context);
+    } catch {
+      // Use raw text if Handlebars fails
+    }
+
+    // Send via Resend
+    const messageId = await resendService.sendEmail(config, {
+      to: lead.email,
+      subject: renderedSubject,
+      html: renderedBody.replace(/\n/g, '<br>'),
+      leadId,
+    });
+
+    // Increment sent_today counter
+    await prisma.resendConfig.update({
+      where: { id: config.id },
+      data: { sent_today: { increment: 1 } },
+    });
+
+    // Create interaction record
+    const interaction = await prisma.interaction.create({
+      data: {
+        lead_id: leadId,
+        type: InteractionType.EMAIL,
+        source: InteractionSource.MANUAL,
+        external_id: messageId,
+        subject: renderedSubject,
+        body: renderedBody,
+        status: 'SENT',
+        metadata: template_id ? { template_id } : undefined,
+      },
+    });
+
+    res.json({ success: true, message_id: messageId, interaction_id: interaction.id });
   }),
 );
 
