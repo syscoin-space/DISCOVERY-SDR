@@ -41,6 +41,12 @@ export class LeadService {
       orderBy: [{ prr_score: 'desc' }, { created_at: 'desc' }],
       include: {
         _count: { select: { interactions: true } },
+        interactions: {
+          where: { type: { in: ['EMAIL', 'WHATSAPP', 'LIGACAO', 'LINKEDIN'] } },
+          orderBy: { created_at: 'desc' },
+          take: 3,
+          select: { id: true, type: true, status: true, created_at: true },
+        },
       },
     });
 

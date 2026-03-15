@@ -19,6 +19,7 @@ const sdrNav = [
   { href: "/cadencias", label: "Cadências", icon: "⚡" },
   { href: "/templates", label: "Templates", icon: "📝" },
   { href: "/emails", label: "Emails", icon: "📧" },
+  { href: "/glossario", label: "Glossário", icon: "📖" },
   { href: "/configuracoes", label: "Configurações", icon: "⚙️" },
 ];
 

@@ -9,6 +9,9 @@ import {
 } from "@/hooks/use-today";
 import { X, Phone, MessageCircle, Mail, Plus } from "lucide-react";
 import { PRRBadge } from "@/components/shared/PRRBadge";
+import { InsightToast } from "@/components/shared/InsightToast";
+import { getInsightForStatus } from "@/lib/insights";
+import type { Insight } from "@/lib/insights";
 import type { DailyTask } from "@/lib/types";
 
 // ─── Status config ────────────────────────────────────────────────
@@ -229,6 +232,9 @@ export default function HojePage() {
   const [ligarDepoisValue, setLigarDepoisValue] = useState("");
   const ligarDepoisRef = useRef<HTMLDivElement>(null);
 
+  // Insights
+  const [activeInsight, setActiveInsight] = useState<Insight | null>(null);
+
   // Custom statuses
   const [customStatuses, setCustomStatuses] = useState<CustomStatus[]>([]);
   const [showAddStatus, setShowAddStatus] = useState(false);
@@ -293,6 +299,22 @@ export default function HojePage() {
       const isoLocal = defaultTime.toISOString().slice(0, 16);
       setLigarDepoisValue(isoLocal);
       setLigarDepoisTaskId(taskId);
+    }
+
+    // Show contextual insight
+    const task = tasks?.find((t) => t.id === taskId);
+    const naoAtendeuCount = tasks?.filter(
+      (t) => t.lead_id === task?.lead_id && t.status === "NAO_ATENDEU"
+    ).length ?? 0;
+
+    const insight = getInsightForStatus(status, {
+      tentativas: naoAtendeuCount + (status === "NAO_ATENDEU" ? 1 : 0),
+      ultimo_canal: task?.canal ?? undefined,
+      contact_name: task?.lead.contact_name ?? undefined,
+    });
+    if (insight) {
+      setActiveInsight(insight);
+      setTimeout(() => setActiveInsight(null), 12000);
     }
   }
 
@@ -452,6 +474,13 @@ export default function HojePage() {
           )}
         </div>
       </div>
+
+      {/* Insight Toast */}
+      {activeInsight && (
+        <div className="fixed bottom-6 right-6 z-50 w-96">
+          <InsightToast insight={activeInsight} onClose={() => setActiveInsight(null)} />
+        </div>
+      )}
 
       {/* Table */}
       <div className="flex-1 overflow-auto">

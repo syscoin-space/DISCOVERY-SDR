@@ -19,6 +19,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle } from "lucide-react";
+import { getTierAInsight, getNextChannelSuggestion } from "@/lib/insights";
+import { InsightBanner } from "@/components/shared/InsightToast";
 
 interface LeadSidebarProps {
   leadId: string | null;
@@ -183,6 +185,24 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 {lead.city && <span>• {lead.city}, {lead.state}</span>}
               </div>
             </SheetHeader>
+
+            {/* Tier A stale insight + channel suggestion */}
+            {(() => {
+              const tierInsight = getTierAInsight(lead.prr_tier, lead.updated_at);
+              const channelSuggestion = interactions ? getNextChannelSuggestion(interactions) : null;
+              if (!tierInsight && !channelSuggestion) return null;
+              return (
+                <div className="px-6 pt-4 space-y-2">
+                  {tierInsight && <InsightBanner insight={tierInsight} />}
+                  {channelSuggestion && (
+                    <div className="rounded-lg border border-accent/20 bg-accent/5 px-3 py-2 flex items-center gap-2">
+                      <span className="text-xs font-medium text-accent">Próximo canal recomendado:</span>
+                      <span className="text-xs font-bold text-foreground">{channelSuggestion}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <Tabs defaultValue="perfil" className="mt-4">
               <div className="px-6">

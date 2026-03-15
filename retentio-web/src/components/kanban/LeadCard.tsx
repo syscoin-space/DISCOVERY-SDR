@@ -3,13 +3,14 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { MapPin, CalendarPlus, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Lead } from "@/lib/types";
 import { PRRBadge } from "@/components/shared/PRRBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
 import { ChannelIcons } from "@/components/shared/ChannelIcons";
 import { useAddToToday } from "@/hooks/use-today";
+import { getNextChannelSuggestion } from "@/lib/insights";
 
 interface LeadCardProps {
   lead: Lead;
@@ -19,6 +20,11 @@ interface LeadCardProps {
 export function LeadCard({ lead, onSelect }: LeadCardProps) {
   const addToToday = useAddToToday();
   const [addedToday, setAddedToday] = useState(false);
+
+  const nextChannel = useMemo(
+    () => lead.interactions?.length ? getNextChannelSuggestion(lead.interactions as any) : null,
+    [lead.interactions]
+  );
 
   const {
     attributes,
@@ -119,6 +125,13 @@ export function LeadCard({ lead, onSelect }: LeadCardProps) {
           {addedToday ? "Adicionado" : "Hoje"}
         </button>
       </div>
+
+      {/* Channel suggestion */}
+      {nextChannel && (
+        <p className="mt-1 text-[10px] text-accent font-medium">
+          Próx: {nextChannel}
+        </p>
+      )}
 
       {/* LINHA 5: Localização */}
       {(() => {
