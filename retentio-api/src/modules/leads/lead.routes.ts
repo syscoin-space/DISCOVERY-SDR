@@ -243,6 +243,70 @@ leadRouter.post(
   }),
 );
 
+// ─── Discovered Stack (Tech/Plataformas mapeadas pelo SDR) ────────
+
+const stackSchema = z.object({
+  category: z.string().min(1).max(100),
+  tool_name: z.string().min(1).max(100),
+});
+
+// GET /leads/:id/stack
+leadRouter.get(
+  '/:id/stack',
+  asyncHandler(async (req, res) => {
+    const leadId = req.params.id as string;
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, sdr_id: req.user!.sub }, select: { id: true } });
+    if (!lead) throw new AppError(404, 'Lead não encontrado');
+
+    const stack = await prisma.discoveredStack.findMany({
+      where: { lead_id: leadId },
+      orderBy: [{ category: 'asc' }, { tool_name: 'asc' }],
+    });
+    res.json(stack);
+  }),
+);
+
+// POST /leads/:id/stack
+leadRouter.post(
+  '/:id/stack',
+  validate(stackSchema),
+  asyncHandler(async (req, res) => {
+    const leadId = req.params.id as string;
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, sdr_id: req.user!.sub }, select: { id: true } });
+    if (!lead) throw new AppError(404, 'Lead não encontrado');
+
+    const item = await prisma.discoveredStack.upsert({
+      where: {
+        lead_id_category_tool_name: {
+          lead_id: leadId,
+          category: req.body.category,
+          tool_name: req.body.tool_name,
+        },
+      },
+      create: {
+        lead_id: leadId,
+        category: req.body.category,
+        tool_name: req.body.tool_name,
+      },
+      update: {},
+    });
+    res.status(201).json(item);
+  }),
+);
+
+// DELETE /leads/:id/stack/:stackId
+leadRouter.delete(
+  '/:id/stack/:stackId',
+  asyncHandler(async (req, res) => {
+    const leadId = req.params.id as string;
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, sdr_id: req.user!.sub }, select: { id: true } });
+    if (!lead) throw new AppError(404, 'Lead não encontrado');
+
+    await prisma.discoveredStack.delete({ where: { id: req.params.stackId as string } });
+    res.status(204).send();
+  }),
+);
+
 // DELETE /leads/:id
 leadRouter.delete(
   '/:id',

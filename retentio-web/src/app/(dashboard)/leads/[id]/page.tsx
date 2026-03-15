@@ -2,7 +2,7 @@
 
 import { use, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useLead, useInteractions, useCreateInteraction, useCalculatePrr, useUpdateLead } from "@/hooks/use-leads";
+import { useLead, useInteractions, useCreateInteraction, useCalculatePrr, useUpdateLead, useLeadStack, useAddToStack, useRemoveFromStack } from "@/hooks/use-leads";
 import { PRRBadge } from "@/components/shared/PRRBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
@@ -25,6 +25,9 @@ import {
   MapPin,
   User,
   Send,
+  Plus,
+  Trash2,
+  Layers,
 } from "lucide-react";
 import type { Lead } from "@/lib/types";
 
@@ -135,11 +138,17 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const { data: lead, isLoading } = useLead(id);
   const { data: interactions } = useInteractions(id);
+  const { data: stack } = useLeadStack(id);
   const createInteraction = useCreateInteraction();
   const calculatePrr = useCalculatePrr();
+  const addToStack = useAddToStack();
+  const removeFromStack = useRemoveFromStack();
 
   const [note, setNote] = useState("");
   const [interType, setInterType] = useState("NOTA");
+  const [showAddStack, setShowAddStack] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [newTool, setNewTool] = useState("");
 
   const handleCreate = async () => {
     if (!note.trim()) return;
@@ -264,6 +273,121 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 <a href={lead.website_url.startsWith("http") ? lead.website_url : `https://${lead.website_url}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
                   <Globe className="h-3 w-3" /> Abrir website
                 </a>
+              )}
+            </div>
+
+            {/* Discovered Stack / Plataformas */}
+            <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-raised">
+                    <Layers className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">Stack / Plataformas</h3>
+                    <p className="text-[10px] text-muted-foreground">Ferramentas e plataformas utilizadas pelo lead</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAddStack(!showAddStack)}
+                  className="flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  Adicionar
+                </button>
+              </div>
+
+              {/* Add form */}
+              {showAddStack && (
+                <div className="flex items-end gap-2 p-3 rounded-lg bg-surface-raised border border-border">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-muted-foreground uppercase font-medium">Categoria</label>
+                    <select
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      className="w-full mt-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="E-commerce">E-commerce</option>
+                      <option value="CRM">CRM</option>
+                      <option value="Email Marketing">Email Marketing</option>
+                      <option value="ERP">ERP</option>
+                      <option value="Pagamento">Pagamento</option>
+                      <option value="Logística">Logística</option>
+                      <option value="Analytics">Analytics</option>
+                      <option value="Atendimento">Atendimento</option>
+                      <option value="Automação">Automação</option>
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-muted-foreground uppercase font-medium">Ferramenta</label>
+                    <input
+                      type="text"
+                      value={newTool}
+                      onChange={(e) => setNewTool(e.target.value)}
+                      placeholder="Ex: Shopify, RD Station..."
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && newCategory && newTool.trim()) {
+                          addToStack.mutate({ leadId: id, category: newCategory, tool_name: newTool.trim() });
+                          setNewTool("");
+                        }
+                      }}
+                      className="w-full mt-1 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (!newCategory || !newTool.trim()) return;
+                      addToStack.mutate({ leadId: id, category: newCategory, tool_name: newTool.trim() });
+                      setNewTool("");
+                    }}
+                    disabled={!newCategory || !newTool.trim() || addToStack.isPending}
+                    className="bg-accent hover:bg-accent-hover"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Stack items grouped by category */}
+              {!stack?.length ? (
+                <p className="text-sm text-muted-foreground italic py-4 text-center">
+                  Nenhuma plataforma mapeada ainda
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {Object.entries(
+                    stack.reduce<Record<string, typeof stack>>((acc, item) => {
+                      if (!acc[item.category]) acc[item.category] = [];
+                      acc[item.category].push(item);
+                      return acc;
+                    }, {})
+                  ).map(([category, items]) => (
+                    <div key={category}>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                        {category}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {items.map((item) => (
+                          <span
+                            key={item.id}
+                            className="group flex items-center gap-1.5 rounded-full border border-border bg-surface-raised px-3 py-1 text-xs font-medium text-foreground"
+                          >
+                            {item.tool_name}
+                            <button
+                              onClick={() => removeFromStack.mutate({ leadId: id, stackId: item.id })}
+                              className="text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 

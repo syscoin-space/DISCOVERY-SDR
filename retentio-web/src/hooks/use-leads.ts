@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api/client";
-import type { Lead, LeadStatus, PaginatedResponse, Interaction } from "@/lib/types";
+import type { Lead, LeadStatus, PaginatedResponse, Interaction, DiscoveredStack } from "@/lib/types";
 
 const LEADS_KEY = "leads";
 
@@ -141,6 +141,56 @@ export function useUpdateLead() {
     onSuccess: (_, { leadId }) => {
       queryClient.invalidateQueries({ queryKey: [LEADS_KEY, leadId] });
       queryClient.invalidateQueries({ queryKey: [LEADS_KEY] });
+    },
+  });
+}
+
+// ─── Discovered Stack (Tech/Plataformas) ────────────────────────────
+
+export function useLeadStack(leadId: string | undefined) {
+  return useQuery<DiscoveredStack[]>({
+    queryKey: ["stack", leadId],
+    queryFn: async () => {
+      const { data } = await api.get<DiscoveredStack[]>(`/leads/${leadId}/stack`);
+      return data;
+    },
+    enabled: !!leadId,
+  });
+}
+
+export function useAddToStack() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      leadId,
+      category,
+      tool_name,
+    }: {
+      leadId: string;
+      category: string;
+      tool_name: string;
+    }) => {
+      const { data } = await api.post<DiscoveredStack>(`/leads/${leadId}/stack`, { category, tool_name });
+      return data;
+    },
+    onSuccess: (_, { leadId }) => {
+      queryClient.invalidateQueries({ queryKey: ["stack", leadId] });
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY, leadId] });
+    },
+  });
+}
+
+export function useRemoveFromStack() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ leadId, stackId }: { leadId: string; stackId: string }) => {
+      await api.delete(`/leads/${leadId}/stack/${stackId}`);
+    },
+    onSuccess: (_, { leadId }) => {
+      queryClient.invalidateQueries({ queryKey: ["stack", leadId] });
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY, leadId] });
     },
   });
 }
