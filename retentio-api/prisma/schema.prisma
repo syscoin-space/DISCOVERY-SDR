@@ -126,6 +126,7 @@ model User {
   handoffs_sent   HandoffBriefing[] @relation("HandoffSdr")
   handoffs_received HandoffBriefing[] @relation("HandoffCloser")
   resend_config   ResendConfig?
+  google_integration GoogleIntegration?
   audit_logs          AuditLog[]
   push_subscriptions  PushSubscription[]
   notifications       Notification[]
@@ -192,6 +193,7 @@ model Lead {
   daily_tasks           DailyTask[]
   handoffs              HandoffBriefing[]
   block_events          BlockEvent[]
+  calendar_events       CalendarEvent[]
   audit_logs            AuditLog[]
 
   @@index([sdr_id])
@@ -593,4 +595,47 @@ model Meta {
   @@index([sdr_id])
   @@index([tipo])
   @@map("metas")
+}
+
+model GoogleIntegration {
+  id              String   @id @default(uuid())
+  user_id         String   @unique
+  google_email    String
+  access_token    String
+  refresh_token   String
+  token_expiry    DateTime
+  calendar_id     String   @default("primary")
+  escopos         String[]
+  ativo           Boolean  @default(true)
+  connected_at    DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("google_integrations")
+}
+
+model CalendarEvent {
+  id              String   @id @default(uuid())
+  google_event_id String   @unique
+  lead_id         String
+  closer_user_id  String
+  sdr_user_id     String
+  titulo          String
+  descricao       String?  @db.Text
+  inicio          DateTime
+  fim             DateTime
+  meet_link       String?
+  status          String   @default("confirmed")
+  convidados      String[]
+  sincronizado_at DateTime @default(now())
+  created_at      DateTime @default(now())
+
+  lead Lead @relation(fields: [lead_id], references: [id])
+
+  @@index([lead_id])
+  @@index([closer_user_id])
+  @@index([sdr_user_id])
+  @@index([inicio])
+  @@map("calendar_events")
 }

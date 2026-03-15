@@ -18,6 +18,7 @@ import { todayRouter } from './modules/today/today.routes';
 import { gestorRouter } from './modules/gestor/gestor.routes';
 import { notificationRouter } from './modules/notifications/notification.routes';
 import { brandRouter } from './modules/brand/brand.routes';
+import { googleRouter } from './modules/google/google.routes';
 import { authGuard, roleGuard } from './middlewares/auth';
 
 export const app = express();
@@ -57,6 +58,7 @@ app.use('/api/today', todayRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/gestor', authGuard, roleGuard('GESTOR'), gestorRouter);
 app.use('/api/brand', brandRouter);
+app.use('/api/google', googleRouter);
 
 // ── Error Handler (must be last) ──
 app.use(errorHandler);

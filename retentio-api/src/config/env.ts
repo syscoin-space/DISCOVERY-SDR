@@ -30,4 +30,8 @@ export const env = {
   VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || '',
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || '',
   VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:admin@retentio.com.br',
+
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
+  GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/google/callback',
 } as const;

@@ -18,9 +18,10 @@ import { useState, useCallback, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
-import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle } from "lucide-react";
+import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, Calendar, Video, XCircle } from "lucide-react";
 import { getTierAInsight, getNextChannelSuggestion } from "@/lib/insights";
 import { InsightBanner } from "@/components/shared/InsightToast";
+import { useCalendarEvents, useCancelCalendarEvent } from "@/hooks/use-google";
 
 interface LeadSidebarProps {
   leadId: string | null;
@@ -121,6 +122,8 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
   const { data: interactions } = useInteractions(leadId ?? undefined);
   const createInteraction = useCreateInteraction();
   const calculatePrr = useCalculatePrr();
+  const { data: calendarEvents } = useCalendarEvents(leadId ?? undefined);
+  const cancelEvent = useCancelCalendarEvent();
 
   const [note, setNote] = useState("");
   const [type, setType] = useState("NOTA");
@@ -219,9 +222,10 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
             <Tabs defaultValue="perfil" className="mt-4">
               <div className="px-6">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="perfil">Perfil</TabsTrigger>
                   <TabsTrigger value="historico">Histórico</TabsTrigger>
+                  <TabsTrigger value="reunioes">Reuniões</TabsTrigger>
                 </TabsList>
               </div>
 
@@ -384,6 +388,76 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                     })
                   )}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="reunioes" className="pt-4 space-y-3 px-6 pb-10">
+                {!calendarEvents || calendarEvents.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground italic">
+                      Nenhuma reunião agendada
+                    </p>
+                  </div>
+                ) : (
+                  calendarEvents.map((evt) => {
+                    const isCancelled = evt.status === "cancelled";
+                    return (
+                      <div
+                        key={evt.id}
+                        className={`rounded-lg border p-4 space-y-2 ${
+                          isCancelled
+                            ? "border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20 opacity-60"
+                            : "border-border bg-surface-raised"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-semibold ${isCancelled ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                              {evt.titulo}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {format(new Date(evt.inicio), "dd MMM yyyy, HH:mm", { locale: ptBR })}
+                              {" — "}
+                              {format(new Date(evt.fim), "HH:mm", { locale: ptBR })}
+                            </p>
+                          </div>
+                          {!isCancelled && (
+                            <button
+                              onClick={() => cancelEvent.mutate(evt.id)}
+                              disabled={cancelEvent.isPending}
+                              className="text-red-400 hover:text-red-500 p-1 shrink-0"
+                              title="Cancelar reunião"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        {evt.meet_link && !isCancelled && (
+                          <a
+                            href={evt.meet_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-md bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent hover:bg-accent/20 transition-colors"
+                          >
+                            <Video className="h-3 w-3" />
+                            Abrir Google Meet
+                          </a>
+                        )}
+
+                        {evt.convidados.length > 0 && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Convidados: {evt.convidados.join(", ")}
+                          </p>
+                        )}
+
+                        {isCancelled && (
+                          <Badge variant="destructive" className="text-[10px]">Cancelada</Badge>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </TabsContent>
             </Tabs>
           </>

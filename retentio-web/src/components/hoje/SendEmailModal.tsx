@@ -12,8 +12,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Mail, Send, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Mail, Send, Eye, EyeOff, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
 import { useToast } from "@/components/shared/Toast";
+import { useGoogleStatus, useSendGmail } from "@/hooks/use-google";
 import type { Template } from "@/lib/types";
 
 interface SendEmailModalProps {
@@ -38,6 +39,8 @@ export function SendEmailModal({
   onSent,
 }: SendEmailModalProps) {
   const { toast } = useToast();
+  const { data: googleStatus } = useGoogleStatus();
+  const [viaGmail, setViaGmail] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -53,14 +56,14 @@ export function SendEmailModal({
     enabled: open,
   });
 
-  // Send email mutation
-  const sendEmail = useMutation({
+  // Send email via Resend (cadence system)
+  const sendEmailResend = useMutation({
     mutationFn: async (payload: { subject: string; body: string; template_id?: string }) => {
       const { data } = await api.post(`/leads/${leadId}/send-email`, payload);
       return data;
     },
     onSuccess: () => {
-      toast("Email enviado com sucesso");
+      toast("Email enviado com sucesso (Resend)");
       onOpenChange(false);
       onSent?.();
     },
@@ -69,6 +72,9 @@ export function SendEmailModal({
       toast(msg, "error");
     },
   });
+
+  // Send email via Gmail
+  const sendEmailGmail = useSendGmail();
 
   // When template changes, fill subject/body with rendered content
   useEffect(() => {
@@ -109,12 +115,38 @@ export function SendEmailModal({
 
   function handleSend() {
     if (!subject.trim() || !body.trim()) return;
-    sendEmail.mutate({
-      subject: subject.trim(),
-      body: body.trim(),
-      template_id: selectedTemplateId || undefined,
-    });
+
+    if (viaGmail) {
+      sendEmailGmail.mutate(
+        {
+          leadId,
+          to: leadEmail,
+          subject: subject.trim(),
+          body: body.trim(),
+          templateId: selectedTemplateId || undefined,
+        },
+        {
+          onSuccess: () => {
+            toast("Email enviado via Gmail");
+            onOpenChange(false);
+            onSent?.();
+          },
+          onError: (err: any) => {
+            const msg = err?.response?.data?.message ?? "Erro ao enviar via Gmail";
+            toast(msg, "error");
+          },
+        },
+      );
+    } else {
+      sendEmailResend.mutate({
+        subject: subject.trim(),
+        body: body.trim(),
+        template_id: selectedTemplateId || undefined,
+      });
+    }
   }
+
+  const isSending = sendEmailResend.isPending || sendEmailGmail.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -195,22 +227,39 @@ export function SendEmailModal({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSend}
-            disabled={!subject.trim() || !body.trim() || sendEmail.isPending}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            {sendEmail.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            Enviar
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          {/* Gmail toggle */}
+          {googleStatus?.connected && (
+            <button
+              type="button"
+              onClick={() => setViaGmail(!viaGmail)}
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mr-auto"
+            >
+              {viaGmail ? (
+                <ToggleRight className="h-5 w-5 text-red-500" />
+              ) : (
+                <ToggleLeft className="h-5 w-5" />
+              )}
+              {viaGmail ? `Via Gmail (${googleStatus.email})` : "Via Resend"}
+            </button>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSend}
+              disabled={!subject.trim() || !body.trim() || isSending}
+              className={viaGmail ? "bg-red-500 hover:bg-red-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}
+            >
+              {isSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Enviar
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

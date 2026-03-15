@@ -22,6 +22,8 @@ import {
   Ban,
   Bell,
   BellOff,
+  Calendar,
+  Unplug,
 } from "lucide-react";
 import {
   isPushSupported,
@@ -29,12 +31,25 @@ import {
   registerPushNotifications,
   unregisterPushNotifications,
 } from "@/lib/push";
+import {
+  useGoogleStatus,
+  useGoogleConnect,
+  useGoogleDisconnect,
+} from "@/hooks/use-google";
+import { useSearchParams } from "next/navigation";
 
 export default function ConfiguracoesPage() {
   const { data: config, isLoading: loadingConfig } = useResendConfig();
   const { data: stats } = useEmailStats(30);
   const saveConfig = useSaveResendConfig();
   const testConnection = useTestResendConnection();
+
+  // Google OAuth
+  const searchParams = useSearchParams();
+  const googleJustConnected = searchParams.get("google") === "connected";
+  const { data: googleStatus, isLoading: loadingGoogle } = useGoogleStatus();
+  const googleConnect = useGoogleConnect();
+  const googleDisconnect = useGoogleDisconnect();
 
   const [fromEmail, setFromEmail] = useState("");
   const [fromName, setFromName] = useState("");
@@ -376,6 +391,90 @@ export default function ConfiguracoesPage() {
               )}
             </div>
           )}
+
+          {/* Google Calendar + Gmail */}
+          <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/10">
+                <Calendar className="h-5 w-5 text-red-500" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  Google Calendar &amp; Gmail
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Agende reuniões e envie emails com sua conta Google
+                </p>
+              </div>
+              {googleStatus?.connected && (
+                <span className="ml-auto flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-600">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Conectado
+                </span>
+              )}
+            </div>
+
+            {googleJustConnected && (
+              <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-950/30">
+                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  Conta Google conectada com sucesso!
+                </p>
+              </div>
+            )}
+
+            {loadingGoogle ? (
+              <div className="flex items-center gap-2 py-2">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Verificando conexão...</span>
+              </div>
+            ) : googleStatus?.connected ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between rounded-lg border border-border bg-surface-raised px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{googleStatus.email}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Escopos: Calendar, Gmail, Perfil
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => googleDisconnect.mutate()}
+                    disabled={googleDisconnect.isPending}
+                    className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
+                  >
+                    {googleDisconnect.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Unplug className="h-3 w-3" />
+                    )}
+                    Desconectar
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Reuniões serão criadas no calendar desta conta. Emails via Gmail serão enviados como este remetente.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Conecte sua conta Google para agendar reuniões com Google Meet e enviar
+                  emails diretamente pelo Gmail.
+                </p>
+                <button
+                  onClick={() => googleConnect.mutate()}
+                  disabled={googleConnect.isPending}
+                  className="flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {googleConnect.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Calendar className="h-4 w-4" />
+                  )}
+                  Conectar com Google
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Push Notifications */}
           <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
