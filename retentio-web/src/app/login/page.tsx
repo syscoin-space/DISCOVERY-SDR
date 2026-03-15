@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api/client";
+import { useBrand } from "@/hooks/use-brand";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: brand } = useBrand();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -44,10 +46,31 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-2xl bg-white/95 p-8 shadow-2xl backdrop-blur-sm">
         {/* Logo */}
         <div className="mb-6 flex flex-col items-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-green text-xl font-bold text-white shadow-lg">
-            R
-          </div>
-          <h1 className="mt-3 text-xl font-bold text-navy">Retentio</h1>
+          {brand?.logo_url ? (
+            <img
+              src={brand.logo_url}
+              alt={brand.app_name}
+              className="object-contain"
+              style={{ width: 200, height: 70, borderRadius: 8 }}
+            />
+          ) : (
+            <>
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-xl text-xl font-bold text-white shadow-lg"
+                style={{
+                  background: `linear-gradient(135deg, ${brand?.color_accent ?? "#2E86AB"}, ${brand?.color_green ?? "#1A7A5E"})`,
+                }}
+              >
+                {(brand?.app_name ?? "R").charAt(0).toUpperCase()}
+              </div>
+              <h1
+                className="mt-3 text-xl font-bold"
+                style={{ color: brand?.color_navy ?? "#1E3A5F" }}
+              >
+                {brand?.app_name ?? "Retentio"}
+              </h1>
+            </>
+          )}
           <p className="mt-1 text-xs text-gray-500">CRM de Prospecção SDR</p>
         </div>
 

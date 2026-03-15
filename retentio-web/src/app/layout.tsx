@@ -19,7 +19,15 @@ export const metadata: Metadata = {
     title: "Discovery SDR",
   },
   icons: {
+    icon: "/api/favicon",
     apple: "/icon-192.png",
+  },
+  openGraph: {
+    title: "Discovery SDR — CRM de Prospecção",
+    description:
+      "CRM de prospecção para SDRs de retenção e-commerce. Kanban, PRR, ICP, Cadências.",
+    type: "website",
+    images: [{ url: "/icon-512.png", width: 512, height: 512 }],
   },
 };
 

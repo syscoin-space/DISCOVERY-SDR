@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { MobileHeader } from "@/components/layout/MobileHeader";
 import { PushPermissionBanner } from "@/components/shared/PushPermissionBanner";
 import { BrandProvider } from "@/components/shared/BrandProvider";
 
@@ -17,7 +18,10 @@ export default function DashboardLayout({
       </div>
       <div className="flex flex-1 flex-col overflow-hidden">
         <PushPermissionBanner />
-        <main className="flex flex-1 flex-col overflow-hidden pb-16 lg:pb-0">
+        {/* Mobile header */}
+        <MobileHeader />
+        {/* pt-[calc(56px+env(safe-area-inset-top))] for mobile header, pb-[calc(56px+env(safe-area-inset-bottom))] for bottom nav */}
+        <main className="flex flex-1 flex-col overflow-hidden pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] lg:pt-0 lg:pb-0">
           {children}
         </main>
       </div>
