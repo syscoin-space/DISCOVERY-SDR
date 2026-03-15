@@ -115,6 +115,7 @@ model User {
   password_hash   String
   name            String
   role            Role
+  avatar_url      String?
   active          Boolean  @default(true)
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt

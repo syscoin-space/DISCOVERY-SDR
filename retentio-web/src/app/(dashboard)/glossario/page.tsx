@@ -227,18 +227,52 @@ export default function GlossarioPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4">
+      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:px-6 lg:py-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Glossário</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-lg lg:text-xl font-bold text-foreground">Glossário</h1>
+          <p className="text-xs lg:text-sm text-muted-foreground">
             Metodologia, siglas, boas práticas e roteiro de discovery
           </p>
         </div>
       </div>
 
+      {/* Mobile category tabs */}
+      <div className="lg:hidden flex items-center gap-1 overflow-x-auto scrollbar-hide border-b border-border bg-surface px-3 py-1.5">
+        {CATEGORIES.map((cat) => {
+          const isActive = activeCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => { setActiveCategory(cat.id); setSearch(""); }}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                isActive
+                  ? "bg-accent text-white"
+                  : "bg-surface-raised text-muted-foreground"
+              }`}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Mobile search */}
+      <div className="lg:hidden px-4 py-2 border-b border-border bg-surface">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar termos..."
+            className="w-full rounded-lg border border-border bg-surface-raised pl-9 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent"
+          />
+        </div>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar nav */}
-        <div className="w-56 shrink-0 border-r border-border bg-surface p-4 space-y-1 overflow-y-auto">
+        {/* Sidebar nav — desktop only */}
+        <div className="hidden lg:block w-56 shrink-0 border-r border-border bg-surface p-4 space-y-1 overflow-y-auto">
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             const isActive = activeCategory === cat.id;
@@ -263,10 +297,10 @@ export default function GlossarioPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-3xl mx-auto space-y-6">
-            {/* Search + category header */}
-            <div className="flex items-center gap-4">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <div className="max-w-3xl mx-auto space-y-4 lg:space-y-6">
+            {/* Search + category header — desktop only */}
+            <div className="hidden lg:flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
                   <ActiveIcon className="h-5 w-5 text-accent" />
@@ -294,18 +328,18 @@ export default function GlossarioPage() {
                 Nenhum resultado para &ldquo;{search}&rdquo;
               </p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 lg:space-y-4">
                 {items.map((item, i) => (
                   <div
                     key={i}
-                    className={`rounded-xl border bg-surface p-5 transition-all ${
+                    className={`rounded-xl border bg-surface p-3.5 lg:p-5 transition-all ${
                       item.highlight
                         ? "border-l-[3px] border-l-accent border-accent/20"
                         : "border-border"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <h3 className="text-sm font-bold text-foreground leading-snug">
+                    <div className="flex items-start justify-between gap-2 lg:gap-3 mb-2">
+                      <h3 className="text-xs lg:text-sm font-bold text-foreground leading-snug">
                         {item.title}
                       </h3>
                       {item.tag && (

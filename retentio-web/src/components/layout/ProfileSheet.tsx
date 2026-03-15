@@ -14,12 +14,14 @@ import {
   LogOut,
   ChevronRight,
 } from "lucide-react";
+import { UserAvatar } from "@/components/shared/UserAvatar";
 import { AccountSheet } from "./AccountSheet";
 
 interface StoredUser {
   name: string;
   role: string;
   email: string;
+  avatar_url?: string | null;
 }
 
 interface ProfileSheetProps {
@@ -35,14 +37,6 @@ export function ProfileSheet({ open, onOpenChange, user }: ProfileSheetProps) {
   const isDark = theme === "dark";
 
   const isGestor = user?.role === "GESTOR";
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((w) => w[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "??";
 
   function handleLogout() {
     if (!confirm("Tem certeza que quer sair?")) return;
@@ -74,9 +68,11 @@ export function ProfileSheet({ open, onOpenChange, user }: ProfileSheetProps) {
               {/* User Card */}
               <div className="rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/10 to-navy/10 p-4 mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-bold text-white">
-                    {initials}
-                  </div>
+                  <UserAvatar
+                    name={user?.name ?? ""}
+                    avatarUrl={user?.avatar_url}
+                    size="lg"
+                  />
                   <div className="min-w-0">
                     <p className="text-lg font-bold text-foreground truncate">
                       {user?.name ?? "..."}

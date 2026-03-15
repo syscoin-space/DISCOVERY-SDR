@@ -54,24 +54,24 @@ export default function TemplatesPage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4">
+      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:px-6 lg:py-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Templates</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-lg lg:text-xl font-bold text-foreground">Templates</h1>
+          <p className="text-xs lg:text-sm text-muted-foreground">
             {templates?.length ?? 0} templates criados
           </p>
         </div>
         <Link
           href="/templates/nova"
-          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover"
+          className="flex items-center gap-1.5 rounded-lg bg-accent px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover"
         >
           <Plus className="h-4 w-4" />
-          Novo Template
+          <span className="hidden sm:inline">Novo </span>Template
         </Link>
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         {!templates?.length ? (
           <div className="flex flex-col items-center justify-center py-20">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 mb-4">
@@ -88,7 +88,7 @@ export default function TemplatesPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 lg:gap-4 lg:grid-cols-2">
             {templates.map((tpl) => {
               const ch = CHANNEL_BADGE[tpl.channel];
               const ChIcon = ch.icon;

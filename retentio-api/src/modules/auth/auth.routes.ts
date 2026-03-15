@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { compare } from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
 import { z } from 'zod';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
@@ -48,7 +49,7 @@ authRouter.post(
 
     const tokens = signTokens(user);
     res.json({
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: { id: user.id, email: user.email, name: user.name, role: user.role, avatar_url: user.avatar_url },
       token: tokens.access_token,
       refreshToken: tokens.refresh_token,
       access_token: tokens.access_token,
@@ -89,11 +90,56 @@ authRouter.get(
   asyncHandler(async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.sub },
-      select: { id: true, email: true, name: true, role: true, active: true, created_at: true },
+      select: { id: true, email: true, name: true, role: true, avatar_url: true, active: true, created_at: true },
     });
     if (!user) {
       throw new AppError(404, 'Usuário não encontrado');
     }
+    res.json(user);
+  }),
+);
+
+// POST /auth/avatar — upload profile photo
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new AppError(400, 'Apenas imagens são aceitas', 'INVALID_FILE_TYPE'));
+    }
+  },
+});
+
+authRouter.post(
+  '/avatar',
+  authGuard,
+  avatarUpload.single('file'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new AppError(400, 'Arquivo ausente', 'FILE_MISSING');
+    }
+    const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    const user = await prisma.user.update({
+      where: { id: req.user!.sub },
+      data: { avatar_url: dataUri },
+      select: { id: true, email: true, name: true, role: true, avatar_url: true },
+    });
+    res.json(user);
+  }),
+);
+
+// DELETE /auth/avatar — remove profile photo
+authRouter.delete(
+  '/avatar',
+  authGuard,
+  asyncHandler(async (req, res) => {
+    const user = await prisma.user.update({
+      where: { id: req.user!.sub },
+      data: { avatar_url: null },
+      select: { id: true, email: true, name: true, role: true, avatar_url: true },
+    });
     res.json(user);
   }),
 );

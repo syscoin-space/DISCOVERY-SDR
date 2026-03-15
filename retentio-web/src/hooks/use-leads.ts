@@ -85,7 +85,7 @@ export function useAllLeads() {
     queryKey: [LEADS_KEY, "all"],
     queryFn: async () => {
       const { data } = await api.get<PaginatedResponse<Lead>>(
-        "/leads?limit=50"
+        "/leads?limit=500"
       );
       return data.data;
     },

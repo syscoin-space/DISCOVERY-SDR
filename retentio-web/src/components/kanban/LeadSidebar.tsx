@@ -8,7 +8,6 @@ import { ChannelIcons } from "@/components/shared/ChannelIcons";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle
 } from "@/components/ui/sheet";
 import { Drawer } from "vaul";
@@ -167,7 +166,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
         {lead && (
           <>
-            <SheetHeader className="px-6 py-5 border-b border-border">
+            <div className="px-6 py-5 border-b border-border">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
@@ -185,14 +184,20 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   Ver página
                 </Link>
               </div>
-              <SheetTitle className="text-xl font-bold text-foreground">
-                {lead.company_name}
-              </SheetTitle>
+              {isMobile ? (
+                <Drawer.Title className="text-xl font-bold text-foreground">
+                  {lead.company_name}
+                </Drawer.Title>
+              ) : (
+                <SheetTitle className="text-xl font-bold text-foreground">
+                  {lead.company_name}
+                </SheetTitle>
+              )}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>{lead.niche}</span>
                 {lead.city && <span>• {lead.city}, {lead.state}</span>}
               </div>
-            </SheetHeader>
+            </div>
 
             {/* Tier A stale insight + channel suggestion */}
             {(() => {

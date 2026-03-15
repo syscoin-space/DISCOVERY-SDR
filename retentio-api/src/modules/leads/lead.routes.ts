@@ -68,7 +68,7 @@ leadRouter.get(
   '/',
   validate(leadFiltersSchema, 'query'),
   asyncHandler(async (req, res) => {
-    const result = await leadService.list(req.user!.sub, req.query as any);
+    const result = await leadService.list(req.user!.sub, req.query as any, req.user!.role);
     res.json(result);
   }),
 );
@@ -151,7 +151,7 @@ leadRouter.get(
 leadRouter.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const lead = await leadService.getById(req.params.id as string, req.user!.sub);
+    const lead = await leadService.getById(req.params.id as string, req.user!.sub, req.user!.role);
     res.json(lead);
   }),
 );

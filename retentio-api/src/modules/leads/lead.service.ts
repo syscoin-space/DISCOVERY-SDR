@@ -14,8 +14,8 @@ const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
 };
 
 export class LeadService {
-  async list(sdrId: string, filters: LeadFilters): Promise<PaginatedResult<any>> {
-    const where: Prisma.LeadWhereInput = { sdr_id: sdrId };
+  async list(sdrId: string, filters: LeadFilters, role?: string): Promise<PaginatedResult<any>> {
+    const where: Prisma.LeadWhereInput = role === 'GESTOR' ? {} : { sdr_id: sdrId };
 
     if (filters.status) where.status = filters.status;
     if (filters.prr_tier) where.prr_tier = filters.prr_tier;
@@ -66,9 +66,9 @@ export class LeadService {
     } as any;
   }
 
-  async getById(id: string, sdrId: string) {
+  async getById(id: string, sdrId: string, role?: string) {
     const lead = await prisma.lead.findFirst({
-      where: { id, sdr_id: sdrId },
+      where: role === 'GESTOR' ? { id } : { id, sdr_id: sdrId },
       include: {
         prr_inputs: true,
         icp_answers: { include: { criteria: true } },

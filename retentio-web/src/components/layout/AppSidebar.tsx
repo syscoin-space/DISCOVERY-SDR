@@ -6,12 +6,14 @@ import { LogOut } from "lucide-react";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import { NotificationBell } from "../shared/NotificationBell";
 import { BrandLogo } from "../shared/BrandLogo";
+import { UserAvatar } from "../shared/UserAvatar";
 import { useEffect, useState } from "react";
 
 interface StoredUser {
   name: string;
   role: string;
   email: string;
+  avatar_url?: string | null;
 }
 
 const sdrNav = [
@@ -45,14 +47,6 @@ export function AppSidebar() {
   }, []);
 
   const isGestor = user?.role === "GESTOR";
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((w) => w[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "??";
 
   function handleLogout() {
     localStorage.removeItem("accessToken");
@@ -127,9 +121,11 @@ export function AppSidebar() {
       {/* Footer */}
       <div className="border-t border-gray-100 flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/20 text-xs font-medium text-accent">
-            {initials}
-          </div>
+          <UserAvatar
+            name={user?.name ?? ""}
+            avatarUrl={user?.avatar_url}
+            size="sm"
+          />
           <div className="flex flex-col">
             <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
               {user?.name ?? "..."}

@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useBrand } from "@/hooks/use-brand";
 import { useUnreadCount } from "@/hooks/use-notifications";
+import { UserAvatar } from "@/components/shared/UserAvatar";
 import { ProfileSheet } from "./ProfileSheet";
 
 interface StoredUser {
   name: string;
   role: string;
   email: string;
+  avatar_url?: string | null;
 }
 
 export function MobileHeader() {
@@ -27,14 +29,6 @@ export function MobileHeader() {
 
   const appName = brand?.app_name ?? "Retentio";
   const logoUrl = brand?.logo_url;
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((w) => w[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "??";
 
   return (
     <>
@@ -84,9 +78,13 @@ export function MobileHeader() {
             {/* Avatar */}
             <button
               onClick={() => setProfileOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-xs font-semibold text-white transition-transform active:scale-95"
+              className="transition-transform active:scale-95"
             >
-              {initials}
+              <UserAvatar
+                name={user?.name ?? ""}
+                avatarUrl={user?.avatar_url}
+                size="md"
+              />
             </button>
           </div>
         </div>
