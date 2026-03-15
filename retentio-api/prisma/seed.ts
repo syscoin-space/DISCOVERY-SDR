@@ -7,39 +7,27 @@ async function main() {
   console.log('🌱 Iniciando seed...');
 
   // ── Usuários ──
-  const passwordHash = await hash('Sdr@123', 12);
-  const adminHash = await hash('Admin@123', 12);
+  const defaultHash = await hash('Padrao123#', 12);
 
   const gestor = await prisma.user.upsert({
-    where: { email: 'gestor@retentio.com.br' },
+    where: { email: 'hugo@syscoin.com.br' },
     update: {},
     create: {
-      email: 'gestor@retentio.com.br',
-      password_hash: adminHash,
-      name: 'Maria Gestora',
+      email: 'hugo@syscoin.com.br',
+      password_hash: defaultHash,
+      name: 'Hugo Cândido',
       role: Role.GESTOR,
     },
   });
 
   const sdr1 = await prisma.user.upsert({
-    where: { email: 'joao.sdr@retentio.com.br' },
+    where: { email: 'vitoria@retentio.com.br' },
     update: {},
     create: {
-      email: 'joao.sdr@retentio.com.br',
-      password_hash: passwordHash,
-      name: 'João SDR',
+      email: 'vitoria@retentio.com.br',
+      password_hash: defaultHash,
+      name: 'Vitória',
       role: Role.SDR,
-    },
-  });
-
-  const closer = await prisma.user.upsert({
-    where: { email: 'ana.closer@retentio.com.br' },
-    update: {},
-    create: {
-      email: 'ana.closer@retentio.com.br',
-      password_hash: await hash('Closer@123', 12),
-      name: 'Ana Closer',
-      role: Role.CLOSER,
     },
   });
 
