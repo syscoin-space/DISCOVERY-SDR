@@ -11,10 +11,11 @@ import {
   SheetHeader,
   SheetTitle
 } from "@/components/ui/sheet";
+import { Drawer } from "vaul";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
@@ -124,6 +125,14 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
   const [note, setNote] = useState("");
   const [type, setType] = useState("NOTA");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const handleCreateInteraction = async () => {
     if (!leadId || !note.trim()) return;
@@ -134,9 +143,8 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
     setNote("");
   };
 
-  return (
-    <Sheet open={!!leadId} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-[450px] sm:w-[540px] overflow-y-auto p-0">
+  const sidebarContent = (
+    <>
         {isLoading && (
           <div className="flex flex-col items-center justify-center h-full py-20">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
@@ -375,6 +383,29 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
             </Tabs>
           </>
         )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer.Root open={!!leadId} onOpenChange={(open) => !open && onClose()}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 max-h-[90vh] rounded-t-2xl bg-surface border-t border-border overflow-hidden flex flex-col">
+            <div className="mx-auto mt-3 mb-2 h-1.5 w-12 rounded-full bg-muted-foreground/30 shrink-0" />
+            <div className="flex-1 overflow-y-auto pb-safe">
+              {sidebarContent}
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+    );
+  }
+
+  return (
+    <Sheet open={!!leadId} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="w-[450px] sm:w-[540px] overflow-y-auto p-0">
+        {sidebarContent}
       </SheetContent>
     </Sheet>
   );

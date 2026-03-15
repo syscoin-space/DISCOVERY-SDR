@@ -364,29 +364,25 @@ export default function HojePage() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4">
+      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:px-6 lg:py-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Fila de Hoje</h1>
-          <p className="text-sm text-muted-foreground capitalize">{formatDate()}</p>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>
+          <h1 className="text-lg lg:text-xl font-bold text-foreground">Fila de Hoje</h1>
+          <p className="text-xs lg:text-sm text-muted-foreground">
+            <span className="capitalize hidden sm:inline">{formatDate()} — </span>
             <strong className="text-foreground">{summary?.total ?? 0}</strong> leads
-          </span>
-          <span className="text-emerald-500">
-            <strong>{summary?.atendeu ?? 0}</strong> atendidos
-          </span>
-          <span className="text-amber-500">
-            <strong>{summary?.pendente ?? 0}</strong> pendentes
-          </span>
+            {" · "}
+            <span className="text-emerald-500"><strong>{summary?.atendeu ?? 0}</strong> feitos</span>
+            {" · "}
+            <span className="text-amber-500"><strong>{summary?.pendente ?? 0}</strong> pendentes</span>
+          </p>
         </div>
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-surface px-6 py-2">
+      <div className="flex items-center gap-1.5 border-b border-border bg-surface px-4 py-2 lg:px-6 overflow-x-auto scrollbar-hide lg:flex-wrap">
         <button
           onClick={() => setFilter("ALL")}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
             filter === "ALL"
               ? "bg-accent text-white"
               : "bg-surface-raised text-muted-foreground hover:text-foreground"
@@ -400,7 +396,7 @@ export default function HojePage() {
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                 filter === key
                   ? "bg-accent text-white"
                   : `bg-surface-raised ${s.color} hover:opacity-80`
@@ -477,12 +473,33 @@ export default function HojePage() {
 
       {/* Insight Toast */}
       {activeInsight && (
-        <div className="fixed bottom-6 right-6 z-50 w-96">
+        <div className="fixed bottom-20 right-4 left-4 z-50 lg:left-auto lg:bottom-6 lg:right-6 lg:w-96">
           <InsightToast insight={activeInsight} onClose={() => setActiveInsight(null)} />
         </div>
       )}
 
-      {/* Table */}
+      {/* Ligar depois sheet (mobile-friendly) */}
+      {ligarDepoisTaskId && (
+        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setLigarDepoisTaskId(null)} />
+          <div ref={ligarDepoisRef} className="relative w-full max-w-sm mx-4 mb-20 lg:mb-0 rounded-xl border border-border bg-surface p-4 shadow-lg space-y-3">
+            <p className="text-sm font-medium text-foreground">Ligar quando?</p>
+            <input
+              autoFocus
+              type="datetime-local"
+              value={ligarDepoisValue}
+              onChange={(e) => setLigarDepoisValue(e.target.value)}
+              className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setLigarDepoisTaskId(null)} className="flex-1 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground">Cancelar</button>
+              <button onClick={() => handleLigarDepoisConfirm(ligarDepoisTaskId)} className="flex-1 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
       <div className="flex-1 overflow-auto">
         {sortedTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
@@ -493,195 +510,169 @@ export default function HojePage() {
             </p>
           </div>
         ) : (
-          <table className="w-full min-w-[900px]">
-            <thead>
-              <tr className="border-b border-border bg-surface-raised text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-2 text-left font-medium">Empresa</th>
-                <th className="px-3 py-2 text-left font-medium w-24">PRR</th>
-                <th className="px-3 py-2 text-left font-medium w-16">ICP</th>
-                <th className="px-3 py-2 text-left font-medium w-16">Canal</th>
-                <th className="px-3 py-2 text-left font-medium w-44">Status</th>
-                <th className="px-3 py-2 text-left font-medium">Resultado</th>
-                <th className="px-3 py-2 text-left font-medium w-40">Próximo Contato</th>
-                <th className="px-3 py-2 text-center font-medium w-12"></th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Desktop Table */}
+            <div className="hidden lg:block">
+              <table className="w-full min-w-[900px]">
+                <thead>
+                  <tr className="border-b border-border bg-surface-raised text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <th className="px-4 py-2 text-left font-medium">Empresa</th>
+                    <th className="px-3 py-2 text-left font-medium w-24">PRR</th>
+                    <th className="px-3 py-2 text-left font-medium w-16">ICP</th>
+                    <th className="px-3 py-2 text-left font-medium w-16">Canal</th>
+                    <th className="px-3 py-2 text-left font-medium w-44">Status</th>
+                    <th className="px-3 py-2 text-left font-medium">Resultado</th>
+                    <th className="px-3 py-2 text-left font-medium w-40">Próximo Contato</th>
+                    <th className="px-3 py-2 text-center font-medium w-12"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedTasks.map((task) => {
+                    const statusConf = allStatuses[task.status];
+                    const isFinal = statusConf?.final === true;
+                    const canalConf = task.canal ? CANAL_ICON[task.canal] : null;
+                    const CanalIcon = canalConf?.icon;
+                    const contactStyle = getContactStyle(task.proximo_contato);
+                    const rowClasses = isFinal
+                      ? "opacity-40"
+                      : contactStyle?.rowBg
+                        ? contactStyle.rowBg
+                        : statusConf?.bg ?? "";
+
+                    return (
+                      <tr
+                        key={task.id}
+                        className={`border-b border-border/50 transition-colors hover:bg-surface-raised ${rowClasses}`}
+                      >
+                        <td className="px-4 py-2.5">
+                          <div className="text-sm font-medium text-foreground">{task.lead.company_name}</div>
+                          {task.lead.niche && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.lead.niche}</div>}
+                        </td>
+                        <td className="px-3 py-2.5"><PRRBadge tier={task.lead.prr_tier} score={task.lead.prr_score} /></td>
+                        <td className="px-3 py-2.5"><span className="text-xs text-muted-foreground">{task.lead.icp_score != null ? `${task.lead.icp_score}/14` : "—"}</span></td>
+                        <td className="px-3 py-2.5">
+                          {CanalIcon ? <CanalIcon className={`h-4 w-4 ${canalConf.color}`} /> : <span className="text-xs text-muted-foreground">—</span>}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                            className={`rounded-md border-0 bg-transparent text-xs font-medium focus:outline-none focus:ring-1 focus:ring-accent px-1 py-0.5 cursor-pointer ${statusConf?.color ?? "text-foreground"}`}
+                          >
+                            {statusKeys.map((key) => <option key={key} value={key}>{allStatuses[key].label}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {editingResultado === task.id ? (
+                            <input autoFocus type="text" value={resultadoText} onChange={(e) => setResultadoText(e.target.value)} onBlur={() => handleResultadoSave(task.id)} onKeyDown={(e) => { if (e.key === "Enter") handleResultadoSave(task.id); if (e.key === "Escape") setEditingResultado(null); }} className="w-full rounded border border-border bg-surface-raised px-2 py-1 text-xs text-foreground font-medium focus:border-accent focus:outline-none" />
+                          ) : (
+                            <button onClick={() => { setEditingResultado(task.id); setResultadoText(task.resultado ?? ""); }} className={`w-full text-left text-xs transition-colors truncate max-w-[200px] ${task.resultado ? "text-foreground font-medium hover:text-accent" : "text-muted-foreground italic hover:text-foreground"}`}>{task.resultado || "O que aconteceu?"}</button>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {contactStyle ? (
+                            <span className={`text-xs ${contactStyle.colorClass} ${contactStyle.animate}`}>{contactStyle.text}</span>
+                          ) : (
+                            <input type="datetime-local" value="" onChange={(e) => { const val = e.target.value; updateTask.mutate({ id: task.id, proximo_contato: val ? new Date(val).toISOString() : null }); }} className="rounded border-0 bg-transparent text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent px-1 py-0.5" />
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-center">
+                          <button onClick={() => handleRemove(task.id)} className="p-1 text-muted-foreground hover:text-red-500 transition-colors" title="Remover da fila"><X className="h-3.5 w-3.5" /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden px-4 py-3 space-y-3">
               {sortedTasks.map((task) => {
                 const statusConf = allStatuses[task.status];
                 const isFinal = statusConf?.final === true;
-                const canalConf = task.canal ? CANAL_ICON[task.canal] : null;
-                const CanalIcon = canalConf?.icon;
                 const contactStyle = getContactStyle(task.proximo_contato);
-
-                // Row background: urgency takes precedence, then status bg, then final opacity
-                const rowClasses = isFinal
-                  ? "opacity-40"
-                  : contactStyle?.rowBg
-                    ? contactStyle.rowBg
-                    : statusConf?.bg ?? "";
+                const borderColor = contactStyle?.rowBg?.includes("red")
+                  ? "border-l-red-500"
+                  : contactStyle?.rowBg?.includes("orange")
+                    ? "border-l-orange-500"
+                    : statusConf?.bg?.includes("emerald")
+                      ? "border-l-emerald-500"
+                      : "border-l-transparent";
 
                 return (
-                  <tr
+                  <div
                     key={task.id}
-                    className={`border-b border-border/50 transition-colors hover:bg-surface-raised ${rowClasses}`}
+                    className={`rounded-xl border border-border bg-surface p-4 border-l-2 ${borderColor} ${isFinal ? "opacity-40" : ""}`}
                   >
-                    {/* Empresa */}
-                    <td className="px-4 py-2.5">
-                      <div className="text-sm font-medium text-foreground">
-                        {task.lead.company_name}
+                    {/* Line 1: PRR + Company + Status */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <PRRBadge tier={task.lead.prr_tier} score={task.lead.prr_score} />
+                        <span className="text-sm font-semibold text-foreground truncate">
+                          {task.lead.company_name}
+                        </span>
                       </div>
-                      {task.lead.niche && (
-                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {task.lead.niche}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* PRR */}
-                    <td className="px-3 py-2.5">
-                      <PRRBadge tier={task.lead.prr_tier} score={task.lead.prr_score} />
-                    </td>
-
-                    {/* ICP */}
-                    <td className="px-3 py-2.5">
-                      <span className="text-xs text-muted-foreground">
-                        {task.lead.icp_score != null ? `${task.lead.icp_score}/14` : "—"}
-                      </span>
-                    </td>
-
-                    {/* Canal */}
-                    <td className="px-3 py-2.5">
-                      {CanalIcon ? (
-                        <CanalIcon className={`h-4 w-4 ${canalConf.color}`} />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-3 py-2.5 relative">
                       <select
                         value={task.status}
                         onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                        className={`rounded-md border-0 bg-transparent text-xs font-medium focus:outline-none focus:ring-1 focus:ring-accent px-1 py-0.5 cursor-pointer ${
-                          statusConf?.color ?? "text-foreground"
-                        }`}
+                        className={`shrink-0 rounded-md border border-border bg-surface-raised px-2 py-1.5 text-xs font-medium ${statusConf?.color ?? "text-foreground"}`}
                       >
-                        {statusKeys.map((key) => (
-                          <option key={key} value={key}>
-                            {allStatuses[key].label}
-                          </option>
-                        ))}
+                        {statusKeys.map((key) => <option key={key} value={key}>{allStatuses[key].label}</option>)}
                       </select>
+                    </div>
 
-                      {/* Ligar depois popover */}
-                      {ligarDepoisTaskId === task.id && (
-                        <div
-                          ref={ligarDepoisRef}
-                          className="absolute left-0 top-full z-50 mt-1 rounded-xl border border-border bg-surface p-3 shadow-lg space-y-2 w-64"
-                        >
-                          <p className="text-[11px] font-medium text-foreground uppercase tracking-wide">
-                            Ligar quando?
-                          </p>
-                          <input
-                            autoFocus
-                            type="datetime-local"
-                            value={ligarDepoisValue}
-                            onChange={(e) => setLigarDepoisValue(e.target.value)}
-                            className="w-full rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-sm text-foreground focus:border-accent focus:outline-none"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setLigarDepoisTaskId(null)}
-                              className="flex-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:border-accent transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={() => handleLigarDepoisConfirm(task.id)}
-                              className="flex-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-hover transition-colors"
-                            >
-                              Salvar
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </td>
+                    {/* Line 2: Niche + city */}
+                    {(task.lead.niche || task.lead.city) && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        {task.lead.niche}{task.lead.niche && task.lead.city ? " · " : ""}{task.lead.city}
+                      </p>
+                    )}
 
-                    {/* Resultado */}
-                    <td className="px-3 py-2.5">
+                    {/* Line 3: Resultado */}
+                    <div className="mt-2">
                       {editingResultado === task.id ? (
-                        <input
-                          autoFocus
-                          type="text"
-                          value={resultadoText}
-                          onChange={(e) => setResultadoText(e.target.value)}
-                          onBlur={() => handleResultadoSave(task.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleResultadoSave(task.id);
-                            if (e.key === "Escape") setEditingResultado(null);
-                          }}
-                          className="w-full rounded border border-border bg-surface-raised px-2 py-1 text-xs text-foreground font-medium focus:border-accent focus:outline-none"
-                        />
+                        <input autoFocus type="text" value={resultadoText} onChange={(e) => setResultadoText(e.target.value)} onBlur={() => handleResultadoSave(task.id)} onKeyDown={(e) => { if (e.key === "Enter") handleResultadoSave(task.id); if (e.key === "Escape") setEditingResultado(null); }} className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none" placeholder="O que aconteceu?" />
                       ) : (
-                        <button
-                          onClick={() => {
-                            setEditingResultado(task.id);
-                            setResultadoText(task.resultado ?? "");
-                          }}
-                          className={`w-full text-left text-xs transition-colors truncate max-w-[200px] ${
-                            task.resultado
-                              ? "text-foreground font-medium hover:text-accent"
-                              : "text-muted-foreground italic hover:text-foreground"
-                          }`}
-                        >
-                          {task.resultado || "O que aconteceu?"}
+                        <button onClick={() => { setEditingResultado(task.id); setResultadoText(task.resultado ?? ""); }} className={`text-xs ${task.resultado ? "text-foreground" : "text-muted-foreground italic"}`}>
+                          {task.resultado ? `Resultado: ${task.resultado}` : "O que aconteceu? ✏️"}
                         </button>
                       )}
-                    </td>
+                    </div>
 
-                    {/* Próximo contato */}
-                    <td className="px-3 py-2.5">
-                      {contactStyle ? (
-                        <span
-                          className={`text-xs ${contactStyle.colorClass} ${contactStyle.animate}`}
-                        >
-                          {contactStyle.text}
-                        </span>
-                      ) : (
-                        <input
-                          type="datetime-local"
-                          value=""
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            updateTask.mutate({
-                              id: task.id,
-                              proximo_contato: val
-                                ? new Date(val).toISOString()
-                                : null,
-                            });
-                          }}
-                          className="rounded border-0 bg-transparent text-xs text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent px-1 py-0.5"
-                        />
-                      )}
-                    </td>
+                    {/* Line 4: Contact time */}
+                    {contactStyle && (
+                      <p className={`mt-2 text-xs ${contactStyle.colorClass} ${contactStyle.animate}`}>
+                        {contactStyle.text}
+                      </p>
+                    )}
 
-                    {/* Remove */}
-                    <td className="px-3 py-2.5 text-center">
+                    {/* Footer: action buttons */}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+                      <button
+                        onClick={() => handleStatusChange(task.id, "ATENDEU")}
+                        className="flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600"
+                      >
+                        <Phone className="h-3.5 w-3.5" /> Ligar
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(task.id, "MENSAGEM_ENVIADA")}
+                        className="flex items-center gap-1.5 rounded-lg bg-green-500/10 px-3 py-2 text-xs font-medium text-green-600"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                      </button>
                       <button
                         onClick={() => handleRemove(task.id)}
-                        className="p-1 text-muted-foreground hover:text-red-500 transition-colors"
-                        title="Remover da fila"
+                        className="ml-auto flex items-center gap-1 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-500"
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-3.5 w-3.5" /> Remover
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
     </div>

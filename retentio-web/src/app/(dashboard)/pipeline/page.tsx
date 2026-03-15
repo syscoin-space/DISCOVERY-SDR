@@ -55,24 +55,24 @@ export default function PipelinePage() {
     <div className="flex flex-1 overflow-hidden">
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4">
+        <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:px-6 lg:py-4">
           <div>
-            <h1 className="text-xl font-bold text-foreground">Pipeline</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-lg lg:text-xl font-bold text-foreground">Pipeline</h1>
+            <p className="text-xs lg:text-sm text-muted-foreground">
               {Object.values(columns).reduce((sum, col) => sum + col.length, 0)} leads no funil
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={() => setImportModalOpen(true)}
-              className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-foreground 
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-2 text-xs lg:text-sm font-medium text-foreground
                 shadow-sm transition-colors hover:border-accent hover:text-accent focus:ring-2 focus:ring-accent/50 outline-none"
             >
               <Upload className="h-4 w-4" />
-              Importar
+              <span className="hidden sm:inline">Importar</span>
             </button>
-            <button className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover focus:ring-2 focus:ring-accent/50 outline-none">
-              + Novo Lead
+            <button className="rounded-lg bg-accent px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover focus:ring-2 focus:ring-accent/50 outline-none">
+              + <span className="hidden sm:inline">Novo </span>Lead
             </button>
           </div>
         </div>

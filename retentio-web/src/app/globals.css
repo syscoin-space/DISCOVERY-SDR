@@ -127,6 +127,35 @@
   animation: pulse-slow 2s ease-in-out infinite;
 }
 
+/* Safe area for iPhone */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Prevent zoom on inputs in iOS */
+@media (max-width: 639px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Smooth scroll iOS */
+.overflow-auto, .overflow-y-auto, .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar for horizontal scroll containers */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
