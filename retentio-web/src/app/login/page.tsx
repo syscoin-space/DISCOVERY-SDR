@@ -40,14 +40,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#1E3A5F] via-[#2E86AB] to-[#1A7A5E]">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-navy via-accent to-green">
       <div className="w-full max-w-sm rounded-2xl bg-white/95 p-8 shadow-2xl backdrop-blur-sm">
         {/* Logo */}
         <div className="mb-6 flex flex-col items-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2E86AB] to-[#1A7A5E] text-xl font-bold text-white shadow-lg">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-green text-xl font-bold text-white shadow-lg">
             R
           </div>
-          <h1 className="mt-3 text-xl font-bold text-[#1E3A5F]">Retentio</h1>
+          <h1 className="mt-3 text-xl font-bold text-navy">Retentio</h1>
           <p className="mt-1 text-xs text-gray-500">CRM de Prospecção SDR</p>
         </div>
 
@@ -66,7 +66,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="sdr@empresa.com"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:border-[#2E86AB] focus:outline-none focus:ring-2 focus:ring-[#2E86AB]/30"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:border-[#2E86AB] focus:outline-none focus:ring-2 focus:ring-[#2E86AB]/30"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
             />
           </div>
 
@@ -97,7 +97,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-[#2E86AB] py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#256e8f] disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-accent py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>

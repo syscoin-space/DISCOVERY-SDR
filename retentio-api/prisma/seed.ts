@@ -202,6 +202,13 @@ async function main() {
   }
   console.log(`📝 ${templates.length} templates seeded`);
 
+  // ── Brand Config ──
+  const existingBrand = await prisma.brandConfig.findFirst();
+  if (!existingBrand) {
+    await prisma.brandConfig.create({ data: {} });
+    console.log('🎨 Brand config padrão criado');
+  }
+
   console.log('✅ Seed concluído com sucesso');
 }
 

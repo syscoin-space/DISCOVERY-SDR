@@ -17,6 +17,7 @@ import { icpRouter } from './modules/icp/icp.routes';
 import { todayRouter } from './modules/today/today.routes';
 import { gestorRouter } from './modules/gestor/gestor.routes';
 import { notificationRouter } from './modules/notifications/notification.routes';
+import { brandRouter } from './modules/brand/brand.routes';
 import { authGuard, roleGuard } from './middlewares/auth';
 
 export const app = express();
@@ -55,6 +56,7 @@ app.use('/api/icp-criteria', icpRouter);
 app.use('/api/today', todayRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/gestor', authGuard, roleGuard('GESTOR'), gestorRouter);
+app.use('/api/brand', brandRouter);
 
 // ── Error Handler (must be last) ──
 app.use(errorHandler);

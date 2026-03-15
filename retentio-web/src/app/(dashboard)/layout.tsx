@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PushPermissionBanner } from "@/components/shared/PushPermissionBanner";
+import { BrandProvider } from "@/components/shared/BrandProvider";
 
 export default function DashboardLayout({
   children,
@@ -9,6 +10,7 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex h-screen overflow-hidden">
+      <BrandProvider />
       {/* Desktop sidebar */}
       <div className="hidden lg:block">
         <AppSidebar />

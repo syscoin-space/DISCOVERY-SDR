@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import { NotificationBell } from "../shared/NotificationBell";
+import { BrandLogo } from "../shared/BrandLogo";
 import { useEffect, useState } from "react";
 
 interface StoredUser {
@@ -28,6 +29,7 @@ const gestorNav = [
   { href: "/gestor", label: "Painel", icon: "🏠" },
   { href: "/gestor/sdrs", label: "SDRs", icon: "👥" },
   { href: "/gestor/metas", label: "Metas", icon: "🎯" },
+  { href: "/gestor/marca", label: "Marca", icon: "🎨" },
 ];
 
 export function AppSidebar() {
@@ -62,13 +64,8 @@ export function AppSidebar() {
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
       {/* Logo */}
-      <div className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 px-4 py-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#2E86AB] to-[#1A7A5E] text-sm font-bold text-white">
-          R
-        </div>
-        <span className="text-base font-semibold text-[#1E3A5F] dark:text-gray-100">
-          Retentio
-        </span>
+      <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-4">
+        <BrandLogo />
       </div>
 
       {/* Nav */}
@@ -89,7 +86,7 @@ export function AppSidebar() {
                     transition-colors duration-150
                     ${
                       isActive
-                        ? "bg-[#2E86AB]/10 font-medium text-[#2E86AB] dark:bg-[#3B9AC4]/20 dark:text-[#3B9AC4]"
+                        ? "bg-accent/10 font-medium text-accent"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                     }
                   `}
@@ -115,7 +112,7 @@ export function AppSidebar() {
                 transition-colors duration-150
                 ${
                   isActive
-                    ? "bg-[#2E86AB]/10 font-medium text-[#2E86AB] dark:bg-[#3B9AC4]/20 dark:text-[#3B9AC4]"
+                    ? "bg-accent/10 font-medium text-accent"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                 }
               `}
@@ -130,7 +127,7 @@ export function AppSidebar() {
       {/* Footer */}
       <div className="border-t border-gray-100 flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2E86AB]/20 text-xs font-medium text-[#2E86AB]">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/20 text-xs font-medium text-accent">
             {initials}
           </div>
           <div className="flex flex-col">

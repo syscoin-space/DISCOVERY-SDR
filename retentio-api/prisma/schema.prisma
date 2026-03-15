@@ -520,6 +520,21 @@ model Notification {
   @@map("notifications")
 }
 
+model BrandConfig {
+  id              String   @id @default(uuid())
+  app_name        String   @default("Retentio")
+  logo_url        String?
+  favicon_url     String?
+  icon_192_url    String?
+  icon_512_url    String?
+  color_accent    String   @default("#2E86AB")
+  color_navy      String   @default("#1E3A5F")
+  color_green     String   @default("#1A7A5E")
+  updated_at      DateTime @updatedAt
+
+  @@map("brand_configs")
+}
+
 model AuditLog {
   id          String   @id @default(uuid())
   user_id     String?

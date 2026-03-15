@@ -110,7 +110,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
                 onClick={() => fileInputRef.current?.click()}
                 className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 p-10 transition-colors hover:bg-gray-100"
               >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-[#2E86AB]">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-accent">
                   <Upload className="h-6 w-6" />
                 </div>
                 <p className="text-sm font-medium text-gray-700">Clique para selecionar ou arraste aqui</p>
@@ -126,7 +126,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
             ) : (
               <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-[#2E86AB]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-accent">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div>
@@ -165,7 +165,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-gray-50 p-4 text-center">
                 <p className="text-xs font-medium text-gray-500 uppercase">Sucesso</p>
-                <p className="mt-1 text-2xl font-bold text-[#2E86AB]">{result.importados}</p>
+                <p className="mt-1 text-2xl font-bold text-accent">{result.importados}</p>
               </div>
               <div className="rounded-lg bg-gray-50 p-4 text-center">
                 <p className="text-xs font-medium text-gray-500 uppercase">Duplicatas</p>
@@ -176,8 +176,8 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
                 <p className="mt-1 text-2xl font-bold text-red-500">{result.erros}</p>
               </div>
               <div className="rounded-lg bg-blue-50 p-4 text-center border border-blue-100">
-                <p className="text-sm font-medium text-[#2E86AB] uppercase">Total</p>
-                <p className="mt-1 text-2xl font-bold text-[#1E3A5F]">{result.total}</p>
+                <p className="text-sm font-medium text-accent uppercase">Total</p>
+                <p className="mt-1 text-2xl font-bold text-navy">{result.total}</p>
               </div>
             </div>
             
@@ -196,7 +196,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
               <Button
                 onClick={handleImport}
                 disabled={!file || uploading}
-                className="bg-[#2E86AB] hover:bg-[#256e8f] min-w-[100px]"
+                className="bg-accent hover:bg-accent-hover min-w-[100px]"
               >
                 {uploading ? (
                   <>
@@ -209,7 +209,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
               </Button>
             </>
           ) : (
-            <Button onClick={handleClose} className="w-full bg-[#1E3A5F] hover:bg-[#152a45]">
+            <Button onClick={handleClose} className="w-full bg-navy hover:bg-navy/90">
               Concluído
             </Button>
           )}
