@@ -20,7 +20,15 @@ import {
   MousePointerClick,
   MailOpen,
   Ban,
+  Bell,
+  BellOff,
 } from "lucide-react";
+import {
+  isPushSupported,
+  getPushPermission,
+  registerPushNotifications,
+  unregisterPushNotifications,
+} from "@/lib/push";
 
 export default function ConfiguracoesPage() {
   const { data: config, isLoading: loadingConfig } = useResendConfig();
@@ -36,6 +44,56 @@ export default function ConfiguracoesPage() {
   const [testEmail, setTestEmail] = useState("");
   const [saved, setSaved] = useState(false);
   const [testResult, setTestResult] = useState<"success" | "error" | null>(null);
+
+  // Push notification state
+  const [pushSupported] = useState(() => typeof window !== "undefined" && isPushSupported());
+  const [pushPermission, setPushPermission] = useState<string>("default");
+  const [pushActivating, setPushActivating] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState(() => {
+    if (typeof window === "undefined") return {} as Record<string, boolean>;
+    try {
+      const raw = localStorage.getItem("retentio_notif_prefs");
+      return raw
+        ? JSON.parse(raw)
+        : {
+            proximo_contato: true,
+            step_atrasado: true,
+            tier_a_parado: true,
+            bloqueio: true,
+            meta_performance: true,
+          };
+    } catch {
+      return {
+        proximo_contato: true,
+        step_atrasado: true,
+        tier_a_parado: true,
+        bloqueio: true,
+        meta_performance: true,
+      };
+    }
+  });
+
+  useEffect(() => {
+    if (pushSupported) setPushPermission(getPushPermission());
+  }, [pushSupported]);
+
+  function toggleNotifPref(key: string) {
+    const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
+    setNotifPrefs(updated);
+    localStorage.setItem("retentio_notif_prefs", JSON.stringify(updated));
+  }
+
+  async function handleActivatePush() {
+    setPushActivating(true);
+    const ok = await registerPushNotifications();
+    setPushActivating(false);
+    if (ok) setPushPermission("granted");
+  }
+
+  async function handleDeactivatePush() {
+    await unregisterPushNotifications();
+    setPushPermission("default");
+  }
 
   const hasConfig = config !== null && config !== undefined;
 
@@ -318,6 +376,108 @@ export default function ConfiguracoesPage() {
               )}
             </div>
           )}
+
+          {/* Push Notifications */}
+          <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+                <Bell className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  Notificações Push
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Receba alertas mesmo com o navegador fechado
+                </p>
+              </div>
+              {pushPermission === "granted" && (
+                <span className="ml-auto flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-600">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Ativo
+                </span>
+              )}
+            </div>
+
+            {!pushSupported ? (
+              <p className="text-sm text-muted-foreground">
+                Seu navegador não suporta notificações push.
+              </p>
+            ) : pushPermission === "denied" ? (
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800 dark:bg-red-950/30">
+                <BellOff className="h-4 w-4 text-red-500 shrink-0" />
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  Notificações foram bloqueadas no navegador. Acesse as
+                  configurações do site para reativar.
+                </p>
+              </div>
+            ) : pushPermission === "granted" ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-green-600 font-medium">
+                  Notificações ativadas
+                </span>
+                <button
+                  onClick={handleDeactivatePush}
+                  className="text-xs text-red-500 hover:text-red-600 underline"
+                >
+                  Desativar
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleActivatePush}
+                disabled={pushActivating}
+                className="flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+              >
+                {pushActivating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Bell className="h-4 w-4" />
+                )}
+                Ativar notificações
+              </button>
+            )}
+
+            {/* Preferences toggles */}
+            <div className="border-t border-border pt-4 space-y-3">
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                Tipos de notificação
+              </h4>
+              {[
+                { key: "proximo_contato", label: "Próximo contato (30min antes)" },
+                { key: "step_atrasado", label: "Steps de cadência atrasados" },
+                { key: "tier_a_parado", label: "Lead Tier A parado" },
+                { key: "bloqueio", label: "Alertas de bloqueio" },
+                { key: "meta_performance", label: "Metas e performance (gestor)" },
+              ].map(({ key, label }) => (
+                <label
+                  key={key}
+                  className="flex items-center justify-between cursor-pointer"
+                >
+                  <span className="text-sm text-foreground">{label}</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={notifPrefs[key] ?? true}
+                    onClick={() => toggleNotifPref(key)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      notifPrefs[key] ?? true
+                        ? "bg-blue-500"
+                        : "bg-gray-300 dark:bg-gray-600"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                        notifPrefs[key] ?? true
+                          ? "translate-x-[18px]"
+                          : "translate-x-[3px]"
+                      }`}
+                    />
+                  </button>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

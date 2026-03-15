@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { PushPermissionBanner } from "@/components/shared/PushPermissionBanner";
 
 export default function DashboardLayout({
   children,
@@ -8,7 +9,10 @@ export default function DashboardLayout({
   return (
     <div className="flex h-screen overflow-hidden">
       <AppSidebar />
-      <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <PushPermissionBanner />
+        <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+      </div>
     </div>
   );
 }

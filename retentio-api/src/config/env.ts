@@ -26,4 +26,8 @@ export const env = {
   BLOCK_CHECK_INTERVAL_MS: parseInt(process.env.BLOCK_CHECK_INTERVAL_MS || '900000', 10),
   CADENCE_CHECK_INTERVAL_MS: parseInt(process.env.CADENCE_CHECK_INTERVAL_MS || '900000', 10),
   PRR_CONCURRENCY: parseInt(process.env.PRR_CONCURRENCY || '5', 10),
+
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || '',
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || '',
+  VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:admin@retentio.com.br',
 } as const;

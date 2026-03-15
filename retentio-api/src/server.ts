@@ -3,12 +3,20 @@ import { env } from './config/env';
 import { logger } from './config/logger';
 import { startCadenceStepWorker } from './modules/cadences/cadence-step.worker';
 import { prrWorker } from './workers/prr.worker';
+import { startNotificationWorker } from './modules/notifications/notification.worker';
 
 // ── Inicializa BullMQ Workers ──
 const cadenceWorker = startCadenceStepWorker();
 logger.info('Cadence step worker started');
 // prrWorker já está rodando via import
 logger.info('PRR worker started');
+
+let notificationWorkerInstance: Awaited<ReturnType<typeof startNotificationWorker>> | null = null;
+startNotificationWorker().then((w) => {
+  notificationWorkerInstance = w;
+}).catch((err) => {
+  logger.error('Failed to start notification worker:', err);
+});
 
 const server = app.listen(env.PORT, () => {
   logger.info(`🚀 Retentio API running on port ${env.PORT} [${env.NODE_ENV}]`);
@@ -19,6 +27,7 @@ const shutdown = async (signal: string) => {
   logger.info(`${signal} received. Shutting down gracefully...`);
   await cadenceWorker.close();
   await prrWorker.close();
+  if (notificationWorkerInstance) await notificationWorkerInstance.close();
   logger.info('All workers closed');
   server.close(() => {
     logger.info('HTTP server closed');

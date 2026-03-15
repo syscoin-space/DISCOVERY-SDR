@@ -125,7 +125,9 @@ model User {
   handoffs_sent   HandoffBriefing[] @relation("HandoffSdr")
   handoffs_received HandoffBriefing[] @relation("HandoffCloser")
   resend_config   ResendConfig?
-  audit_logs      AuditLog[]
+  audit_logs          AuditLog[]
+  push_subscriptions  PushSubscription[]
+  notifications       Notification[]
 
   @@index([email])
   @@index([role])
@@ -483,6 +485,39 @@ model EmailEvent {
   @@index([type])
   @@index([created_at(sort: Desc)])
   @@map("email_events")
+}
+
+model PushSubscription {
+  id          String   @id @default(uuid())
+  user_id     String
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  user_agent  String?
+  created_at  DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("push_subscriptions")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  user_id     String
+  tipo        String   // tier_a_parado | step_atrasado | proximo_contato | reuniao_agendada | bloqueio | meta_batida | ritmo_ruim | sdr_destaque
+  titulo      String
+  corpo       String
+  url         String?
+  lida        Boolean  @default(false)
+  enviada_at  DateTime @default(now())
+  lead_id     String?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, lida])
+  @@index([user_id, enviada_at(sort: Desc)])
+  @@map("notifications")
 }
 
 model AuditLog {

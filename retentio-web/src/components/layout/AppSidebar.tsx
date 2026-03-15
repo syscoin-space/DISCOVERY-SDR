@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "../shared/ThemeToggle";
+import { NotificationBell } from "../shared/NotificationBell";
 import { useEffect, useState } from "react";
 
 interface StoredUser {
@@ -140,6 +141,7 @@ export function AppSidebar() {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <NotificationBell />
           <ThemeToggle />
           <button
             onClick={handleLogout}
