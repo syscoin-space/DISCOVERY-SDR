@@ -71,8 +71,10 @@ agendaRouter.get(
       orderBy: { scheduled_at: 'asc' },
       include: {
         cadence_step: {
-          select: { step_order: true, day_offset: true, channel: true },
-          include: {
+          select: {
+            step_order: true,
+            day_offset: true,
+            channel: true,
             cadence: { select: { id: true, name: true } },
           },
         },
