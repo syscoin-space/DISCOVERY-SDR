@@ -9,6 +9,8 @@ import {
 } from "@/hooks/use-today";
 import { X, Phone, MessageCircle, Mail, Plus, CalendarPlus, Pencil, Clock } from "lucide-react";
 import { Drawer } from "vaul";
+import { LeadSidebar } from "@/components/kanban/LeadSidebar";
+import { useKanbanStore } from "@/lib/stores/kanban.store";
 import { PRRBadge } from "@/components/shared/PRRBadge";
 import { InsightToast } from "@/components/shared/InsightToast";
 import { DateTimePicker } from "@/components/shared/DateTimePicker";
@@ -247,6 +249,7 @@ export default function HojePage() {
   const [editingResultado, setEditingResultado] = useState<string | null>(null);
   const [resultadoText, setResultadoText] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const { selectedLeadId, setSelectedLeadId } = useKanbanStore();
 
   // DateTimePicker state
   const [pickerTaskId, setPickerTaskId] = useState<string | null>(null);
@@ -432,7 +435,7 @@ export default function HojePage() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:px-6 lg:py-4">
         <div>
-          <h1 className="text-lg lg:text-xl font-bold text-foreground">Fila de Hoje</h1>
+        {/* Content */}
           <p className="text-xs lg:text-sm text-muted-foreground">
             <span className="capitalize hidden sm:inline">{formatDate()} — </span>
             <strong className="text-foreground">{summary?.total ?? 0}</strong> leads
@@ -659,8 +662,13 @@ export default function HojePage() {
                       >
                         {/* Empresa */}
                         <td className="px-4 py-2.5">
-                          <div className="text-sm font-medium text-foreground">{task.lead.company_name}</div>
-                          {task.lead.niche && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.lead.niche}</div>}
+                          <button
+                            onClick={() => setSelectedLeadId(task.lead.id)}
+                            className="text-left w-full"
+                          >
+                            <div className="text-sm font-medium text-foreground hover:text-accent">{task.lead.company_name}</div>
+                            {task.lead.niche && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.lead.niche}</div>}
+                          </button>
                         </td>
                         {/* PRR */}
                         <td className="px-3 py-2.5"><PRRBadge tier={task.lead.prr_tier} score={task.lead.prr_score} /></td>
@@ -851,6 +859,8 @@ export default function HojePage() {
           </>
         )}
       </div>
+      {/* Lead Sidebar */}
+      <LeadSidebar leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} />
     </div>
   );
 }
