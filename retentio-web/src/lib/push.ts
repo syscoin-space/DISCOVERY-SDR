@@ -1,4 +1,4 @@
-import { api } from "./api/client";
+import api from "./api/client";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
