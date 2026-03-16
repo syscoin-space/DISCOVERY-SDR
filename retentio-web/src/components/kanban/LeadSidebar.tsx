@@ -1,6 +1,7 @@
 "use client";
 
-import { useLead, useInteractions, useCreateInteraction, useCalculatePrr, useUpdateLead } from "@/hooks/use-leads";
+import { useLead, useInteractions, useCreateInteraction, useUpdateLead } from "@/hooks/use-leads";
+import { useCalculatePrr } from "@/hooks/use-prr";
 import { useCreateTouchpoint } from "@/hooks/use-touchpoints";
 import TouchpointTimeline from "@/components/lead/TouchpointTimeline";
 import { PRRBadge } from "@/components/shared/PRRBadge";
@@ -323,7 +324,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   </div>
                   <Button
                     className="w-full bg-accent hover:bg-accent-hover"
-                    onClick={() => calculatePrr.mutate(lead.id)}
+                    onClick={() => calculatePrr.mutate({ leadId: lead.id, inputs: {} })}
                     disabled={calculatePrr.isPending}
                   >
                     {calculatePrr.isPending ? "Calculando..." : "Calcular PRR"}
