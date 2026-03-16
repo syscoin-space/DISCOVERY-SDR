@@ -15,6 +15,7 @@ import { resendService, decryptApiKey } from '../cadences/resend.service';
 import { z } from 'zod';
 
 import { importFromBuffer } from './lead.import';
+import { createTouchpoint, recalcJourneySummary } from './touchpoint.service';
 
 export const leadRouter = Router();
 leadRouter.use(authGuard);
@@ -199,7 +200,7 @@ const prrInputsSchema = z.object({
   recompra_cycle_days: z.number().int().positive().optional(),
   avg_ticket_estimated: z.number().nonnegative().optional(),
   inactive_base_pct: z.number().min(0).max(100).optional(),
-  integrability_score: z.number().int().min(0).max(20).optional(),
+  integrability_score: z.number().int().min(1).max(5).optional(),
 });
 
 leadRouter.patch(
@@ -214,7 +215,141 @@ leadRouter.patch(
     
     res.json({ success: true });
   }),
+  asyncHandler(async (req, res) => {
+    const leadId = req.params.id as string;
+    await prrService.upsertInputs(leadId, req.body);
+    
+    // Trigger PRR Recalculation
+    await enqueuePRRRecalculation(leadId);
+    
+    res.json({ success: true });
+  }),
 );
+
+// Compatibility endpoints for front-end
+// GET /leads/:id/prr  -> returns prr_inputs
+leadRouter.get(
+  '/:id/prr',
+  asyncHandler(async (req, res) => {
+    const leadId = req.params.id as string;
+    const prr = await prisma.prrInputs.findUnique({ where: { lead_id: leadId } });
+    res.json(prr ?? null);
+  }),
+);
+
+// POST /leads/:id/prr/calculate  -> accepts optional inputs, upserts them, then calculates PRR
+leadRouter.post(
+  '/:id/prr/calculate',
+  asyncHandler(async (req, res) => {
+    const leadId = req.params.id as string;
+    const inputs = req.body || {};
+    if (Object.keys(inputs).length > 0) {
+      await prrService.upsertInputs(leadId, inputs);
+    }
+    const result = await prrService.calculate(leadId);
+    res.json(result);
+  }),
+);
+
+  // ===== Touchpoints endpoints =====
+
+  const touchpointSchema = z.object({
+    channel: z.enum([
+      'call',
+      'whatsapp',
+      'email',
+      'sms',
+      'instagram',
+      'meeting',
+      'other',
+    ]),
+    touchpoint_type: z.enum([
+      'attempt',
+      'effective_contact',
+      'follow_up',
+      'response',
+      'reschedule',
+      'booking',
+      'other',
+    ]),
+    outcome: z.enum([
+      'no_answer',
+      'voicemail',
+      'invalid_number',
+      'seen_no_reply',
+      'responded',
+      'spoke_to_gatekeeper',
+      'spoke_to_decision_maker',
+      'asked_to_follow_up',
+      'not_interested',
+      'booked',
+      'lost',
+    ]),
+    direction: z.enum(['outbound', 'inbound']).optional(),
+    duration_seconds: z.number().int().optional(),
+    notes: z.string().optional(),
+  });
+
+  // POST /leads/:id/touchpoints
+  leadRouter.post(
+    '/:id/touchpoints',
+    validate(touchpointSchema),
+    asyncHandler(async (req, res) => {
+      const leadId = req.params.id as string;
+      const sdrId = req.user!.sub;
+
+      const lead = await prisma.lead.findFirst({ where: { id: leadId, sdr_id: sdrId }, select: { id: true } });
+      if (!lead) throw new AppError(404, 'Lead não encontrado');
+
+      const tp = await createTouchpoint({
+        lead_id: leadId,
+        owner_id: sdrId,
+        channel: req.body.channel,
+        touchpoint_type: req.body.touchpoint_type,
+        outcome: req.body.outcome,
+        direction: req.body.direction,
+        duration_seconds: req.body.duration_seconds,
+        notes: req.body.notes,
+      });
+
+      res.status(201).json(tp);
+    }),
+  );
+
+  // GET /leads/:id/touchpoints
+  leadRouter.get(
+    '/:id/touchpoints',
+    asyncHandler(async (req, res) => {
+      const leadId = req.params.id as string;
+      const sdrId = req.user!.sub;
+
+      const lead = await prisma.lead.findFirst({ where: { id: leadId, sdr_id: sdrId }, select: { id: true } });
+      if (!lead) throw new AppError(404, 'Lead não encontrado');
+
+      const tps = await prisma.touchpoint.findMany({ where: { lead_id: leadId }, orderBy: { sequence_number: 'asc' } });
+      res.json(tps);
+    }),
+  );
+
+  // GET /leads/:id/journey-summary
+  leadRouter.get(
+    '/:id/journey-summary',
+    asyncHandler(async (req, res) => {
+      const leadId = req.params.id as string;
+      const sdrId = req.user!.sub;
+
+      const lead = await prisma.lead.findFirst({ where: { id: leadId, sdr_id: sdrId }, select: { id: true } });
+      if (!lead) throw new AppError(404, 'Lead não encontrado');
+
+      let summary = await prisma.leadJourneySummary.findUnique({ where: { lead_id: leadId } });
+      if (!summary) {
+        // Calculate on demand
+        await recalcJourneySummary(leadId);
+        summary = await prisma.leadJourneySummary.findUnique({ where: { lead_id: leadId } });
+      }
+      res.json(summary ?? null);
+    }),
+  );
 
 // GET /leads/:id/interactions
 leadRouter.get(
