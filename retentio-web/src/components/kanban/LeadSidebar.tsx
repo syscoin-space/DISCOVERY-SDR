@@ -1,6 +1,8 @@
 "use client";
 
 import { useLead, useInteractions, useCreateInteraction, useCalculatePrr, useUpdateLead } from "@/hooks/use-leads";
+import { useCreateTouchpoint } from "@/hooks/use-touchpoints";
+import TouchpointTimeline from "@/components/lead/TouchpointTimeline";
 import { PRRBadge } from "@/components/shared/PRRBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
@@ -127,6 +129,9 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
   const [note, setNote] = useState("");
   const [type, setType] = useState("NOTA");
+  const [tpChannel, setTpChannel] = useState("EMAIL");
+  const [tpOutcome, setTpOutcome] = useState("");
+  const [tpNotes, setTpNotes] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -143,6 +148,18 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
       payload: { type, body: note },
     });
     setNote("");
+  };
+
+  const createTouchpoint = useCreateTouchpoint();
+
+  const handleCreateTouchpoint = async () => {
+    if (!leadId) return;
+    await createTouchpoint.mutateAsync({
+      leadId,
+      payload: { channel: tpChannel, outcome: tpOutcome || null, notes: tpNotes || null },
+    });
+    setTpNotes("");
+    setTpOutcome("");
   };
 
   const sidebarContent = (
@@ -344,8 +361,50 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   </div>
                 </div>
 
+                {/* Register Touchpoint */}
+                <div className="p-4 rounded-lg bg-surface-raised border border-border space-y-3">
+                  <h4 className="text-xs font-bold text-foreground uppercase">Registrar Touchpoint</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="flex gap-2">
+                      <select
+                        value={tpChannel}
+                        onChange={(e) => setTpChannel(e.target.value)}
+                        className="text-xs border border-border rounded px-2 py-1.5 bg-surface text-foreground"
+                      >
+                        <option value="EMAIL">Email</option>
+                        <option value="WHATSAPP">WhatsApp</option>
+                        <option value="LIGACAO">Ligação</option>
+                        <option value="LINKEDIN">LinkedIn</option>
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Outcome (ex: interested)"
+                        className="flex-1 text-xs border border-border rounded px-2 py-1.5 bg-surface text-foreground placeholder:text-muted-foreground"
+                        value={tpOutcome}
+                        onChange={(e) => setTpOutcome(e.target.value)}
+                      />
+                    </div>
+                    <textarea
+                      placeholder="Notas sobre o touchpoint..."
+                      className="w-full text-xs border border-border rounded px-2 py-1.5 bg-surface text-foreground placeholder:text-muted-foreground"
+                      value={tpNotes}
+                      onChange={(e) => setTpNotes(e.target.value)}
+                      rows={3}
+                    />
+                    <div className="flex justify-end">
+                      <Button size="sm" onClick={handleCreateTouchpoint} disabled={createTouchpoint.isPending}>
+                        {createTouchpoint.isPending ? "Salvando..." : "Salvar Touchpoint"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Timeline */}
                 <div className="space-y-3">
+                  <div className="pt-2">
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Touchpoints</h4>
+                    {lead?.id && <TouchpointTimeline leadId={lead.id} />}
+                  </div>
                   {interactions?.length === 0 ? (
                     <p className="text-center py-8 text-sm text-muted-foreground italic">Nenhuma interação registrada ainda</p>
                   ) : (
