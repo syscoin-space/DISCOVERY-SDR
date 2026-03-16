@@ -2,11 +2,27 @@
 
 import { ReactNode, useState, useRef, useEffect } from "react";
 
-export default function Tooltip({ children, content, delay = 200 }: { children: ReactNode; content: ReactNode; delay?: number }) {
+type Position = "top" | "right" | "left" | "bottom";
+
+export default function Tooltip({
+  children,
+  content,
+  delay = 200,
+  position = "top",
+}: {
+  children: ReactNode;
+  content: ReactNode;
+  delay?: number;
+  position?: Position;
+}) {
   const [visible, setVisible] = useState(false);
   const timer = useRef<number | null>(null);
 
-  useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
+  useEffect(() => {
+    return () => {
+      if (timer.current) window.clearTimeout(timer.current);
+    };
+  }, []);
 
   function handleEnter() {
     if (timer.current) window.clearTimeout(timer.current);
@@ -17,14 +33,26 @@ export default function Tooltip({ children, content, delay = 200 }: { children: 
     setVisible(false);
   }
 
+  // Position classes (Tailwind helpers) — supports dark mode via `dark:` classes
+  let posClass = "left-1/2 -translate-x-1/2 top-full mt-2"; // bottom by default
+  if (position === "top") posClass = "left-1/2 -translate-x-1/2 bottom-full mb-2";
+  if (position === "right") posClass = "top-1/2 -translate-y-1/2 left-full ml-2";
+  if (position === "left") posClass = "top-1/2 -translate-y-1/2 right-full mr-2";
+
   return (
-    <span className="relative inline-block" onMouseEnter={handleEnter} onFocus={handleEnter} onMouseLeave={handleLeave} onBlur={handleLeave} tabIndex={0}>
+    <span
+      className="relative inline-block"
+      onMouseEnter={handleEnter}
+      onFocus={handleEnter}
+      onMouseLeave={handleLeave}
+      onBlur={handleLeave}
+      tabIndex={0}
+    >
       {children}
       <span
         role="tooltip"
         aria-hidden={!visible}
-        className={`pointer-events-none z-50 absolute left-1/2 -translate-x-1/2 mt-2 w-max max-w-xs rounded-md bg-black text-white text-xs leading-snug px-2 py-1 opacity-0 transform transition-all duration-150 ${visible ? "opacity-100 translate-y-0" : "translate-y-1"}`}
-        style={{ top: '100%' }}
+        className={`pointer-events-none z-50 absolute ${posClass} w-max max-w-xs rounded-md px-2 py-1 text-xs leading-snug transition-all duration-150 transform ${visible ? "opacity-100 scale-100" : "opacity-0 scale-95"} shadow-lg bg-black text-white dark:bg-white dark:text-black`}
       >
         {content}
       </span>
