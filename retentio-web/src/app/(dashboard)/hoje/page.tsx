@@ -10,6 +10,7 @@ import {
 import { X, Phone, MessageCircle, Mail, Plus, CalendarPlus, Pencil, Clock } from "lucide-react";
 import { Drawer } from "vaul";
 import { LeadSidebar } from "@/components/kanban/LeadSidebar";
+import Tooltip from "@/components/ui/Tooltip";
 import { useKanbanStore } from "@/lib/stores/kanban.store";
 import { PRRBadge } from "@/components/shared/PRRBadge";
 import { InsightToast } from "@/components/shared/InsightToast";
@@ -665,9 +666,10 @@ export default function HojePage() {
                           <button
                             onClick={() => setSelectedLeadId(task.lead.id)}
                             className="text-left w-full"
-                            title="Abrir cartão do lead"
                           >
-                            <div className="text-sm font-medium text-foreground hover:text-accent hover:underline">{task.lead.company_name}</div>
+                            <Tooltip content="Abrir cartão do lead">
+                              <div className="text-sm font-medium text-foreground hover:text-accent hover:underline">{task.lead.company_name}</div>
+                            </Tooltip>
                             {task.lead.niche && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.lead.niche}</div>}
                           </button>
                         </td>
