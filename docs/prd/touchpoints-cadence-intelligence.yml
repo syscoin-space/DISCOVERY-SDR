@@ -1,13 +1,625 @@
-title: "Touchpoints & Cadence Intelligence"
-status: draft
-created_by: "Hugo Candido"
-created_at: 2026-03-16
-summary: "Placeholder PRD file — replace with the full YAML provided by the product team."
+prd:
+  meta:
+    name: "Touchpoints & Cadence Intelligence"
+    version: "1.0"
+    status: "draft"
+    language: "en"
+    owner: "Hugo"
+    type: "module_prd"
+    summary: >
+      This module transforms contact attempts into commercial intelligence by
+      capturing structured touchpoints, analyzing cadence patterns, and exposing
+      indicators that show which channels, sequences, and rhythms generate more
+      meetings for each lead profile.
 
-# NOTE: This is a placeholder created by the assistant while awaiting the full PRD YAML.
-# Replace the contents of this file with the complete PRD YAML the team provided.
+  context:
+    objective: >
+      Register every attempt and interaction with each prospect in a structured way
+      so the operation can turn raw outreach activity into indicators, patterns,
+      and operational recommendations.
+    business_problem: >
+      Most commercial teams store contacts only as loose history. That prevents
+      the company from understanding how many attempts are needed to convert,
+      which channels work best, which cadences are most efficient, and which
+      reps perform better under different contact strategies.
+    expected_outcomes:
+      - "Structured touchpoint registration with low friction"
+      - "Clear contact timeline for each lead"
+      - "Performance metrics by channel, order, and timing"
+      - "Pattern discovery across successful journeys"
+      - "Operational insights and living playbooks"
+      - "Foundation for future recommendation engines"
 
-notes: |
-  - Created as: `docs/prd/touchpoints-cadence-intelligence.yml`
-  - Action: replace this placeholder with the final PRD YAML content.
-  - Related: Redis auth fixes (branch `fix/redis-auth`) and PRR calculation improvements.
+  goals:
+    primary:
+      - "Track all lead touchpoints in a structured sequence"
+      - "Measure average number of contacts until booking"
+      - "Identify best-performing channels for first, second, and later contacts"
+      - "Find cadence patterns that lead to faster bookings"
+      - "Compare performance by rep, lead source, and lead profile"
+    secondary:
+      - "Standardize outcomes across the sales team"
+      - "Reduce data inconsistency from free-text logging"
+      - "Support future next-best-action recommendations"
+
+  users:
+    personas:
+      - role: "SDR"
+        needs:
+          - "Quickly log touchpoints"
+          - "See lead timeline and next action context"
+      - role: "Closer / Sales Rep"
+        needs:
+          - "Understand prior touch history"
+          - "Book meetings faster with better cadence"
+      - role: "Sales Manager"
+        needs:
+          - "See efficiency metrics and team comparisons"
+          - "Detect repeatable outreach patterns"
+      - role: "Ops / BI"
+        needs:
+          - "Reliable structured data for analysis"
+      - role: "Admin"
+        needs:
+          - "Control enums, rules, and reporting visibility"
+
+  scope:
+    mvp_includes:
+      - "Manual and automatic touchpoint registration"
+      - "Lead touchpoint timeline"
+      - "Sequential numbering of attempts per lead"
+      - "Classification by channel, type, direction, and outcome"
+      - "Automatic per-lead summary calculations"
+      - "Basic dashboards for contact efficiency"
+      - "Simple cadence pattern identification"
+      - "Descriptive auto-insights from aggregated data"
+    mvp_excludes:
+      - "Advanced predictive AI"
+      - "Automated multi-channel outreach execution"
+      - "Deep telephony integrations"
+      - "Real-time probabilistic recommendations"
+      - "Advanced attribution modeling"
+      - "A/B experimentation engine"
+      - "Statistical significance engine"
+
+  concepts:
+    definitions:
+      touchpoint: >
+        Any interaction or attempt to interact with a prospect, such as a call,
+        WhatsApp message, email, SMS, Instagram message, meeting, or manual follow-up.
+      contact_sequence: >
+        The chronological order of touchpoints for a lead.
+      cadence_signature: >
+        A compressed signature of the sequence of channels used in the journey,
+        such as 'call > whatsapp > call'.
+      touchpoint_outcome: >
+        A standardized classification of the result of an interaction attempt.
+      effective_contact: >
+        A touchpoint that generated an actual exchange, such as response, decision-maker contact,
+        or booking.
+      journey_summary: >
+        Aggregated metrics for a lead based on the complete set of touchpoints.
+
+  requirements:
+    functional:
+      - id: "FR-001"
+        name: "Create touchpoint"
+        description: "The system must allow a user or integration to register a touchpoint linked to a lead."
+        priority: "must"
+      - id: "FR-002"
+        name: "Lead timeline"
+        description: "The system must display all touchpoints for a lead in chronological order."
+        priority: "must"
+      - id: "FR-003"
+        name: "Sequence numbering"
+        description: "The system must auto-assign a sequence number to each touchpoint within the lead journey."
+        priority: "must"
+      - id: "FR-004"
+        name: "Standardized outcomes"
+        description: "The system must provide a controlled list of touchpoint outcomes."
+        priority: "must"
+      - id: "FR-005"
+        name: "Journey summary"
+        description: "The system must calculate and maintain an updated lead journey summary after each touchpoint."
+        priority: "must"
+      - id: "FR-006"
+        name: "Operational dashboard"
+        description: "The system must expose KPIs and visual breakdowns for touchpoint efficiency."
+        priority: "must"
+      - id: "FR-007"
+        name: "Pattern analysis"
+        description: "The system must group journeys by channel order and timing patterns for analysis."
+        priority: "should"
+      - id: "FR-008"
+        name: "Auto-insights"
+        description: "The system must generate simple descriptive insights from aggregated outreach data."
+        priority: "should"
+      - id: "FR-009"
+        name: "Filtering"
+        description: "The system must support filtering metrics and views by period, owner, source, segment, channel, and initial temperature."
+        priority: "must"
+      - id: "FR-010"
+        name: "Quick logging actions"
+        description: "The interface should provide shortcut actions for common touchpoint events."
+        priority: "should"
+
+    non_functional:
+      - id: "NFR-001"
+        name: "Low friction"
+        description: "Logging a touchpoint should be fast and simple for commercial teams."
+      - id: "NFR-002"
+        name: "Data consistency"
+        description: "The system must enforce strong standardization of core touchpoint fields."
+      - id: "NFR-003"
+        name: "Near real-time summaries"
+        description: "Lead summary metrics should update automatically after each new touchpoint."
+      - id: "NFR-004"
+        name: "Scalability"
+        description: "The data model must support future advanced analytics and recommendation layers."
+      - id: "NFR-005"
+        name: "Auditability"
+        description: "Touchpoint history must remain visible and traceable by lead and owner."
+
+  data_model:
+    entities:
+      lead:
+        description: "Prospect or account being worked by the commercial team."
+        fields:
+          id:
+            type: "uuid"
+            required: true
+          name:
+            type: "string"
+            required: true
+          source:
+            type: "string"
+            required: false
+          segment:
+            type: "string"
+            required: false
+          initial_temperature:
+            type: "enum"
+            values: ["cold", "warm", "hot"]
+            required: false
+          owner_id:
+            type: "uuid"
+            required: false
+          created_at:
+            type: "datetime"
+            required: true
+          current_status:
+            type: "enum"
+            values: ["new", "in_progress", "booked", "lost", "archived"]
+            required: true
+
+      touchpoint:
+        description: "Single contact attempt or interaction linked to a lead."
+        fields:
+          id:
+            type: "uuid"
+            required: true
+          lead_id:
+            type: "uuid"
+            required: true
+          owner_id:
+            type: "uuid"
+            required: true
+          sequence_number:
+            type: "integer"
+            required: true
+          channel:
+            type: "enum"
+            values: ["call", "whatsapp", "email", "sms", "instagram", "meeting", "other"]
+            required: true
+          touchpoint_type:
+            type: "enum"
+            values:
+              - "attempt"
+              - "effective_contact"
+              - "follow_up"
+              - "response"
+              - "reschedule"
+              - "booking"
+              - "other"
+            required: true
+          outcome:
+            type: "enum"
+            values:
+              - "no_answer"
+              - "voicemail"
+              - "invalid_number"
+              - "seen_no_reply"
+              - "responded"
+              - "spoke_to_gatekeeper"
+              - "spoke_to_decision_maker"
+              - "asked_to_follow_up"
+              - "not_interested"
+              - "booked"
+              - "lost"
+            required: true
+          direction:
+            type: "enum"
+            values: ["outbound", "inbound"]
+            required: false
+          answered:
+            type: "boolean"
+            required: false
+          booked:
+            type: "boolean"
+            required: false
+          lost:
+            type: "boolean"
+            required: false
+          duration_seconds:
+            type: "integer"
+            required: false
+          notes:
+            type: "text"
+            required: false
+          created_at:
+            type: "datetime"
+            required: true
+          hours_since_previous_touch:
+            type: "decimal"
+            required: false
+          days_since_lead_created:
+            type: "decimal"
+            required: false
+          generated_next_step:
+            type: "boolean"
+            required: false
+
+      lead_journey_summary:
+        description: "Aggregated lead-level summary updated from touchpoints."
+        fields:
+          lead_id:
+            type: "uuid"
+            required: true
+          total_touchpoints:
+            type: "integer"
+            required: true
+          total_effective_contacts:
+            type: "integer"
+            required: true
+          total_no_response_attempts:
+            type: "integer"
+            required: true
+          first_contact_channel:
+            type: "string"
+            required: false
+          second_contact_channel:
+            type: "string"
+            required: false
+          last_contact_channel:
+            type: "string"
+            required: false
+          first_touch_at:
+            type: "datetime"
+            required: false
+          last_touch_at:
+            type: "datetime"
+            required: false
+          first_response_at:
+            type: "datetime"
+            required: false
+          booked_at:
+            type: "datetime"
+            required: false
+          lost_at:
+            type: "datetime"
+            required: false
+          days_to_first_contact:
+            type: "decimal"
+            required: false
+          days_to_book:
+            type: "decimal"
+            required: false
+          touchpoints_to_book:
+            type: "integer"
+            required: false
+          final_status:
+            type: "enum"
+            values: ["in_progress", "booked", "lost"]
+            required: true
+          cadence_signature:
+            type: "string"
+            required: false
+
+      cadence_insight:
+        description: "Aggregated cadence-level analytics."
+        fields:
+          id:
+            type: "uuid"
+            required: true
+          cadence_signature:
+            type: "string"
+            required: true
+          leads_count:
+            type: "integer"
+            required: true
+          touchpoints_count:
+            type: "integer"
+            required: true
+          response_rate:
+            type: "decimal"
+            required: true
+          booking_rate:
+            type: "decimal"
+            required: true
+          avg_days_to_book:
+            type: "decimal"
+            required: false
+          median_touchpoints_to_book:
+            type: "decimal"
+            required: false
+
+  enums:
+    channels:
+      - "call"
+      - "whatsapp"
+      - "email"
+      - "sms"
+      - "instagram"
+      - "meeting"
+      - "other"
+    touchpoint_types:
+      - "attempt"
+      - "effective_contact"
+      - "follow_up"
+      - "response"
+      - "reschedule"
+      - "booking"
+      - "other"
+    outcomes:
+      - "no_answer"
+      - "voicemail"
+      - "invalid_number"
+      - "seen_no_reply"
+      - "responded"
+      - "spoke_to_gatekeeper"
+      - "spoke_to_decision_maker"
+      - "asked_to_follow_up"
+      - "not_interested"
+      - "booked"
+      - "lost"
+    directions:
+      - "outbound"
+      - "inbound"
+    lead_statuses:
+      - "new"
+      - "in_progress"
+      - "booked"
+      - "lost"
+      - "archived"
+
+  business_rules:
+    - id: "BR-001"
+      rule: "Every touchpoint must belong to a lead."
+    - id: "BR-002"
+      rule: "Every new touchpoint increments the sequence number for that lead."
+    - id: "BR-003"
+      rule: "Lead journey summaries must recalculate after each new touchpoint."
+    - id: "BR-004"
+      rule: "If outcome = booked, then booked = true and the summary must store booked_at, days_to_book, and touchpoints_to_book."
+    - id: "BR-005"
+      rule: "If outcome = lost, then lost = true and the journey final_status becomes lost."
+    - id: "BR-006"
+      rule: "Outcomes responded, spoke_to_decision_maker, and booked count as effective contacts."
+    - id: "BR-007"
+      rule: "Cadence signature must be recalculated based on ordered channels in the lead journey."
+    - id: "BR-008"
+      rule: "Auto-insights should only be shown when the minimum sample size threshold is reached."
+    - id: "BR-009"
+      rule: "hours_since_previous_touch and days_since_lead_created should be automatically calculated when possible."
+    - id: "BR-010"
+      rule: "Standardized outcomes must be enforced in UI and integrations."
+
+  calculations:
+    lead_level:
+      - name: "total_touchpoints"
+        formula: "count(all touchpoints for lead)"
+      - name: "total_effective_contacts"
+        formula: "count(touchpoints where outcome in [responded, spoke_to_decision_maker, booked])"
+      - name: "total_no_response_attempts"
+        formula: "count(touchpoints where outcome in [no_answer, voicemail, seen_no_reply])"
+      - name: "first_contact_channel"
+        formula: "channel of earliest touchpoint"
+      - name: "second_contact_channel"
+        formula: "channel of second touchpoint by created_at"
+      - name: "last_contact_channel"
+        formula: "channel of latest touchpoint"
+      - name: "days_to_first_contact"
+        formula: "first_touch_at - lead.created_at"
+      - name: "days_to_book"
+        formula: "booked_at - lead.created_at"
+      - name: "touchpoints_to_book"
+        formula: "sequence_number of touchpoint where outcome = booked"
+      - name: "cadence_signature"
+        formula: "ordered channel chain joined by ' > '"
+    aggregate_level:
+      - name: "avg_touchpoints_per_lead"
+        formula: "avg(total_touchpoints)"
+      - name: "avg_touchpoints_to_booking"
+        formula: "avg(touchpoints_to_book where final_status = booked)"
+      - name: "median_touchpoints_to_booking"
+        formula: "median(touchpoints_to_book where final_status = booked)"
+      - name: "response_rate_by_channel"
+        formula: "responded leads or touchpoints / total touchpoints by channel"
+      - name: "booking_rate_by_first_channel"
+        formula: "booked leads / total leads grouped by first_contact_channel"
+      - name: "avg_time_to_booking"
+        formula: "avg(days_to_book where final_status = booked)"
+      - name: "most_common_booking_attempt"
+        formula: "mode(touchpoints_to_book where final_status = booked)"
+
+  analytics:
+    key_questions:
+      - "How many contacts on average are required to get a booking?"
+      - "At which attempt number do bookings happen most often?"
+      - "Which channel works best as first contact?"
+      - "Which channel works best as second contact?"
+      - "Which channel sequence converts more?"
+      - "Which channel sequence converts faster?"
+      - "Which rep books with fewer attempts?"
+      - "Which lead sources require more outreach effort?"
+      - "How long does a lead take to book?"
+    pattern_examples:
+      - "Leads with first contact by call"
+      - "Leads with second contact by WhatsApp"
+      - "Leads with cadence call > whatsapp"
+      - "Leads with 3+ attempts and no response"
+      - "Leads booked within 72 hours"
+    auto_insight_templates:
+      - "Leads with first contact by {channel} book faster."
+      - "The second contact by {channel} had the highest response rate."
+      - "{channel} performs better after the {attempt_number}th touchpoint."
+      - "Most bookings happen between the {min_attempt}nd and {max_attempt}th contact."
+      - "Leads from {source} require more attempts on average before booking."
+
+  kpis:
+    contact_efficiency:
+      - "total_touchpoints"
+      - "avg_touchpoints_per_lead"
+      - "avg_effective_contacts_per_lead"
+      - "response_rate_by_channel"
+      - "connection_rate_by_channel"
+      - "booking_rate_by_channel"
+    sequence_efficiency:
+      - "avg_touchpoints_to_booking"
+      - "median_touchpoints_to_booking"
+      - "most_common_booking_attempt"
+      - "best_booking_cadence"
+      - "fastest_booking_cadence"
+    timing:
+      - "avg_time_to_first_contact"
+      - "avg_time_between_touchpoints"
+      - "avg_time_to_booking"
+      - "avg_time_to_loss"
+    cuts:
+      - "period"
+      - "owner"
+      - "lead_source"
+      - "segment"
+      - "channel"
+      - "initial_temperature"
+
+  ui:
+    screens:
+      lead_detail:
+        description: "Lead detail page with contact journey visibility."
+        components:
+          - "lead header"
+          - "current status"
+          - "journey summary card"
+          - "touchpoint timeline"
+          - "add touchpoint button"
+      new_touchpoint_modal:
+        description: "Fast touchpoint registration form."
+        fields:
+          - "channel"
+          - "touchpoint_type"
+          - "outcome"
+          - "date_time"
+          - "notes"
+          - "duration_seconds"
+          - "owner"
+        quick_actions:
+          - "call_no_answer"
+          - "whatsapp_sent"
+          - "responded"
+          - "booked"
+      dashboard:
+        description: "Operational dashboard for touchpoint intelligence."
+        components:
+          - "top KPI cards"
+          - "channel performance chart"
+          - "booking by attempt chart"
+          - "cadence table"
+          - "auto-insights panel"
+          - "filters by period, owner, source, and segment"
+
+  events:
+    domain_events:
+      - name: "touchpoint_created"
+        triggers:
+          - "recalculate lead journey summary"
+          - "recompute cadence signature"
+          - "refresh aggregated KPIs"
+      - name: "touchpoint_updated"
+        triggers:
+          - "recalculate lead journey summary"
+          - "refresh analytics"
+      - name: "touchpoint_deleted"
+        triggers:
+          - "re-sequence lead touchpoints if needed"
+          - "recalculate lead journey summary"
+          - "refresh analytics"
+      - name: "lead_booked"
+        triggers:
+          - "persist booking timestamp"
+          - "freeze booking metrics snapshot if needed"
+
+  permissions:
+    roles:
+      admin:
+        can:
+          - "create_touchpoint"
+          - "edit_touchpoint"
+          - "delete_touchpoint"
+          - "view_all_dashboards"
+          - "manage_enums"
+      manager:
+        can:
+          - "create_touchpoint"
+          - "edit_team_touchpoints"
+          - "view_team_dashboards"
+      rep:
+        can:
+          - "create_touchpoint"
+          - "edit_own_touchpoints"
+          - "view_own_leads"
+      ops_bi:
+        can:
+          - "view_all_dashboards"
+          - "export_analytics"
+
+  success_criteria:
+    mvp_is_successful_when:
+      - "Commercial users can log touchpoints quickly and consistently"
+      - "Each lead has a visible and reliable contact timeline"
+      - "The operation can measure average contacts until booking"
+      - "The team can compare channel performance"
+      - "Managers can identify simple successful sequences"
+      - "The module produces useful descriptive outreach insights"
+
+  future_evolution:
+    roadmap:
+      - "Next best action recommendation"
+      - "Booking probability score"
+      - "Broken cadence alerts"
+      - "Automatic recommendations by lead profile"
+      - "Cadence playbook comparison"
+      - "WhatsApp, email, and telephony integrations"
+      - "More robust statistical analytics"
+      - "Cadence A/B testing"
+
+  implementation_notes:
+    assumptions:
+      - "Lead entity already exists in the system"
+      - "Users and ownership structure already exist"
+      - "Dashboards can be built from transactional tables plus summaries"
+    risks:
+      - "Poor user adoption if logging is too slow"
+      - "Low-quality insights if sample size is too small"
+      - "Misleading conclusions if analyses are not segmented by lead profile"
+    mitigations:
+      - "Use quick actions and defaults in UI"
+      - "Enforce sample thresholds for insights"
+      - "Always provide filters and segmented views"
+
+  one_liner: >
+    Touchpoints & Cadence Intelligence turns outreach activity into measurable,
+    repeatable commercial intelligence.
+
+
+
