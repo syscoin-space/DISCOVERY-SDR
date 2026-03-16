@@ -8,6 +8,8 @@ export const env = {
 
   DATABASE_URL: process.env.DATABASE_URL!,
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+  REDIS_USERNAME: process.env.REDIS_USERNAME || '',
+  REDIS_PASSWORD: process.env.REDIS_PASSWORD || '',
 
   JWT_SECRET: process.env.JWT_SECRET!,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',

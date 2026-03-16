@@ -5,10 +5,17 @@ import { logger } from '../config/logger';
 import { checkAndApplyBlocks } from '../modules/leads/block.service';
 import { PrrTier } from '@prisma/client';
 
-const connection = {
-  host: new URL(env.REDIS_URL).hostname,
-  port: parseInt(new URL(env.REDIS_URL).port, 10),
+const redisUrl = new URL(env.REDIS_URL);
+const connection: any = {
+  host: redisUrl.hostname,
+  port: parseInt(redisUrl.port || '6379', 10),
 };
+
+if (redisUrl.password) connection.password = redisUrl.password;
+else if (env.REDIS_PASSWORD) connection.password = env.REDIS_PASSWORD;
+
+if (redisUrl.username) connection.username = redisUrl.username;
+else if (env.REDIS_USERNAME) connection.username = env.REDIS_USERNAME;
 
 export const prrWorker = new Worker(
   'prr-calculation',
