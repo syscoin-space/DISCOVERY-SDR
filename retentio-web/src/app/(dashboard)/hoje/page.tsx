@@ -665,8 +665,9 @@ export default function HojePage() {
                           <button
                             onClick={() => setSelectedLeadId(task.lead.id)}
                             className="text-left w-full"
+                            title="Abrir cartão do lead"
                           >
-                            <div className="text-sm font-medium text-foreground hover:text-accent">{task.lead.company_name}</div>
+                            <div className="text-sm font-medium text-foreground hover:text-accent hover:underline">{task.lead.company_name}</div>
                             {task.lead.niche && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.lead.niche}</div>}
                           </button>
                         </td>

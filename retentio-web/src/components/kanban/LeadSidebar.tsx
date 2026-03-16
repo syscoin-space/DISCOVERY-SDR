@@ -17,7 +17,7 @@ import { Drawer } from "vaul";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
@@ -40,6 +40,7 @@ function EditableField({
   leadId,
   type = "text",
   placeholder = "—",
+  openOnMount = false,
 }: {
   label: string;
   value: string | null | undefined;
@@ -47,10 +48,12 @@ function EditableField({
   leadId: string;
   type?: string;
   placeholder?: string;
+  openOnMount?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value ?? "");
   const updateLead = useUpdateLead();
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSave = useCallback(async () => {
     if (editValue !== (value ?? "")) {
@@ -67,12 +70,29 @@ function EditableField({
     setEditing(false);
   };
 
+  useEffect(() => {
+    if ((typeof (arguments) !== 'undefined') && (arguments as any)) {
+      // noop to satisfy lint in TSX-only file
+    }
+  }, []);
+
+  useEffect(() => {
+    if ((openOnMount as any) && !editing) {
+      setEditValue(value ?? "");
+      setEditing(true);
+      // focus after render
+      setTimeout(() => inputRef?.current?.focus(), 50);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openOnMount, leadId]);
+
   if (editing) {
     return (
       <div>
         <label className="text-[10px] text-muted-foreground uppercase font-medium">{label}</label>
         <div className="flex items-center gap-1 mt-0.5">
           <input
+            ref={inputRef}
             type={type}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
@@ -80,7 +100,6 @@ function EditableField({
               if (e.key === "Enter") handleSave();
               if (e.key === "Escape") handleCancel();
             }}
-            autoFocus
             className="flex-1 rounded border border-accent/40 bg-surface-raised px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <button onClick={handleSave} className="text-green-500 hover:text-green-600 p-0.5">
@@ -275,7 +294,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                     <UserRound className="h-3.5 w-3.5" /> Decisor / Contato Ideal
                   </h4>
                   <div className="grid grid-cols-2 gap-3">
-                    <EditableField label="Nome" value={lead.contact_name} field="contact_name" leadId={lead.id} placeholder="Quem é o decisor?" />
+                    <EditableField openOnMount label="Nome" value={lead.contact_name} field="contact_name" leadId={lead.id} placeholder="Quem é o decisor?" />
                     <EditableField label="Cargo" value={lead.contact_role} field="contact_role" leadId={lead.id} placeholder="Ex: Head de E-commerce" />
                     <EditableField label="Email" value={lead.email} field="email" leadId={lead.id} type="email" placeholder="email@empresa.com" />
                     <EditableField label="WhatsApp" value={lead.whatsapp} field="whatsapp" leadId={lead.id} type="tel" placeholder="(11) 99999-9999" />
