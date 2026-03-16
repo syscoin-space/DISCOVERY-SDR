@@ -478,6 +478,7 @@ leadRouter.post(
     const context = {
       empresa: lead.company_name,
       contato: lead.contact_name ?? '',
+      nome_cliente: lead.contact_name ?? '',
       nicho: lead.niche ?? '',
       email: lead.email,
     };

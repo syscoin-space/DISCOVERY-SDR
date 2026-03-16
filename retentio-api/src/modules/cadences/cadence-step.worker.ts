@@ -234,6 +234,7 @@ function buildTemplateContext(lead: {
   return {
     empresa: lead.company_name,
     contato: lead.contact_name ?? '',
+    nome_cliente: lead.contact_name ?? '',
     email: lead.email ?? '',
     nicho: lead.niche ?? '',
     cidade: lead.city ?? '',

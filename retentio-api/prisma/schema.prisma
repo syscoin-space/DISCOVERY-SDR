@@ -121,6 +121,7 @@ model User {
   updated_at      DateTime @updatedAt
 
   leads           Lead[]
+  touchpoints     Touchpoint[]
   daily_tasks     DailyTask[]
   metas           Meta[]
   handoffs_sent   HandoffBriefing[] @relation("HandoffSdr")
@@ -186,6 +187,8 @@ model Lead {
 
   sdr                   User            @relation(fields: [sdr_id], references: [id])
   prr_inputs            PrrInputs?
+  touchpoints           Touchpoint[]
+  journey_summary       LeadJourneySummary?
   icp_answers           IcpAnswer[]
   discovered_stack      DiscoveredStack[]
   lead_cadences         LeadCadence[]

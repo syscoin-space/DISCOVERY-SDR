@@ -12,10 +12,12 @@ const CHANNELS: { value: StepChannel; label: string; icon: typeof Mail }[] = [
   { value: "WHATSAPP", label: "WhatsApp", icon: MessageCircle },
 ];
 
-const VARIABLES = ["empresa", "nicho", "cidade", "plataforma", "sdr_nome", "prr_tier"];
+const VARIABLES = ["empresa", "contato", "nome_cliente", "nicho", "cidade", "plataforma", "sdr_nome", "prr_tier"];
 
 const SAMPLE_CONTEXT: Record<string, string> = {
   empresa: "Loja Exemplo",
+  contato: "Maria Silva",
+  nome_cliente: "Maria Silva",
   nicho: "Moda Feminina",
   cidade: "São Paulo",
   plataforma: "Shopify",
