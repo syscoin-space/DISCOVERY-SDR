@@ -1,0 +1,13 @@
+title: "Touchpoints & Cadence Intelligence"
+status: draft
+created_by: "Hugo Candido"
+created_at: 2026-03-16
+summary: "Placeholder PRD file — replace with the full YAML provided by the product team."
+
+# NOTE: This is a placeholder created by the assistant while awaiting the full PRD YAML.
+# Replace the contents of this file with the complete PRD YAML the team provided.
+
+notes: |
+  - Created as: `docs/prd/touchpoints-cadence-intelligence.yml`
+  - Action: replace this placeholder with the final PRD YAML content.
+  - Related: Redis auth fixes (branch `fix/redis-auth`) and PRR calculation improvements.
