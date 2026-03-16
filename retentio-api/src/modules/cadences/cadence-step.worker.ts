@@ -25,8 +25,20 @@ export const CADENCE_STEP_QUEUE = 'cadence-steps';
 
 // ─── Scheduler helper (agenda um step no momento correto) ─────────────
 
+const redisUrl = new URL(env.REDIS_URL);
+const connection: any = {
+  host: redisUrl.hostname,
+  port: parseInt(redisUrl.port || '6379', 10),
+};
+
+if (redisUrl.password) connection.password = redisUrl.password;
+else if (env.REDIS_PASSWORD) connection.password = env.REDIS_PASSWORD;
+
+if (redisUrl.username) connection.username = redisUrl.username;
+else if (env.REDIS_USERNAME) connection.username = env.REDIS_USERNAME;
+
 export const cadenceStepQueue = new Queue(CADENCE_STEP_QUEUE, {
-  connection: { url: env.REDIS_URL },
+  connection,
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: 'exponential', delay: 5_000 },
@@ -184,7 +196,7 @@ export function startCadenceStepWorker() {
       }
     },
     {
-      connection: { url: env.REDIS_URL },
+      connection,
       concurrency: 5,
       limiter: {
         max: 10,
@@ -222,6 +234,7 @@ function buildTemplateContext(lead: {
   return {
     empresa: lead.company_name,
     contato: lead.contact_name ?? '',
+    nome_cliente: lead.contact_name ?? '',
     email: lead.email ?? '',
     nicho: lead.niche ?? '',
     cidade: lead.city ?? '',

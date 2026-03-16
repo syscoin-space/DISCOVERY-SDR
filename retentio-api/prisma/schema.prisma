@@ -121,6 +121,7 @@ model User {
   updated_at      DateTime @updatedAt
 
   leads           Lead[]
+  touchpoints     Touchpoint[]
   daily_tasks     DailyTask[]
   metas           Meta[]
   handoffs_sent   HandoffBriefing[] @relation("HandoffSdr")
@@ -186,6 +187,8 @@ model Lead {
 
   sdr                   User            @relation(fields: [sdr_id], references: [id])
   prr_inputs            PrrInputs?
+  touchpoints           Touchpoint[]
+  journey_summary       LeadJourneySummary?
   icp_answers           IcpAnswer[]
   discovered_stack      DiscoveredStack[]
   lead_cadences         LeadCadence[]
@@ -638,4 +641,118 @@ model CalendarEvent {
   @@index([sdr_user_id])
   @@index([inicio])
   @@map("calendar_events")
+}
+
+// --- Touchpoints & Cadence Intelligence models (added per PRD)
+
+enum Channel {
+  call
+  whatsapp
+  email
+  sms
+  instagram
+  meeting
+  other
+}
+
+enum TouchpointType {
+  attempt
+  effective_contact
+  follow_up
+  response
+  reschedule
+  booking
+  other
+}
+
+enum Outcome {
+  no_answer
+  voicemail
+  invalid_number
+  seen_no_reply
+  responded
+  spoke_to_gatekeeper
+  spoke_to_decision_maker
+  asked_to_follow_up
+  not_interested
+  booked
+  lost
+}
+
+enum Direction {
+  outbound
+  inbound
+}
+
+enum LeadFinalStatus {
+  in_progress
+  booked
+  lost
+}
+
+model Touchpoint {
+  id                      String         @id @default(uuid())
+  lead_id                 String
+  owner_id                String
+  sequence_number         Int
+  channel                 Channel
+  touchpoint_type         TouchpointType
+  outcome                 Outcome
+  direction               Direction?
+  answered                Boolean?
+  booked                  Boolean?
+  lost                    Boolean?
+  duration_seconds        Int?
+  notes                   String?        @db.Text
+  created_at              DateTime       @default(now())
+  hours_since_previous_touch Float?
+  days_since_lead_created Float?
+  generated_next_step     Boolean?       @default(false)
+
+  lead  Lead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  owner User @relation(fields: [owner_id], references: [id])
+
+  @@index([lead_id, created_at(sort: Desc)])
+  @@map("touchpoints")
+}
+
+model LeadJourneySummary {
+  id                      String       @id @default(uuid())
+  lead_id                 String       @unique
+  total_touchpoints       Int          @default(0)
+  total_effective_contacts Int         @default(0)
+  total_no_response_attempts Int       @default(0)
+  first_contact_channel   String?
+  second_contact_channel  String?
+  last_contact_channel    String?
+  first_touch_at          DateTime?
+  last_touch_at           DateTime?
+  first_response_at       DateTime?
+  booked_at               DateTime?
+  lost_at                 DateTime?
+  days_to_first_contact   Float?
+  days_to_book            Float?
+  touchpoints_to_book     Int?
+  final_status            LeadFinalStatus @default(in_progress)
+  cadence_signature       String?
+
+  lead Lead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+
+  @@map("lead_journey_summaries")
+}
+
+model CadenceInsight {
+  id                       String   @id @default(uuid())
+  cadence_signature        String
+  leads_count              Int
+  touchpoints_count        Int
+  response_rate            Float
+  booking_rate             Float
+  avg_days_to_book         Float?
+  median_touchpoints_to_book Float?
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+
+  @@index([cadence_signature])
+  @@map("cadence_insights")
 }

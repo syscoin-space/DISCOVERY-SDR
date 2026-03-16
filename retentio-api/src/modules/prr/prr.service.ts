@@ -78,10 +78,16 @@ export class PrrService {
     inactive_base_pct?: number;
     integrability_score?: number;
   }) {
+    // Normalize inputs: some clients send inactive_base_pct as percentage (0-100).
+    const normalized = { ...data } as any;
+    if (normalized.inactive_base_pct != null && normalized.inactive_base_pct > 1) {
+      normalized.inactive_base_pct = normalized.inactive_base_pct / 100;
+    }
+
     return prisma.prrInputs.upsert({
       where: { lead_id: leadId },
-      create: { lead_id: leadId, ...data },
-      update: data,
+      create: { lead_id: leadId, ...normalized },
+      update: normalized,
     });
   }
 
