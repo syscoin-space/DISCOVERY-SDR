@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-config();
+config({ override: false }); // Don't override existing env vars (e.g. from Docker/Easypanel)
 
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
