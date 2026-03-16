@@ -18,7 +18,7 @@ import { useState, useCallback, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
-import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, Calendar, Video, XCircle } from "lucide-react";
+import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, Calendar, Video, XCircle, Search, UserRound } from "lucide-react";
 import { getTierAInsight, getNextChannelSuggestion } from "@/lib/insights";
 import { InsightBanner } from "@/components/shared/InsightToast";
 import { useCalendarEvents, useCancelCalendarEvent } from "@/hooks/use-google";
@@ -156,7 +156,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
         {!isLoading && !lead && leadId && (
           <div className="flex flex-col items-center justify-center h-full py-20 px-10 text-center">
-            <div className="text-4xl mb-4">🔍</div>
+            <Search className="h-10 w-10 text-muted-foreground mb-4" />
             <h3 className="text-lg font-bold text-foreground">Lead não encontrado</h3>
             <p className="text-sm text-muted-foreground mt-2">
               Não conseguimos carregar as informações deste lead.
@@ -254,7 +254,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 {/* Decision Maker Section */}
                 <div className="space-y-3 rounded-lg border border-accent/20 bg-accent/5 p-4">
                   <h4 className="text-xs font-bold text-accent uppercase tracking-wider flex items-center gap-1.5">
-                    👤 Decisor / Contato Ideal
+                    <UserRound className="h-3.5 w-3.5" /> Decisor / Contato Ideal
                   </h4>
                   <div className="grid grid-cols-2 gap-3">
                     <EditableField label="Nome" value={lead.contact_name} field="contact_name" leadId={lead.id} placeholder="Quem é o decisor?" />

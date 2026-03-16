@@ -2,13 +2,30 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import {
+  LogOut,
+  BarChart3,
+  ClipboardList,
+  CalendarDays,
+  TrendingUp,
+  Zap,
+  FileText,
+  Mail,
+  Bell,
+  BookOpen,
+  Settings,
+  LayoutDashboard,
+  Users,
+  Target,
+  Palette,
+} from "lucide-react";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import { NotificationBell } from "../shared/NotificationBell";
 import { BrandLogo } from "../shared/BrandLogo";
 import { UserAvatar } from "../shared/UserAvatar";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { useEffect, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 
 interface StoredUser {
   name: string;
@@ -17,24 +34,31 @@ interface StoredUser {
   avatar_url?: string | null;
 }
 
-const sdrNav = [
-  { href: "/pipeline", label: "Pipeline", icon: "📊" },
-  { href: "/hoje", label: "Hoje", icon: "📋" },
-  { href: "/agenda", label: "Agenda", icon: "📅" },
-  { href: "/dashboard", label: "Dashboard", icon: "📈" },
-  { href: "/cadencias", label: "Cadências", icon: "⚡" },
-  { href: "/templates", label: "Templates", icon: "📝" },
-  { href: "/emails", label: "Emails", icon: "📧" },
-  { href: "/notificacoes", label: "Notificações", icon: "🔔", hasBadge: true },
-  { href: "/glossario", label: "Glossário", icon: "📖" },
-  { href: "/configuracoes", label: "Configurações", icon: "⚙️" },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  hasBadge?: boolean;
+}
+
+const sdrNav: NavItem[] = [
+  { href: "/pipeline", label: "Pipeline", icon: BarChart3 },
+  { href: "/hoje", label: "Hoje", icon: ClipboardList },
+  { href: "/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/dashboard", label: "Dashboard", icon: TrendingUp },
+  { href: "/cadencias", label: "Cadências", icon: Zap },
+  { href: "/templates", label: "Templates", icon: FileText },
+  { href: "/emails", label: "Emails", icon: Mail },
+  { href: "/notificacoes", label: "Notificações", icon: Bell, hasBadge: true },
+  { href: "/glossario", label: "Glossário", icon: BookOpen },
+  { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
-const gestorNav = [
-  { href: "/gestor", label: "Painel", icon: "🏠" },
-  { href: "/gestor/sdrs", label: "SDRs", icon: "👥" },
-  { href: "/gestor/metas", label: "Metas", icon: "🎯" },
-  { href: "/gestor/marca", label: "Marca", icon: "🎨" },
+const gestorNav: NavItem[] = [
+  { href: "/gestor", label: "Painel", icon: LayoutDashboard },
+  { href: "/gestor/sdrs", label: "SDRs", icon: Users },
+  { href: "/gestor/metas", label: "Metas", icon: Target },
+  { href: "/gestor/marca", label: "Marca", icon: Palette },
 ];
 
 export function AppSidebar() {
@@ -89,7 +113,7 @@ export function AppSidebar() {
                     }
                   `}
                 >
-                  <span className="text-base">{item.icon}</span>
+                  <item.icon className="h-4 w-4 shrink-0" />
                   {item.label}
                 </Link>
               );
@@ -115,9 +139,9 @@ export function AppSidebar() {
                 }
               `}
             >
-              <span className="text-base">{item.icon}</span>
+              <item.icon className="h-4 w-4 shrink-0" />
               {item.label}
-              {"hasBadge" in item && item.hasBadge && unreadCount > 0 && (
+              {item.hasBadge && unreadCount > 0 && (
                 <span className="ml-auto flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>

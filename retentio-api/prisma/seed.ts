@@ -208,7 +208,7 @@ async function main() {
     {
       user_id: sdr1.id,
       tipo: 'tier_a_parado',
-      titulo: '⚡ Lead Tier A parado há 3 dias',
+      titulo: 'Lead Tier A parado há 3 dias',
       corpo: 'Pet Natural não recebe atividade há 3 dias. PRR A·72 — priorize hoje.',
       url: '/pipeline',
       lida: false,
@@ -216,7 +216,7 @@ async function main() {
     {
       user_id: sdr1.id,
       tipo: 'step_atrasado',
-      titulo: '📋 Step de cadência atrasado',
+      titulo: 'Step de cadência atrasado',
       corpo: 'Moda Carioca — Email D3 está pendente desde ontem.',
       url: '/cadencias',
       lida: false,
@@ -224,7 +224,7 @@ async function main() {
     {
       user_id: sdr1.id,
       tipo: 'proximo_contato',
-      titulo: '⏰ Ligue em 30min',
+      titulo: 'Ligue em 30min',
       corpo: 'TechShop Brasil — agendado para 15:30.',
       url: '/hoje',
       lida: false,
@@ -232,7 +232,7 @@ async function main() {
     {
       user_id: sdr1.id,
       tipo: 'reuniao_agendada',
-      titulo: '📅 Reunião confirmada',
+      titulo: 'Reunião confirmada',
       corpo: 'Pet Natural confirmou reunião para amanhã às 14h.',
       url: '/pipeline',
       lida: true,
@@ -240,7 +240,7 @@ async function main() {
     {
       user_id: gestor.id,
       tipo: 'ritmo_ruim',
-      titulo: '📉 Ritmo abaixo do esperado',
+      titulo: 'Ritmo abaixo do esperado',
       corpo: 'Vitória concluiu apenas 0% das atividades de hoje às 14h.',
       url: '/gestor',
       lida: false,
@@ -248,7 +248,7 @@ async function main() {
     {
       user_id: gestor.id,
       tipo: 'meta_batida',
-      titulo: '🎯 Meta batida!',
+      titulo: 'Meta batida!',
       corpo: 'Vitória atingiu a meta de 5 reuniões esta semana!',
       url: '/gestor/sdrs',
       lida: true,
@@ -256,7 +256,7 @@ async function main() {
     {
       user_id: gestor.id,
       tipo: 'sdr_destaque',
-      titulo: '⭐ SDR destaque da semana',
+      titulo: 'SDR destaque da semana',
       corpo: 'Vitória se destacou com a maior taxa de conversão.',
       url: '/gestor/sdrs',
       lida: false,

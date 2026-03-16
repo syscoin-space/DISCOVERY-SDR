@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, ArrowRight } from "lucide-react";
+import {
+  Bell,
+  ArrowRight,
+  Zap,
+  ClipboardList,
+  Clock,
+  AlertTriangle,
+  Target,
+  TrendingDown,
+  Star,
+  CalendarCheck,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   useUnreadCount,
   useNotificationPreview,
@@ -11,15 +23,15 @@ import {
 import type { AppNotification } from "@/hooks/use-notifications";
 import { useRouter } from "next/navigation";
 
-const TIPO_ICONS: Record<string, string> = {
-  proximo_contato: "\u23F0",
-  step_atrasado: "\uD83D\uDCCB",
-  tier_a_parado: "\u26A1",
-  bloqueio: "\u26A0\uFE0F",
-  meta_batida: "\uD83C\uDFAF",
-  ritmo_ruim: "\uD83D\uDCC9",
-  sdr_destaque: "\u2B50",
-  reuniao_agendada: "\uD83D\uDCC5",
+const TIPO_ICONS: Record<string, LucideIcon> = {
+  proximo_contato: Clock,
+  step_atrasado: ClipboardList,
+  tier_a_parado: Zap,
+  bloqueio: AlertTriangle,
+  meta_batida: Target,
+  ritmo_ruim: TrendingDown,
+  sdr_destaque: Star,
+  reuniao_agendada: CalendarCheck,
 };
 
 const TIPO_COLORS: Record<string, string> = {
@@ -127,9 +139,10 @@ export function NotificationBell() {
                       : "opacity-60 hover:bg-surface-raised"
                   }`}
                 >
-                  <span className={`text-lg shrink-0 mt-0.5 ${TIPO_COLORS[n.tipo] ?? ""}`}>
-                    {TIPO_ICONS[n.tipo] || "\uD83D\uDD14"}
-                  </span>
+                  {(() => {
+                    const Icon = TIPO_ICONS[n.tipo] ?? Bell;
+                    return <Icon className={`h-4 w-4 shrink-0 mt-0.5 ${TIPO_COLORS[n.tipo] ?? "text-muted-foreground"}`} />;
+                  })()}
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-foreground truncate">
                       {n.titulo}

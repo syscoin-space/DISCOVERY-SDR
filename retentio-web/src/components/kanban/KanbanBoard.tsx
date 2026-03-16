@@ -19,7 +19,7 @@ import { KanbanColumn } from "./KanbanColumn";
 import { LeadCard } from "./LeadCard";
 import { PRRBadge } from "@/components/shared/PRRBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
-import { MapPin } from "lucide-react";
+import { MapPin, Search } from "lucide-react";
 
 interface KanbanBoardProps {
   onSelectLead: (leadId: string) => void;
@@ -192,7 +192,7 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
           </select>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-muted-foreground text-sm">🔍</span>
+          <Search className="h-4 w-4 text-muted-foreground" />
           <input type="text" placeholder="Buscar empresa..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-56 rounded-md border border-border bg-surface text-foreground px-3 py-1 text-xs placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors" />
         </div>
       </div>

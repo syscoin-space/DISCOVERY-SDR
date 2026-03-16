@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck, ArrowRight } from "lucide-react";
+import {
+  Bell,
+  CheckCheck,
+  ArrowRight,
+  Zap,
+  ClipboardList,
+  Clock,
+  AlertTriangle,
+  Target,
+  TrendingDown,
+  Star,
+  CalendarCheck,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   useNotifications,
@@ -12,15 +25,15 @@ import {
 } from "@/hooks/use-notifications";
 import type { AppNotification } from "@/hooks/use-notifications";
 
-const TIPO_ICONS: Record<string, string> = {
-  tier_a_parado: "\u26A1",
-  step_atrasado: "\uD83D\uDCCB",
-  proximo_contato: "\u23F0",
-  reuniao_agendada: "\uD83D\uDCC5",
-  bloqueio: "\u26A0\uFE0F",
-  meta_batida: "\uD83C\uDFAF",
-  ritmo_ruim: "\uD83D\uDCC9",
-  sdr_destaque: "\u2B50",
+const TIPO_ICONS: Record<string, LucideIcon> = {
+  tier_a_parado: Zap,
+  step_atrasado: ClipboardList,
+  proximo_contato: Clock,
+  reuniao_agendada: CalendarCheck,
+  bloqueio: AlertTriangle,
+  meta_batida: Target,
+  ritmo_ruim: TrendingDown,
+  sdr_destaque: Star,
 };
 
 const TIPO_COLORS: Record<string, string> = {
@@ -172,11 +185,14 @@ export default function NotificacoesPage() {
                   }`}
                 >
                   {/* Icon */}
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${iconColor}`}
-                  >
-                    {TIPO_ICONS[n.tipo] || "\uD83D\uDD14"}
-                  </div>
+                  {(() => {
+                    const Icon = TIPO_ICONS[n.tipo] ?? Bell;
+                    return (
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconColor}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                    );
+                  })()}
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
