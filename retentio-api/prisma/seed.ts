@@ -6,19 +6,6 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
 
-  // ── Limpeza de leads (Fresh start) ──
-  console.log('🧹 Limpando dados de leads para novo começo...');
-  await prisma.handoffBriefing.deleteMany();
-  await prisma.blockEvent.deleteMany();
-  await prisma.calendarEvent.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.auditLog.deleteMany();
-  await prisma.dailyTask.deleteMany();
-  await prisma.emailEvent.deleteMany();
-  await prisma.lead.deleteMany(); 
-  // Nota: Deletar Lead cascateia para Touchpoints, Interactions, PrrInputs, IcpAnswers, etc.
-
-
   // ── Usuários ──
   const defaultHash = await hash('Padrao123#', 12);
 
