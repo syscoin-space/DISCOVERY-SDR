@@ -6,6 +6,19 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
 
+  // ── Limpeza de leads (Fresh start) ──
+  console.log('🧹 Limpando dados de leads para novo começo...');
+  await prisma.handoffBriefing.deleteMany();
+  await prisma.blockEvent.deleteMany();
+  await prisma.calendarEvent.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.auditLog.deleteMany();
+  await prisma.dailyTask.deleteMany();
+  await prisma.emailEvent.deleteMany();
+  await prisma.lead.deleteMany(); 
+  // Nota: Deletar Lead cascateia para Touchpoints, Interactions, PrrInputs, IcpAnswers, etc.
+
+
   // ── Usuários ──
   const defaultHash = await hash('Padrao123#', 12);
 
@@ -73,87 +86,11 @@ async function main() {
     }
   }
 
-  // ── Leads Data ──
-  const leadsData = [
-    {
-      company_name: 'TechShop Brasil',
-      niche: 'E-commerce Eletrônicos',
-      email: 'contato@techshop.com.br',
-      state: 'SP',
-      city: 'São Paulo',
-      ecommerce_platform: 'Shopify',
-      estimated_base_size: 45000,
-      avg_ticket_estimated: 189.90,
-      status: 'EM_PROSPECCAO' as const,
-      prr_score: 38,
-      prr_tier: PrrTier.C,
-      icp_score: 5,
-      prr_inputs: {
-         base_size_estimated: 45000,
-         recompra_cycle_days: 90,
-         avg_ticket_estimated: 189.90,
-         inactive_base_pct: 0.3,
-         integrability_score: 4
-      }
-    },
-    {
-      company_name: 'Moda Carioca',
-      niche: 'Fashion',
-      email: 'vendas@modacarioca.com.br',
-      state: 'RJ',
-      city: 'Rio de Janeiro',
-      ecommerce_platform: 'VTEX',
-      estimated_base_size: 120000,
-      avg_ticket_estimated: 250.00,
-      status: 'CONTA_FRIA' as const,
-      prr_score: 55,
-      prr_tier: PrrTier.B,
-      icp_score: 7,
-      prr_inputs: {
-         base_size_estimated: 120000,
-         recompra_cycle_days: 120,
-         avg_ticket_estimated: 250.00,
-         inactive_base_pct: 0.5,
-         integrability_score: 5
-      }
-    },
-    {
-      company_name: 'Pet Natural',
-      niche: 'Pet Shop',
-      email: 'hello@petnatural.com.br',
-      state: 'MG',
-      city: 'Belo Horizonte',
-      ecommerce_platform: 'WooCommerce',
-      estimated_base_size: 8000,
-      avg_ticket_estimated: 75.00,
-      status: 'CONTA_FRIA' as const,
-      prr_score: 72,
-      prr_tier: PrrTier.A,
-      icp_score: 10,
-      prr_inputs: {
-         base_size_estimated: 8000,
-         recompra_cycle_days: 30,
-         avg_ticket_estimated: 75.00,
-         inactive_base_pct: 0.1,
-         integrability_score: 3
-      }
-    },
-  ];
-
-  for (const ld of leadsData) {
-    const { prr_inputs, ...leadData } = ld;
-    const lead = await prisma.lead.upsert({
-      where: { email_sdr_id: { email: leadData.email, sdr_id: sdr1.id } },
-      update: { ...leadData, sdr_id: sdr1.id },
-      create: { ...leadData, sdr_id: sdr1.id },
-    });
-
-    await prisma.prrInputs.upsert({
-      where: { lead_id: lead.id },
-      update: prr_inputs,
-      create: { lead_id: lead.id, ...prr_inputs },
-    });
-  }
+  // ── Leads Data Removido para início limpo ──
+  /* 
+  const leadsData = ... 
+  for (const ld of leadsData) { ... }
+  */
 
   // ── Templates ──
   const templates = [
@@ -203,7 +140,6 @@ async function main() {
   console.log(`📝 ${templates.length} templates seeded`);
 
   // ── Notificações de exemplo ──
-  await prisma.notification.deleteMany();
   const notificacoes = [
     {
       user_id: sdr1.id,
