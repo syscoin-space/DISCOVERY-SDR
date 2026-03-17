@@ -37,7 +37,7 @@ services:
       ENCRYPTION_IV: ${ENCRYPTION_IV}
       CORS_ORIGIN: ${CORS_ORIGIN}
       RATE_LIMIT_WINDOW_MS: "900000"
-      RATE_LIMIT_MAX: "200"
+      RATE_LIMIT_MAX: "1000"
       LOG_LEVEL: info
 
   retentio-web:
