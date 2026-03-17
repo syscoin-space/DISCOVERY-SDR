@@ -56,17 +56,25 @@ todayRouter.get(
       total += group._count;
     }
 
+    const pendenteAgg = counts.PENDENTE ?? 0;
+    const feitoAgg = total - pendenteAgg;
+
     res.json({
       total,
-      pendente: counts.PENDENTE ?? 0,
-      atendeu: counts.ATENDEU ?? 0,
-      nao_atendeu: counts.NAO_ATENDEU ?? 0,
-      reuniao_agendada: counts.REUNIAO_AGENDADA ?? 0,
-      mensagem_enviada: counts.MENSAGEM_ENVIADA ?? 0,
-      sem_interesse: counts.SEM_INTERESSE ?? 0,
-      ligar_depois: counts.LIGAR_DEPOIS ?? 0,
-      pessoa_errada: counts.PESSOA_ERRADA ?? 0,
-      numero_errado: counts.NUMERO_ERRADO ?? 0,
+      pendente: pendenteAgg,
+      atendeu: feitoAgg, // Mapeando para o campo que o front já usa como "feitos" para evitar quebra imediata
+      concluidos: feitoAgg,
+      detalhado: {
+        pendente: counts.PENDENTE ?? 0,
+        atendeu: counts.ATENDEU ?? 0,
+        nao_atendeu: counts.NAO_ATENDEU ?? 0,
+        reuniao_agendada: counts.REUNIAO_AGENDADA ?? 0,
+        mensagem_enviada: counts.MENSAGEM_ENVIADA ?? 0,
+        sem_interesse: counts.SEM_INTERESSE ?? 0,
+        ligar_depois: counts.LIGAR_DEPOIS ?? 0,
+        pessoa_errada: counts.PESSOA_ERRADA ?? 0,
+        numero_errado: counts.NUMERO_ERRADO ?? 0,
+      }
     });
   }),
 );

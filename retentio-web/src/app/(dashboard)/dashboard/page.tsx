@@ -26,6 +26,7 @@ interface SDRMetrics {
 const STATUS_LABELS: Record<string, string> = {
   CONTA_FRIA: "Conta Fria",
   EM_PROSPECCAO: "Em Prospecção",
+  FOLLOW_UP: "Follow-Up",
   REUNIAO_AGENDADA: "Reunião Agendada",
   OPORTUNIDADE_QUALIFICADA: "Oportunidade",
   NUTRICAO: "Nutrição",
@@ -35,6 +36,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   CONTA_FRIA: "#94A3B8",
   EM_PROSPECCAO: "#2E86AB",
+  FOLLOW_UP: "#EC4899",
   REUNIAO_AGENDADA: "#F59E0B",
   OPORTUNIDADE_QUALIFICADA: "#10B981",
   NUTRICAO: "#8B5CF6",
@@ -49,12 +51,12 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [pipeRes, sdrRes] = await Promise.all([
+        const [pipeRes, statsRes] = await Promise.all([
           api.get("/dashboard/pipeline"),
-          api.get("/dashboard/sdr-metrics"),
+          api.get("/dashboard/stats"),
         ]);
         setPipeline(pipeRes.data);
-        setSdr(sdrRes.data);
+        setSdr(statsRes.data);
       } catch {
         /* error silenciado para MVP */
       } finally {
