@@ -527,7 +527,7 @@ leadRouter.post(
 leadRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
-    await leadService.delete(req.params.id as string, req.user!.sub);
+    await leadService.delete(req.params.id as string, req.user!.sub, req.user!.role);
     res.status(204).send();
   }),
 );

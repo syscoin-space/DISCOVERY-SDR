@@ -5,8 +5,9 @@ import { CreateLeadInput, UpdateLeadInput, LeadFilters } from './lead.schema';
 
 // Estado-máquina de transições permitidas
 const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  CONTA_FRIA: ['EM_PROSPECCAO', 'SEM_PERFIL', 'NUTRICAO'],
-  EM_PROSPECCAO: ['REUNIAO_AGENDADA', 'NUTRICAO', 'SEM_PERFIL', 'CONTA_FRIA'],
+  CONTA_FRIA: ['EM_PROSPECCAO', 'FOLLOW_UP', 'SEM_PERFIL', 'NUTRICAO'],
+  EM_PROSPECCAO: ['FOLLOW_UP', 'REUNIAO_AGENDADA', 'NUTRICAO', 'SEM_PERFIL', 'CONTA_FRIA'],
+  FOLLOW_UP: ['OPORTUNIDADE_QUALIFICADA', 'REUNIAO_AGENDADA', 'EM_PROSPECCAO', 'NUTRICAO', 'SEM_PERFIL'],
   REUNIAO_AGENDADA: ['OPORTUNIDADE_QUALIFICADA', 'EM_PROSPECCAO', 'NUTRICAO', 'SEM_PERFIL'],
   OPORTUNIDADE_QUALIFICADA: ['EM_PROSPECCAO', 'NUTRICAO'],
   NUTRICAO: ['CONTA_FRIA', 'EM_PROSPECCAO'],
@@ -134,8 +135,10 @@ export class LeadService {
     });
   }
 
-  async delete(id: string, sdrId: string) {
-    const lead = await prisma.lead.findFirst({ where: { id, sdr_id: sdrId } });
+  async delete(id: string, sdrId: string, role?: string) {
+    const lead = await prisma.lead.findFirst({
+      where: role === 'GESTOR' ? { id } : { id, sdr_id: sdrId },
+    });
     if (!lead) {
       throw new AppError(404, 'Lead não encontrado', 'LEAD_NOT_FOUND');
     }

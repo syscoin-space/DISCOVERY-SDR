@@ -1,6 +1,7 @@
 "use client";
 
-import { useLead, useInteractions, useCreateInteraction, useUpdateLead } from "@/hooks/use-leads";
+import { useLead, useInteractions, useCreateInteraction, useUpdateLead, useDeleteLead } from "@/hooks/use-leads";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import { useCalculatePrr } from "@/hooks/use-prr";
 import { useCreateTouchpoint } from "@/hooks/use-touchpoints";
 import TouchpointTimeline from "@/components/lead/TouchpointTimeline";
@@ -21,7 +22,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
-import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, Calendar, Video, XCircle, Search, UserRound } from "lucide-react";
+import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, Calendar, Video, XCircle, Search, UserRound, Target, Trash2 } from "lucide-react";
 import { getTierAInsight, getNextChannelSuggestion } from "@/lib/insights";
 import { InsightBanner } from "@/components/shared/InsightToast";
 import { useCalendarEvents, useCancelCalendarEvent } from "@/hooks/use-google";
@@ -146,6 +147,8 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
   const calculatePrr = useCalculatePrr();
   const { data: calendarEvents } = useCalendarEvents(leadId ?? undefined);
   const cancelEvent = useCancelCalendarEvent();
+  const deleteLead = useDeleteLead();
+  const { user } = useAuthStore();
 
   const [note, setNote] = useState("");
   const [type, setType] = useState("NOTA");
@@ -180,6 +183,14 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
     });
     setTpNotes("");
     setTpOutcome("");
+  };
+  
+  const handleDeleteLead = async () => {
+    if (!leadId) return;
+    if (window.confirm("Tem certeza que deseja excluir este lead? Esta ação não pode ser desfeita.")) {
+      await deleteLead.mutateAsync(leadId);
+      onClose();
+    }
   };
 
   const sidebarContent = (
@@ -223,6 +234,18 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   <ExternalLink className="h-3 w-3" />
                   Ver página
                 </Link>
+                {user?.role === "GESTOR" && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 gap-1 text-[10px] uppercase font-bold"
+                    onClick={handleDeleteLead}
+                    disabled={deleteLead.isPending}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Excluir
+                  </Button>
+                )}
               </div>
               {isMobile ? (
                 <Drawer.Title className="text-xl font-bold text-foreground">

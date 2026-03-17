@@ -69,7 +69,7 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
 
       const leadId = active.id as string;
       const validStatuses = new Set<string>([
-        "CONTA_FRIA", "EM_PROSPECCAO", "REUNIAO_AGENDADA",
+        "CONTA_FRIA", "EM_PROSPECCAO", "FOLLOW_UP", "REUNIAO_AGENDADA",
         "OPORTUNIDADE_QUALIFICADA", "NUTRICAO", "SEM_PERFIL",
       ]);
 

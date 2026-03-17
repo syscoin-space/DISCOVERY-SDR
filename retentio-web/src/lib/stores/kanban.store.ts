@@ -27,6 +27,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
   columns: {
       CONTA_FRIA: [],
       EM_PROSPECCAO: [],
+      FOLLOW_UP: [],
       REUNIAO_AGENDADA: [],
       OPORTUNIDADE_QUALIFICADA: [],
       NUTRICAO: [],
@@ -39,6 +40,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
     const grouped: Record<LeadStatus, Lead[]> = {
       CONTA_FRIA: [],
       EM_PROSPECCAO: [],
+      FOLLOW_UP: [],
       REUNIAO_AGENDADA: [],
       OPORTUNIDADE_QUALIFICADA: [],
       NUTRICAO: [],

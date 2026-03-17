@@ -209,3 +209,16 @@ export function useCalculatePrr() {
     },
   });
 }
+export function useDeleteLead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (leadId: string) => {
+      const { data } = await api.delete(`/leads/${leadId}`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY] });
+    },
+  });
+}

@@ -5,6 +5,7 @@ export type Role = "SDR" | "GESTOR" | "CLOSER";
 export type LeadStatus =
   | "CONTA_FRIA"
   | "EM_PROSPECCAO"
+  | "FOLLOW_UP"
   | "REUNIAO_AGENDADA"
   | "OPORTUNIDADE_QUALIFICADA"
   | "NUTRICAO"
@@ -393,8 +394,9 @@ export interface EmailStats {
 export const FUNNEL_COLUMNS: { status: LeadStatus; label: string; color: string }[] = [
   { status: "CONTA_FRIA", label: "Conta Fria", color: "#94a3b8" },
   { status: "EM_PROSPECCAO", label: "Em Prospecção", color: "#2E86AB" },
-  { status: "REUNIAO_AGENDADA", label: "Reunião Agendada", color: "#f59e0b" },
+  { status: "FOLLOW_UP", label: "Follow-Up", color: "#EC4899" }, // Pink-ish for Follow-up
   { status: "OPORTUNIDADE_QUALIFICADA", label: "Oportunidade Qualificada", color: "#1A7A5E" },
+  { status: "REUNIAO_AGENDADA", label: "Reunião Agendada", color: "#f59e0b" },
   { status: "NUTRICAO", label: "Nutrição", color: "#8b5cf6" },
   { status: "SEM_PERFIL", label: "Sem Perfil", color: "#ef4444" },
 ];
