@@ -145,6 +145,35 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
               </div>
             )}
 
+            {!file && !result && (
+              <div className="flex justify-center pt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    const headers = [
+                      "Domínio", "Empresa", "CNPJ", "Nicho", "Tamanho", "Status",
+                      "Data de Registro", "Score ICP", "Tier ICP", "Avaliação da IA", 
+                      "Sobre o Lead", "Plataforma", "WhatsApp", "Email", "Instagram", 
+                      "LinkedIn", "Estado", "Cidade", "Data", "Processamento"
+                    ].join(",");
+                    const blob = new Blob([headers], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "retentio_gabarito.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="text-xs"
+                >
+                  <FileText className="mr-2 h-3.5 w-3.5" />
+                  Baixar Gabarito (.csv)
+                </Button>
+              </div>
+            )}
+
             {error && (
               <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-xs text-red-600">
                 <AlertCircle className="h-4 w-4" />

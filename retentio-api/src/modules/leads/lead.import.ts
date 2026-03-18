@@ -78,22 +78,30 @@ export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: 
 
       const domain = normalize(row[0]);
       const company_name = normalize(row[1])!;
-      const niche = normalize(row[2]);
-      const company_size = normalize(row[3]);
-      const lead_status_origin = normalize(row[4]);
-      const rawIcpScore = parseInt(row[5]) || 0;
+      const cnpj = normalize(row[2]);
+      const niche = normalize(row[3]);
+      const company_size = normalize(row[4]);
+      const lead_status_origin = normalize(row[5]);
+      // row[6] is Data de Registro, ignored for now
+      const rawIcpScore = parseInt(row[7]) || 0;
       // If score > 14, treat as percentage and map to 0-14 scale
       const icp_score = rawIcpScore > 14 ? Math.round((rawIcpScore / 100) * 14) : rawIcpScore;
-      const rawIcpTier = normalize(row[6]);
+      const rawIcpTier = normalize(row[8]);
       const icp_tier = rawIcpTier ? (ICP_TIER_MAP[rawIcpTier] ?? null) : null;
-      const ecommerce_platform = normalize(row[7]);
-      const whatsapp = normalize(row[8]);
-      const email = normalize(row[9]);
-      const instagram_handle = normalize(row[10]);
-      const linkedin_url = normalize(row[11]);
-      const state = normalize(row[12]);
-      const city = normalize(row[13]);
-      const processed_at = normalizeDate(row[14]);
+      
+      const iaEval = normalize(row[9]);
+      const aboutLead = normalize(row[10]);
+      let notes_import = [iaEval ? `Avaliação IA: ${iaEval}` : '', aboutLead ? `Sobre o Lead: ${aboutLead}` : ''].filter(Boolean).join('\n\n');
+      if (!notes_import) notes_import = null as any;
+
+      const ecommerce_platform = normalize(row[11]);
+      const whatsapp = normalize(row[12]);
+      const email = normalize(row[13]);
+      const instagram_handle = normalize(row[14]);
+      const linkedin_url = normalize(row[15]);
+      const state = normalize(row[16]);
+      const city = normalize(row[17]);
+      const processed_at = normalizeDate(row[18]) || normalizeDate(row[19]);
 
       // Deduplicação por domain OU email (relativos ao SDR)
       let existingLead = null;
@@ -111,6 +119,7 @@ export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: 
       const leadData = {
         domain,
         company_name,
+        cnpj,
         niche,
         company_size,
         lead_status_origin,
@@ -123,6 +132,7 @@ export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: 
         linkedin_url,
         state,
         city,
+        notes_import,
         processed_at,
         sdr_id: sdrId,
         status: LeadStatus.CONTA_FRIA,
