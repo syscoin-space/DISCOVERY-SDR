@@ -18,6 +18,8 @@ import {
   getDay,
   addDays,
   subDays,
+  startOfDay,
+  endOfDay,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -145,7 +147,7 @@ function normalizeEvents(data: ReturnType<typeof useAgenda>["data"]): CalEvent[]
 export default function AgendaPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [view, setView] = useState<"week" | "month">("week");
+  const [view, setView] = useState<"day" | "week" | "month">("week");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [closerId, setCloserId] = useState<string | undefined>();
   const [selectedEvent, setSelectedEvent] = useState<CalEvent | null>(null);
@@ -159,13 +161,15 @@ export default function AgendaPage() {
   }, []);
 
   // Date ranges
+  const dayStart = startOfDay(currentDate);
+  const dayEnd = endOfDay(currentDate);
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
 
-  const rangeStart = view === "week" ? weekStart : monthStart;
-  const rangeEnd = view === "week" ? weekEnd : monthEnd;
+  const rangeStart = view === "day" ? dayStart : view === "week" ? weekStart : monthStart;
+  const rangeEnd = view === "day" ? dayEnd : view === "week" ? weekEnd : monthEnd;
 
   const { data, isLoading } = useAgenda(
     rangeStart.toISOString(),
@@ -178,10 +182,10 @@ export default function AgendaPage() {
 
   // Navigation
   const goNext = () => {
-    setCurrentDate((d) => (view === "week" ? addWeeks(d, 1) : addMonths(d, 1)));
+    setCurrentDate((d) => (view === "day" ? addDays(d, 1) : view === "week" ? addWeeks(d, 1) : addMonths(d, 1)));
   };
   const goPrev = () => {
-    setCurrentDate((d) => (view === "week" ? subWeeks(d, 1) : subMonths(d, 1)));
+    setCurrentDate((d) => (view === "day" ? subDays(d, 1) : view === "week" ? subWeeks(d, 1) : subMonths(d, 1)));
   };
   const goToday = () => setCurrentDate(new Date());
 
@@ -197,7 +201,7 @@ export default function AgendaPage() {
     return [subDays(today, 1), today, addDays(today, 1)];
   }, []);
 
-  const displayDays = isMobile && view === "week" ? mobileDays : weekDays;
+  const displayDays = view === "day" ? [currentDate] : isMobile && view === "week" ? mobileDays : weekDays;
 
   // Events for a specific day
   const eventsForDay = useCallback(
@@ -215,8 +219,18 @@ export default function AgendaPage() {
             {/* View toggle */}
             <div className="flex rounded-lg border border-border overflow-hidden">
               <button
+                onClick={() => setView("day")}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors border-r border-border ${
+                  view === "day"
+                    ? "bg-accent text-white"
+                    : "text-muted-foreground hover:bg-surface-raised"
+                }`}
+              >
+                Dia
+              </button>
+              <button
                 onClick={() => setView("week")}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs font-medium transition-colors border-r border-border ${
                   view === "week"
                     ? "bg-accent text-white"
                     : "text-muted-foreground hover:bg-surface-raised"
@@ -248,7 +262,9 @@ export default function AgendaPage() {
               <ChevronLeft className="h-4 w-4" />
             </button>
             <span className="text-sm font-semibold text-foreground min-w-[120px] text-center">
-              {view === "week"
+              {view === "day"
+                ? format(currentDate, "EEEE, dd 'de' MMMM", { locale: ptBR })
+                : view === "week"
                 ? `${format(weekStart, "dd MMM", { locale: ptBR })} — ${format(weekEnd, "dd MMM yyyy", { locale: ptBR })}`
                 : format(currentDate, "MMMM yyyy", { locale: ptBR })}
             </span>
@@ -337,6 +353,50 @@ export default function AgendaPage() {
 
 // ─── Week View ──────────────────────────────────────────────────────
 
+function computeEventLayout(eventsOfDay: CalEvent[]) {
+  const sorted = [...eventsOfDay].sort((a, b) => {
+    if (a.start.getTime() === b.start.getTime()) {
+      return (b.end.getTime() - b.start.getTime()) - (a.end.getTime() - a.start.getTime()); // longest first
+    }
+    return a.start.getTime() - b.start.getTime();
+  });
+
+  const columns: CalEvent[][] = [];
+  const layoutInfo = new Map<string, { col: number; maxCols: number }>();
+
+  for (const evt of sorted) {
+    let placed = false;
+    for (let i = 0; i < columns.length; i++) {
+      const col = columns[i];
+      const lastEventRaw = col[col.length - 1];
+      // se nao sobrepõe o último evento dessa coluna...
+      // damos um respiro de 1 min pra evitar overlaps exatos nas bordas
+      if (lastEventRaw.end.getTime() <= evt.start.getTime() + 60000) {
+        col.push(evt);
+        layoutInfo.set(evt.id, { col: i, maxCols: columns.length });
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      columns.push([evt]);
+      layoutInfo.set(evt.id, { col: columns.length - 1, maxCols: columns.length });
+    }
+  }
+
+  // update maxCols for all items in these overlapping groups
+  // (Simple approach: just give everyone in this day maxCols = columns.length)
+  // For a perfect layout we'd do connected components, but for this CRM it's enough.
+  const totalCols = Math.max(1, columns.length);
+  for (const evt of sorted) {
+    const info = layoutInfo.get(evt.id)!;
+    info.maxCols = totalCols;
+    layoutInfo.set(evt.id, info);
+  }
+
+  return layoutInfo;
+}
+
 function WeekView({
   days,
   events,
@@ -359,6 +419,16 @@ function WeekView({
 
   const nowHour = now.getHours() + now.getMinutes() / 60;
 
+  // Pre-calculate layouts for all days
+  const layoutByDay = useMemo(() => {
+    const map = new Map<string, Map<string, { col: number; maxCols: number }>>();
+    for (const d of days) {
+      const dayStr = d.toISOString();
+      map.set(dayStr, computeEventLayout(eventsForDay(d)));
+    }
+    return map;
+  }, [days, eventsForDay]);
+
   return (
     <div className="relative min-h-full">
       <div
@@ -368,11 +438,11 @@ function WeekView({
         }}
       >
         {/* Header row */}
-        <div className="sticky top-0 z-10 border-b border-border bg-surface" />
+        <div className="sticky top-0 z-30 border-b border-border bg-surface" />
         {days.map((day) => (
           <div
             key={day.toISOString()}
-            className={`sticky top-0 z-10 flex flex-col items-center border-b border-l border-border py-2 ${
+            className={`sticky top-0 z-30 flex flex-col items-center border-b border-l border-border py-2 ${
               isToday(day) ? "bg-accent/5" : "bg-surface"
             }`}
           >
@@ -401,6 +471,7 @@ function WeekView({
             now={now}
             nowHour={nowHour}
             onEventClick={onEventClick}
+            layoutByDay={layoutByDay}
           />
         ))}
       </div>
@@ -415,6 +486,7 @@ function HourRow({
   now,
   nowHour,
   onEventClick,
+  layoutByDay,
 }: {
   hour: number;
   days: Date[];
@@ -422,6 +494,7 @@ function HourRow({
   now: Date;
   nowHour: number;
   onEventClick: (e: CalEvent) => void;
+  layoutByDay: Map<string, Map<string, { col: number; maxCols: number }>>;
 }) {
   return (
     <>
@@ -434,6 +507,8 @@ function HourRow({
 
       {/* Day cells */}
       {days.map((day) => {
+        const dayStr = day.toISOString();
+        const layoutMap = layoutByDay.get(dayStr);
         const dayEvents = events.filter((e) => {
           if (!isSameDay(e.start, day)) return false;
           const eHour = e.start.getHours();
@@ -445,7 +520,7 @@ function HourRow({
 
         return (
           <div
-            key={day.toISOString()}
+            key={dayStr}
             className={`relative border-b border-l border-border/50 h-14 ${
               isToday(day) ? "bg-accent/[0.03]" : ""
             }`}
@@ -463,6 +538,10 @@ function HourRow({
 
             {/* Events */}
             {dayEvents.map((evt) => {
+              const layout = layoutMap?.get(evt.id) || { col: 0, maxCols: 1 };
+              const widthPct = 100 / layout.maxCols;
+              const leftPct = layout.col * widthPct;
+
               const durationMin = (evt.end.getTime() - evt.start.getTime()) / 60000;
               const heightPx = Math.max(24, (durationMin / 60) * 56);
               const startMin = evt.start.getMinutes();
@@ -473,8 +552,13 @@ function HourRow({
                 <button
                   key={evt.id}
                   onClick={() => onEventClick(evt)}
-                  className={`absolute left-0.5 right-0.5 z-10 rounded border-l-[3px] px-1.5 py-0.5 text-left overflow-hidden transition-shadow hover:shadow-md cursor-pointer ${style.border} ${style.bg}`}
-                  style={{ top: topPx, height: heightPx }}
+                  className={`absolute z-10 rounded border-l-[3px] px-1.5 py-0.5 text-left overflow-hidden transition-shadow hover:shadow-md cursor-pointer ${style.border} ${style.bg} border-y border-r border-border/50`}
+                  style={{ 
+                    top: topPx, 
+                    height: heightPx,
+                    left: `calc(${leftPct}% + 2px)`,
+                    width: `calc(${widthPct}% - 4px)`
+                  }}
                   title={`${evt.title} — ${format(evt.start, "HH:mm")} - ${format(evt.end, "HH:mm")}`}
                 >
                   <p className="text-[10px] font-semibold text-foreground truncate leading-tight">
