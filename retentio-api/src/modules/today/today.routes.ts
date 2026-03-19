@@ -44,7 +44,10 @@ todayRouter.get(
       by: ['status'],
       where: {
         sdr_id: sdrId,
-        date: { gte: start, lt: end },
+        OR: [
+          { date: { gte: start, lt: end }, proximo_contato: null },
+          { proximo_contato: { gte: start, lt: end } },
+        ],
       },
       _count: true,
     });
@@ -89,7 +92,10 @@ todayRouter.get(
     const tasks = await prisma.dailyTask.findMany({
       where: {
         sdr_id: sdrId,
-        date: { gte: start, lt: end },
+        OR: [
+          { date: { gte: start, lt: end }, proximo_contato: null },
+          { proximo_contato: { gte: start, lt: end } },
+        ],
       },
       include: {
         lead: {

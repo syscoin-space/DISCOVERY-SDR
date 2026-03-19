@@ -361,37 +361,60 @@ function computeEventLayout(eventsOfDay: CalEvent[]) {
     return a.start.getTime() - b.start.getTime();
   });
 
-  const columns: CalEvent[][] = [];
   const layoutInfo = new Map<string, { col: number; maxCols: number }>();
 
-  for (const evt of sorted) {
-    let placed = false;
-    for (let i = 0; i < columns.length; i++) {
-      const col = columns[i];
-      const lastEventRaw = col[col.length - 1];
-      // se nao sobrepõe o último evento dessa coluna...
-      // damos um respiro de 1 min pra evitar overlaps exatos nas bordas
-      if (lastEventRaw.end.getTime() <= evt.start.getTime() + 60000) {
-        col.push(evt);
-        layoutInfo.set(evt.id, { col: i, maxCols: columns.length });
-        placed = true;
-        break;
+  // Helper para processar uma ilha de eventos (blocos que estão conectados por sobreposição)
+  const processIsland = (island: CalEvent[]) => {
+    const columns: CalEvent[][] = [];
+    for (const evt of island) {
+      let placed = false;
+      for (let i = 0; i < columns.length; i++) {
+        const col = columns[i];
+        const lastEvent = col[col.length - 1];
+        // Adiciona 1 minuto de respiro
+        if (lastEvent.end.getTime() <= evt.start.getTime() + 60000) {
+          col.push(evt);
+          layoutInfo.set(evt.id, { col: i, maxCols: 1 }); // placeholder maxCols
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        columns.push([evt]);
+        layoutInfo.set(evt.id, { col: columns.length - 1, maxCols: 1 });
       }
     }
-    if (!placed) {
-      columns.push([evt]);
-      layoutInfo.set(evt.id, { col: columns.length - 1, maxCols: columns.length });
+
+    // Todos na ilha terão a largura baseada na coluna máxima DESTA ilha
+    const totalCols = Math.max(1, columns.length);
+    for (const evt of island) {
+      const info = layoutInfo.get(evt.id)!;
+      info.maxCols = totalCols;
+      layoutInfo.set(evt.id, info);
+    }
+  };
+
+  let currentIsland: CalEvent[] = [];
+  let islandMaxEnd = 0;
+
+  for (const evt of sorted) {
+    if (currentIsland.length === 0) {
+      currentIsland.push(evt);
+      islandMaxEnd = evt.end.getTime();
+    } else {
+      if (evt.start.getTime() <= islandMaxEnd + 60000) {
+        currentIsland.push(evt);
+        islandMaxEnd = Math.max(islandMaxEnd, evt.end.getTime());
+      } else {
+        processIsland(currentIsland);
+        currentIsland = [evt];
+        islandMaxEnd = evt.end.getTime();
+      }
     }
   }
 
-  // update maxCols for all items in these overlapping groups
-  // (Simple approach: just give everyone in this day maxCols = columns.length)
-  // For a perfect layout we'd do connected components, but for this CRM it's enough.
-  const totalCols = Math.max(1, columns.length);
-  for (const evt of sorted) {
-    const info = layoutInfo.get(evt.id)!;
-    info.maxCols = totalCols;
-    layoutInfo.set(evt.id, info);
+  if (currentIsland.length > 0) {
+    processIsland(currentIsland);
   }
 
   return layoutInfo;

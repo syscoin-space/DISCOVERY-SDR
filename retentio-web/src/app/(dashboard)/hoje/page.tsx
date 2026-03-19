@@ -12,9 +12,6 @@ import { Drawer } from "vaul";
 import { LeadSidebar } from "@/components/kanban/LeadSidebar";
 import Tooltip from "@/components/ui/Tooltip";
 import { useKanbanStore } from "@/lib/stores/kanban.store";
-import { useAgenda } from "@/hooks/use-agenda";
-import { startOfDay, endOfDay, format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { PRRBadge } from "@/components/shared/PRRBadge";
 import { InsightToast } from "@/components/shared/InsightToast";
 import { DateTimePicker } from "@/components/shared/DateTimePicker";
@@ -252,25 +249,6 @@ export default function HojePage() {
   const [filter, setFilter] = useState<string>("ALL");
   const [editingResultado, setEditingResultado] = useState<string | null>(null);
 
-  const dayStart = startOfDay(new Date());
-  const dayEnd = endOfDay(new Date());
-  const { data: agendaData } = useAgenda(dayStart.toISOString(), dayEnd.toISOString());
-
-  // Derive non-contact agenda events
-  const agendaEvents = useMemo(() => {
-    if (!agendaData) return [];
-    const evts = [];
-    for (const r of agendaData.reunioes) {
-      evts.push({ id: `r-${r.id}`, type: "reuniao", title: r.lead?.company_name ?? r.titulo, time: new Date(r.inicio) });
-    }
-    for (const s of agendaData.steps) {
-      evts.push({ id: `s-${s.id}`, type: "step", title: s.lead_cadence?.lead?.company_name ?? "Step", subtitle: `Step ${s.cadence_step?.step_order}`, time: new Date(s.scheduled_at) });
-    }
-    for (const g of agendaData.google_events) {
-      evts.push({ id: `g-${g.id}`, type: "google", title: g.summary, time: new Date(g.start) });
-    }
-    return evts.sort((a, b) => a.time.getTime() - b.time.getTime());
-  }, [agendaData]);
   const [resultadoText, setResultadoText] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const { selectedLeadId, setSelectedLeadId } = useKanbanStore();
@@ -642,36 +620,8 @@ export default function HojePage() {
       </Drawer.Root>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
-        
-        {/* Agenda Events Section */}
-        {agendaEvents.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-              <CalendarPlus className="h-4 w-4 text-accent" />
-              Agenda de Hoje
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {agendaEvents.map((evt) => (
-                <div key={evt.id} className="flex flex-col gap-1 rounded-xl border border-border bg-surface-raised p-3 border-l-4" style={{ borderLeftColor: evt.type === 'reuniao' ? '#10b981' : evt.type === 'step' ? '#3b82f6' : '#f87171' }}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-foreground truncate">{evt.title}</span>
-                    <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">{format(evt.time, "HH:mm")}</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] uppercase text-muted-foreground font-medium">
-                      {evt.type === "reuniao" ? "Reunião" : evt.type === "step" ? evt.subtitle : "Google"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-foreground">Fila de Contato</h3>
-          {sortedTasks.length === 0 ? (
+      <div className="flex-1 overflow-auto">
+        {sortedTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
             <p className="text-sm text-muted-foreground">
               {filter === "ALL"
@@ -912,7 +862,6 @@ export default function HojePage() {
             </div>
           </>
         )}
-        </div>
       </div>
       {/* Lead Sidebar */}
       <LeadSidebar leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} />
