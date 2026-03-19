@@ -103,17 +103,29 @@ export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: 
       const city = normalize(row[17]);
       const processed_at = normalizeDate(row[18]) || normalizeDate(row[19]);
 
-      // Deduplicação por domain OU email (relativos ao SDR)
+      // Deduplicação por domain, email, whatsapp OU telefone (relativos ao SDR)
+      const orConditions: any[] = [];
+      if (domain) orConditions.push({ domain });
+      if (email) orConditions.push({ email });
+      if (whatsapp) {
+        orConditions.push({ whatsapp });
+        orConditions.push({ phone: whatsapp }); // Often numbers are mixed
+      }
+
       let existingLead = null;
-      if (domain) {
-        existingLead = await prisma.lead.findUnique({ 
-          where: { domain_sdr_id: { domain, sdr_id: sdrId } } 
+      if (orConditions.length > 0) {
+        existingLead = await prisma.lead.findFirst({
+          where: {
+            sdr_id: sdrId,
+            OR: orConditions,
+          }
         });
       }
-      if (!existingLead && email) {
-        existingLead = await prisma.lead.findUnique({ 
-          where: { email_sdr_id: { email, sdr_id: sdrId } } 
-        });
+
+      if (existingLead) {
+        // APENAS IGNORE - não sobrescreva para não perder anotações e status
+        result.duplicatas++;
+        continue;
       }
 
       const leadData = {
@@ -139,22 +151,11 @@ export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: 
         imported_at: new Date(),
       };
 
-      let leadId: string;
-
-      if (existingLead) {
-        await prisma.lead.update({
-          where: { id: existingLead.id },
-          data: leadData,
-        });
-        result.duplicatas++;
-        leadId = existingLead.id;
-      } else {
-        const newLead = await prisma.lead.create({
-          data: leadData,
-        });
-        result.importados++;
-        leadId = newLead.id;
-      }
+      const newLead = await prisma.lead.create({
+        data: leadData,
+      });
+      result.importados++;
+      const leadId = newLead.id;
 
       result.leadIds.push(leadId);
 
