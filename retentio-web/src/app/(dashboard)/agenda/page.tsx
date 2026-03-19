@@ -316,7 +316,7 @@ export default function AgendaPage() {
       <div className="flex-1 overflow-auto">
         {isLoading ? (
           <WeekSkeleton />
-        ) : view === "week" ? (
+        ) : view === "week" || view === "day" ? (
           <WeekView
             days={displayDays}
             events={events}
