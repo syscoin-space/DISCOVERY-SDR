@@ -5,7 +5,7 @@ import multer from 'multer';
 import { z } from 'zod';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
-import { asyncHandler, validate, authGuard } from '../../middlewares';
+import { asyncHandler, validate, authGuard, type JwtPayload } from '../../middlewares';
 import { AppError } from '../../shared/types';
 
 export const authRouter = Router();
@@ -22,12 +22,16 @@ const refreshSchema = z.object({
   message: 'Token de atualização é obrigatório',
 });
 
-function signTokens(user: { id: string; email: string; name: string; role: string }) {
-  const payload = { sub: user.id, email: user.email, name: user.name, role: user.role };
+/**
+ * V2: JWT agora inclui tenant_id e membership_id.
+ * Se o user pertence a mais de um tenant, o login retorna o primeiro ativo.
+ * (Futuramente pode ter seleção de tenant no frontend)
+ */
+function signTokens(payload: Omit<JwtPayload, 'iat' | 'exp'>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const access_token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN as any });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const refresh_token = jwt.sign({ sub: user.id }, env.REFRESH_TOKEN_SECRET, { expiresIn: env.REFRESH_TOKEN_EXPIRES_IN as any });
+  const refresh_token = jwt.sign({ sub: payload.sub, membership_id: payload.membership_id, tenant_id: payload.tenant_id }, env.REFRESH_TOKEN_SECRET, { expiresIn: env.REFRESH_TOKEN_EXPIRES_IN as any });
   return { access_token, refresh_token };
 }
 
@@ -37,7 +41,19 @@ authRouter.post(
   validate(loginSchema),
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        memberships: {
+          where: { active: true },
+          include: {
+            tenant: { select: { id: true, name: true, slug: true, active: true, branding: true, discovery_enabled: true } },
+          },
+          take: 1,
+        },
+      },
+    });
+
     if (!user || !user.active) {
       throw new AppError(401, 'Credenciais inválidas', 'AUTH_INVALID');
     }
@@ -47,9 +63,33 @@ authRouter.post(
       throw new AppError(401, 'Credenciais inválidas', 'AUTH_INVALID');
     }
 
-    const tokens = signTokens(user);
+    // Pega o primeiro membership ativo
+    const membership = user.memberships[0];
+    if (!membership || !membership.tenant.active) {
+      throw new AppError(403, 'Sem acesso a nenhum tenant ativo', 'NO_TENANT');
+    }
+
+    const tokens = signTokens({
+      sub: user.id,
+      membership_id: membership.id,
+      tenant_id: membership.tenant_id,
+      email: user.email,
+      name: user.name,
+      role: membership.role,
+    });
+
     res.json({
-      user: { id: user.id, email: user.email, name: user.name, role: user.role, avatar_url: user.avatar_url },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar_url: user.avatar_url,
+        role: membership.role,
+        membership_id: membership.id,
+        tenant_id: membership.tenant_id,
+        tenant: membership.tenant,
+        capacity: membership.capacity,
+      },
       token: tokens.access_token,
       refreshToken: tokens.refresh_token,
       access_token: tokens.access_token,
@@ -65,12 +105,29 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const refresh_token = req.body.refresh_token || req.body.refreshToken;
     try {
-      const decoded = jwt.verify(refresh_token, env.REFRESH_TOKEN_SECRET) as { sub: string };
+      const decoded = jwt.verify(refresh_token, env.REFRESH_TOKEN_SECRET) as { sub: string; membership_id: string; tenant_id: string };
       const user = await prisma.user.findUnique({ where: { id: decoded.sub } });
       if (!user || !user.active) {
         throw new AppError(401, 'Refresh token inválido', 'AUTH_INVALID');
       }
-      const tokens = signTokens(user);
+
+      const membership = await prisma.membership.findUnique({
+        where: { id: decoded.membership_id },
+        include: { tenant: { select: { id: true, name: true, slug: true, active: true } } },
+      });
+      if (!membership || !membership.active || !membership.tenant.active) {
+        throw new AppError(401, 'Membership inativo', 'AUTH_INVALID');
+      }
+
+      const tokens = signTokens({
+        sub: user.id,
+        membership_id: membership.id,
+        tenant_id: membership.tenant_id,
+        email: user.email,
+        name: user.name,
+        role: membership.role,
+      });
+
       res.json({
         token: tokens.access_token,
         refreshToken: tokens.refresh_token,
@@ -90,12 +147,29 @@ authRouter.get(
   asyncHandler(async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.sub },
-      select: { id: true, email: true, name: true, role: true, avatar_url: true, active: true, created_at: true },
+      select: { id: true, email: true, name: true, avatar_url: true, active: true, created_at: true },
     });
     if (!user) {
       throw new AppError(404, 'Usuário não encontrado');
     }
-    res.json(user);
+
+    const membership = await prisma.membership.findUnique({
+      where: { id: req.user!.membership_id },
+      include: {
+        tenant: { select: { id: true, name: true, slug: true, active: true, branding: true, discovery_enabled: true } },
+        team: { select: { id: true, name: true } },
+      },
+    });
+
+    res.json({
+      ...user,
+      role: membership?.role,
+      membership_id: membership?.id,
+      tenant_id: membership?.tenant_id,
+      tenant: membership?.tenant,
+      team: membership?.team,
+      capacity: membership?.capacity,
+    });
   }),
 );
 
@@ -124,7 +198,7 @@ authRouter.post(
     const user = await prisma.user.update({
       where: { id: req.user!.sub },
       data: { avatar_url: dataUri },
-      select: { id: true, email: true, name: true, role: true, avatar_url: true },
+      select: { id: true, email: true, name: true, avatar_url: true },
     });
     res.json(user);
   }),
@@ -138,7 +212,7 @@ authRouter.delete(
     const user = await prisma.user.update({
       where: { id: req.user!.sub },
       data: { avatar_url: null },
-      select: { id: true, email: true, name: true, role: true, avatar_url: true },
+      select: { id: true, email: true, name: true, avatar_url: true },
     });
     res.json(user);
   }),

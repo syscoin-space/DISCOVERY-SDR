@@ -1,205 +1,71 @@
-import { PrismaClient, Role, PrrTier } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import { hash } from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando seed...');
+  console.log('🌱 Seeding V2 database...');
 
-  // ── Usuários ──
-  const defaultHash = await hash('Padrao123#', 12);
-
-  const gestor = await prisma.user.upsert({
-    where: { email: 'hugo@syscoin.com.br' },
+  // ─── Tenant ────────────────────────────────────────────────
+  const tenant = await prisma.tenant.upsert({
+    where: { slug: 'discovery-demo' },
     update: {},
     create: {
-      email: 'hugo@syscoin.com.br',
-      password_hash: defaultHash,
-      name: 'Hugo Cândido',
-      role: Role.GESTOR,
+      name: 'Discovery Demo',
+      slug: 'discovery-demo',
+      plan: 'standard',
+      discovery_enabled: true,
+      branding: {
+        app_name: 'Discovery SDR',
+        color_accent: '#2E86AB',
+      },
     },
   });
+  console.log(`  ✅ Tenant: ${tenant.name} (${tenant.id})`);
 
-  const sdr1 = await prisma.user.upsert({
-    where: { email: 'vitoria@retentio.com.br' },
-    update: {},
-    create: {
-      email: 'vitoria@retentio.com.br',
-      password_hash: defaultHash,
-      name: 'Vitória',
-      role: Role.SDR,
-    },
-  });
+  // ─── Users ─────────────────────────────────────────────────
+  const passwordHash = await hash('123456', 10);
 
-  // ── PRR Weights ──
-  const dimensions = [
-    { dimension: 'base_size', weight: 0.25, min_value: 0, max_value: 500000 },
-    { dimension: 'recompra_cycle', weight: 0.20, min_value: 7, max_value: 180 },
-    { dimension: 'avg_ticket', weight: 0.20, min_value: 0, max_value: 5000 },
-    { dimension: 'inactive_base', weight: 0.15, min_value: 0, max_value: 1 },
-    { dimension: 'integrability', weight: 0.20, min_value: 1, max_value: 5 },
+  const users = [
+    { email: 'owner@discovery.com', name: 'Hugo (Owner)', role: Role.OWNER, capacity: null },
+    { email: 'manager@discovery.com', name: 'Manager Demo', role: Role.MANAGER, capacity: null },
+    { email: 'sdr@discovery.com', name: 'SDR Demo', role: Role.SDR, capacity: 80 },
+    { email: 'closer@discovery.com', name: 'Closer Demo', role: Role.CLOSER, capacity: null },
   ];
-  for (const d of dimensions) {
-    await prisma.prrWeight.upsert({
-      where: { dimension: d.dimension },
-      update: d,
-      create: d,
+
+  for (const u of users) {
+    const user = await prisma.user.upsert({
+      where: { email: u.email },
+      update: {},
+      create: {
+        email: u.email,
+        password_hash: passwordHash,
+        name: u.name,
+      },
     });
+
+    const membership = await prisma.membership.upsert({
+      where: { user_id_tenant_id: { user_id: user.id, tenant_id: tenant.id } },
+      update: {},
+      create: {
+        user_id: user.id,
+        tenant_id: tenant.id,
+        role: u.role,
+        capacity: u.capacity,
+      },
+    });
+
+    console.log(`  ✅ ${u.role}: ${u.name} (${user.id}) → membership ${membership.id}`);
   }
 
-  // ── ICP Criteria ──
-  const criteria = [
-    { order: 1, label: 'Tem plataforma de e-commerce?', type: 'boolean' },
-    { order: 2, label: 'Plataforma tem API aberta?', type: 'boolean' },
-    { order: 3, label: 'Base de clientes > 5.000?', type: 'boolean' },
-    { order: 4, label: 'Ticket médio > R$ 100?', type: 'boolean' },
-    { order: 5, label: 'Ciclo de recompra < 90 dias?', type: 'boolean' },
-    { order: 6, label: 'Tem programa de fidelidade?', type: 'boolean' },
-    { order: 7, label: 'Investe em marketing digital?', type: 'boolean' },
-    { order: 8, label: 'Tem equipe de CRM/Retenção?', type: 'select', options: ['Sim', 'Não', 'Parcialmente'] },
-    { order: 9, label: 'Volume de transações mensais', type: 'scale' },
-    { order: 10, label: 'Dor de retenção identificada?', type: 'boolean' },
-    { order: 11, label: 'Budget disponível este quarter?', type: 'select', options: ['Sim', 'Não', 'Indefinido'] },
-    { order: 12, label: 'Decision maker acessível?', type: 'boolean' },
-    { order: 13, label: 'Operação multi-canal (loja física + online)?', type: 'boolean' },
-    { order: 14, label: 'Timing de compra favorável?', type: 'select', options: ['Urgente', 'Próximo quarter', 'Indefinido'] },
-  ];
-  for (const c of criteria) {
-    const existing = await prisma.icpCriteria.findFirst({ where: { order: c.order } });
-    if (existing) {
-      await prisma.icpCriteria.update({ where: { id: existing.id }, data: c as any });
-    } else {
-      await prisma.icpCriteria.create({ data: c as any });
-    }
-  }
-
-  // ── Leads Data Removido para início limpo ──
-  /* 
-  const leadsData = ... 
-  for (const ld of leadsData) { ... }
-  */
-
-  // ── Templates ──
-  const templates = [
-    {
-      name: 'Primeiro Contato — E-commerce',
-      channel: 'EMAIL' as const,
-      subject: '{{empresa}} — oportunidade que eu precisava te mostrar',
-      body: 'Oi, tudo bem?\n\nVi que a {{empresa}} usa {{plataforma}} e trabalha com {{nicho}} em {{cidade}}.\n\nAqui na Retentio a gente ajuda lojas como a sua a reativar a base de clientes inativos e aumentar a recompra.\n\nPosso te mostrar em 15 min como funciona?\n\nAbraço,\n{{sdr_nome}}',
-    },
-    {
-      name: 'Follow-up D3',
-      channel: 'EMAIL' as const,
-      subject: 'Re: {{empresa}} — conseguiu ver?',
-      body: 'Oi! Passando rapidinho pra saber se conseguiu ver minha mensagem anterior.\n\nSei que a rotina é corrida, mas acho que vale a pena trocarmos uma ideia sobre o potencial da base da {{empresa}}.\n\nQual o melhor horário pra você essa semana?\n\n{{sdr_nome}}',
-    },
-    {
-      name: 'WhatsApp Abertura',
-      channel: 'WHATSAPP' as const,
-      subject: null,
-      body: 'Oi! Sou {{sdr_nome}} da Retentio 👋\n\nVi que a {{empresa}} tem uma base de clientes interessante no segmento de {{nicho}}.\n\nA gente ajuda e-commerces a reativar clientes inativos e aumentar recompra. Posso te mandar um material rápido?',
-    },
-    {
-      name: 'Reativação Base Fria',
-      channel: 'EMAIL' as const,
-      subject: '{{empresa}} — sua base está dormindo (e perdendo dinheiro)',
-      body: 'Oi!\n\nFaz um tempo que não conversamos, mas continuo acompanhando o mercado de {{nicho}} e sei que a {{empresa}} tem potencial enorme.\n\nVocê sabia que em média 60% da base de um e-commerce está inativa? A Retentio consegue reativar esses clientes de forma automatizada.\n\nVale agendar 15 min essa semana?\n\n{{sdr_nome}}',
-    },
-    {
-      name: 'Proposta PRR Tier A',
-      channel: 'EMAIL' as const,
-      subject: '{{empresa}} — calculei o potencial da sua base',
-      body: 'Oi!\n\nFiz uma análise rápida do perfil da {{empresa}} e o resultado foi impressionante: vocês estão no Tier {{prr_tier}} do nosso score de potencial de recompra.\n\nIsso significa que a sua base tem um potencial de receita recorrente acima da média do mercado de {{nicho}}.\n\nQuero te mostrar os números. Tem 15 min essa semana?\n\n{{sdr_nome}}',
-    },
-  ];
-
-  for (const tpl of templates) {
-    const existing = await prisma.template.findFirst({ where: { name: tpl.name } });
-    if (existing) {
-      await prisma.template.update({
-        where: { id: existing.id },
-        data: { body: tpl.body, subject: tpl.subject },
-      });
-    } else {
-      await prisma.template.create({ data: tpl });
-    }
-  }
-  console.log(`📝 ${templates.length} templates seeded`);
-
-  // ── Notificações de exemplo ──
-  const notificacoes = [
-    {
-      user_id: sdr1.id,
-      tipo: 'tier_a_parado',
-      titulo: 'Lead Tier A parado há 3 dias',
-      corpo: 'Pet Natural não recebe atividade há 3 dias. PRR A·72 — priorize hoje.',
-      url: '/pipeline',
-      lida: false,
-    },
-    {
-      user_id: sdr1.id,
-      tipo: 'step_atrasado',
-      titulo: 'Step de cadência atrasado',
-      corpo: 'Moda Carioca — Email D3 está pendente desde ontem.',
-      url: '/cadencias',
-      lida: false,
-    },
-    {
-      user_id: sdr1.id,
-      tipo: 'proximo_contato',
-      titulo: 'Ligue em 30min',
-      corpo: 'TechShop Brasil — agendado para 15:30.',
-      url: '/hoje',
-      lida: false,
-    },
-    {
-      user_id: sdr1.id,
-      tipo: 'reuniao_agendada',
-      titulo: 'Reunião confirmada',
-      corpo: 'Pet Natural confirmou reunião para amanhã às 14h.',
-      url: '/pipeline',
-      lida: true,
-    },
-    {
-      user_id: gestor.id,
-      tipo: 'ritmo_ruim',
-      titulo: 'Ritmo abaixo do esperado',
-      corpo: 'Vitória concluiu apenas 0% das atividades de hoje às 14h.',
-      url: '/gestor',
-      lida: false,
-    },
-    {
-      user_id: gestor.id,
-      tipo: 'meta_batida',
-      titulo: 'Meta batida!',
-      corpo: 'Vitória atingiu a meta de 5 reuniões esta semana!',
-      url: '/gestor/sdrs',
-      lida: true,
-    },
-    {
-      user_id: gestor.id,
-      tipo: 'sdr_destaque',
-      titulo: 'SDR destaque da semana',
-      corpo: 'Vitória se destacou com a maior taxa de conversão.',
-      url: '/gestor/sdrs',
-      lida: false,
-    },
-  ];
-  for (const n of notificacoes) {
-    await prisma.notification.create({ data: n });
-  }
-  console.log(`🔔 ${notificacoes.length} notificações seeded`);
-
-  // ── Brand Config ──
-  const existingBrand = await prisma.brandConfig.findFirst();
-  if (!existingBrand) {
-    await prisma.brandConfig.create({ data: {} });
-    console.log('🎨 Brand config padrão criado');
-  }
-
-  console.log('✅ Seed concluído com sucesso');
+  console.log('\n🎉 Seed complete!');
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .catch((e) => {
+    console.error('❌ Seed error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

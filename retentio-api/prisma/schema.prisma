@@ -7,70 +7,63 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── ENUMS ───────────────
+// ─── ENUMS ───────────────────────────────────────────────────────────────
 
 enum Role {
+  OWNER
+  MANAGER
   SDR
-  GESTOR
   CLOSER
 }
 
 enum LeadStatus {
+  BANCO
   CONTA_FRIA
+  DISCOVERY
   EM_PROSPECCAO
   FOLLOW_UP
-  REUNIAO_AGENDADA
-  OPORTUNIDADE_QUALIFICADA
   NUTRICAO
-  SEM_PERFIL
+  REUNIAO_MARCADA
+  PERDIDO
 }
 
-enum PrrTier {
-  A
-  B
-  C
+enum TaskType {
+  CADENCE_STEP
+  DISCOVERY_STEP
+  MANUAL
+  AUTO
+  MEETING
 }
 
-enum IcpTier {
-  FORA
-  PARCIAL
-  QUENTE
-  CONTRATO_CERTO
-}
-
-enum BloqueioStatus {
-  LIMPO
-  ALERTA
-  CONFIRMADO
-  IGNORADO
-}
-
-enum MomentoCompra {
-  URGENTE
-  PESQUISANDO
-  FUTURO
-  SEM_TIMING
-}
-
-enum CadenceType {
-  STANDARD
-  REATIVACAO
-  FAST_TRACK
-}
-
-enum StepChannel {
-  EMAIL
-  WHATSAPP
-  LIGACAO
-  LINKEDIN
-}
-
-enum StepStatus {
+enum TaskStatus {
   PENDENTE
-  EXECUTADO
-  PULADO
-  ATRASADO
-  CANCELADO
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+  ATRASADA
+}
+
+enum CadencePurpose {
+  DISCOVERY
+  PROSPECCAO
+  NUTRICAO
+  CONFIRMACAO
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED_SUCCESS
+  COMPLETED_FAIL
+  CANCELLED
+}
+
+enum TemplatePurpose {
+  PRIMEIRO_CONTATO
+  FOLLOW_UP
+  NUTRICAO
+  CONFIRMACAO_REUNIAO
+  REATIVACAO
 }
 
 enum InteractionType {
@@ -86,6 +79,21 @@ enum InteractionSource {
   CADENCIA
   MANUAL
   WEBHOOK
+  AUTOMACAO
+}
+
+enum TouchpointOutcome {
+  NO_ANSWER
+  VOICEMAIL
+  INVALID_NUMBER
+  SEEN_NO_REPLY
+  RESPONDED
+  SPOKE_GATEKEEPER
+  SPOKE_DECISION_MAKER
+  ASKED_FOLLOW_UP
+  NOT_INTERESTED
+  BOOKED
+  LOST
 }
 
 enum HandoffStatus {
@@ -94,326 +102,347 @@ enum HandoffStatus {
   DEVOLVIDO
 }
 
-enum IntegrabilityScore {
-  ALTA
-  MEDIA
-  DIFICIL
+// ─── FOUNDATION LAYER ────────────────────────────────────────────────────
+
+model Tenant {
+  id                  String   @id @default(uuid())
+  name                String
+  slug                String   @unique
+  plan                String   @default("standard")
+  discovery_enabled   Boolean  @default(false)
+  active              Boolean  @default(true)
+  settings            Json?    // notificações, limites, preferências
+  branding            Json?    // logo_url, cores, app_name, favicon
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  memberships         Membership[]
+  teams               Team[]
+  leads               Lead[]
+  cadences            Cadence[]
+  templates           Template[]
+  goals               Goal[]
+  notifications       Notification[]
+  call_scripts        CallScript[]
+  audit_logs          AuditLog[]
+
+  @@map("tenants")
 }
-
-enum RecompraSignal {
-  ALTA
-  MEDIA
-  BAIXA
-}
-
-// DailyTaskStatus removed — status is now a free-form String to allow custom statuses
-
-// ─── MODELS ──────────────
 
 model User {
   id              String   @id @default(uuid())
   email           String   @unique
   password_hash   String
   name            String
-  role            Role
   avatar_url      String?
   active          Boolean  @default(true)
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  leads           Lead[]
-  touchpoints     Touchpoint[]
-  daily_tasks     DailyTask[]
-  metas           Meta[]
-  handoffs_sent   HandoffBriefing[] @relation("HandoffSdr")
-  handoffs_received HandoffBriefing[] @relation("HandoffCloser")
-  resend_config   ResendConfig?
-  google_integration GoogleIntegration?
-  audit_logs          AuditLog[]
-  push_subscriptions  PushSubscription[]
-  notifications       Notification[]
+  memberships     Membership[]
 
   @@index([email])
-  @@index([role])
   @@map("users")
 }
 
-model Lead {
-  id                    String          @id @default(uuid())
-  sdr_id                String
-  status                LeadStatus      @default(CONTA_FRIA)
-
-  domain                String?
-  company_name          String
-  niche                 String?
-  company_size          String?
-  cnpj                  String?         @unique
-  contact_name          String?
-  contact_role          String?
-  email                 String?
-  phone                 String?
-  whatsapp              String?
-  instagram_handle      String?
-  linkedin_url          String?
-  website_url           String?
-  state                 String?
-  city                  String?
-  ecommerce_platform    String?
-  estimated_base_size   Int?
-  avg_ticket_estimated  Float?
-  lead_status_origin    String?
-  notes_import          String?         @db.Text
-  source                String?
-  processed_at          DateTime?
-  imported_at           DateTime?
-
-  prr_score             Float?
-  prr_tier              PrrTier?
-
-  icp_score             Int?
-  icp_tier              IcpTier?
-
-  bloqueio_status       BloqueioStatus  @default(LIMPO)
-  bloqueio_motivos      Json?
-
-  momento_compra        MomentoCompra?
-  recompra_signal       RecompraSignal?
-  recompra_cycle        String?
-  company_type          String?
-  integrability_level   String?
-  integrability         IntegrabilityScore?
-
-  created_at            DateTime        @default(now())
-  updated_at            DateTime        @updatedAt
-
-  sdr                   User            @relation(fields: [sdr_id], references: [id])
-  prr_inputs            PrrInputs?
-  touchpoints           Touchpoint[]
-  journey_summary       LeadJourneySummary?
-  icp_answers           IcpAnswer[]
-  discovered_stack      DiscoveredStack[]
-  lead_cadences         LeadCadence[]
-  interactions          Interaction[]
-  daily_tasks           DailyTask[]
-  handoffs              HandoffBriefing[]
-  block_events          BlockEvent[]
-  calendar_events       CalendarEvent[]
-  audit_logs            AuditLog[]
-
-  @@index([sdr_id])
-  @@index([status])
-  @@index([prr_tier])
-  @@index([icp_tier])
-  @@index([sdr_id, status])
-  @@index([sdr_id, prr_score(sort: Desc)])
-  @@index([company_name])
-  @@index([bloqueio_status])
-  @@unique([domain, sdr_id])
-  @@unique([email, sdr_id])
-  @@map("leads")
-}
-
-model PrrInputs {
-  id                    String   @id @default(uuid())
-  lead_id               String   @unique
-  base_size_estimated   Int?
-  recompra_cycle_days   Int?
-  avg_ticket_estimated  Float?
-  inactive_base_pct     Float?
-  integrability_score   Int?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
-
-  lead                  Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
-
-  @@map("prr_inputs")
-}
-
-model PrrWeight {
+model Membership {
   id          String   @id @default(uuid())
-  dimension   String   @unique
-  weight      Float
-  min_value   Float?
-  max_value   Float?
+  user_id     String
+  tenant_id   String
+  role        Role
+  capacity    Int?     // Só para SDR: máx leads ativos
+  team_id     String?
+  active      Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  @@map("prr_weights")
+  user        User     @relation(fields: [user_id], references: [id])
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id])
+  team        Team?    @relation(fields: [team_id], references: [id])
+
+  assigned_leads    Lead[]   @relation("AssignedSDR")
+  distributed_leads Lead[]   @relation("DistributedBy")
+  tasks             Task[]
+  touchpoints       Touchpoint[]
+  google_integration GoogleIntegration?
+  handoffs_sent     HandoffBriefing[] @relation("HandoffSdr")
+  handoffs_received HandoffBriefing[] @relation("HandoffCloser")
+  resend_config     ResendConfig?
+  push_subscriptions PushSubscription[]
+
+  @@unique([user_id, tenant_id])
+  @@index([tenant_id, role])
+  @@index([tenant_id, team_id])
+  @@map("memberships")
 }
 
-model IcpCriteria {
-  id          String     @id @default(uuid())
-  order       Int
-  label       String
-  type        String
-  options     Json?
-  weight      Int        @default(1)
-  active      Boolean    @default(true)
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
-
-  answers     IcpAnswer[]
-
-  @@index([active, order])
-  @@map("icp_criteria")
-}
-
-model IcpAnswer {
-  id            String      @id @default(uuid())
-  lead_id       String
-  criteria_id   String
-  answer_value  String
-  score_points  Int         @default(0)
-  created_at    DateTime    @default(now())
-  updated_at    DateTime    @updatedAt
-
-  lead          Lead        @relation(fields: [lead_id], references: [id], onDelete: Cascade)
-  criteria      IcpCriteria @relation(fields: [criteria_id], references: [id])
-
-  @@unique([lead_id, criteria_id])
-  @@map("icp_answers")
-}
-
-model DiscoveredStack {
+model Team {
   id          String   @id @default(uuid())
-  lead_id     String
-  category    String
-  tool_name   String
+  tenant_id   String
+  name        String
+  manager_id  String?  // membership_id do manager
   created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
-  lead        Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  tenant      Tenant       @relation(fields: [tenant_id], references: [id])
+  members     Membership[]
 
-  @@unique([lead_id, category, tool_name])
-  @@index([lead_id])
-  @@map("discovered_stacks")
+  @@index([tenant_id])
+  @@map("teams")
 }
+
+// ─── LEAD & LEAD POOL ────────────────────────────────────────────────────
+
+model Lead {
+  id              String     @id @default(uuid())
+  tenant_id       String
+  sdr_id          String?    // membership_id do SDR (null = pool)
+  distributed_by  String?    // membership_id de quem distribuiu
+  status          LeadStatus @default(BANCO)
+
+  // Dados genéricos do lead
+  company_name    String
+  domain          String?
+  cnpj            String?
+  segment         String?
+  company_size    String?
+  contact_name    String?
+  contact_role    String?
+  email           String?
+  phone           String?
+  whatsapp        String?
+  instagram       String?
+  linkedin        String?
+  city            String?
+  state           String?
+  source          String?
+  notes           String?    @db.Text
+  icp_score       Int?       // 0 a 10, genérico
+  best_channel    String?    // descoberto ao longo do processo
+
+  distributed_at  DateTime?
+  imported_at     DateTime?
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  tenant          Tenant      @relation(fields: [tenant_id], references: [id])
+  sdr             Membership? @relation("AssignedSDR", fields: [sdr_id], references: [id])
+  distributor     Membership? @relation("DistributedBy", fields: [distributed_by], references: [id])
+
+  cadence_enrollments CadenceEnrollment[]
+  tasks               Task[]
+  touchpoints         Touchpoint[]
+  interactions        Interaction[]
+  calendar_events     CalendarEvent[]
+  handoffs            HandoffBriefing[]
+  audit_logs          AuditLog[]
+
+  @@unique([domain, tenant_id])
+  @@unique([email, tenant_id])
+  @@index([tenant_id, status])
+  @@index([tenant_id, sdr_id])
+  @@index([tenant_id, sdr_id, status])
+  @@index([company_name])
+  @@map("leads")
+}
+
+// ─── TASK ENGINE ─────────────────────────────────────────────────────────
+
+model Task {
+  id                      String     @id @default(uuid())
+  tenant_id               String
+  lead_id                 String?
+  membership_id           String     // SDR que executa
+  type                    TaskType
+  status                  TaskStatus @default(PENDENTE)
+
+  title                   String
+  description             String?
+  channel                 String?    // EMAIL | WHATSAPP | LIGACAO | LINKEDIN
+  outcome                 String?    // resultado registrado pelo SDR
+  scheduled_at            DateTime?  // quando deve ser executada
+  completed_at            DateTime?
+  due_at                  DateTime?  // deadline
+
+  // Vínculo com cadência (se type = CADENCE_STEP ou DISCOVERY_STEP)
+  cadence_enrollment_id   String?
+  cadence_step_id         String?
+
+  created_at              DateTime   @default(now())
+  updated_at              DateTime   @updatedAt
+
+  lead                    Lead?              @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  membership              Membership         @relation(fields: [membership_id], references: [id])
+  cadence_enrollment      CadenceEnrollment? @relation(fields: [cadence_enrollment_id], references: [id])
+  cadence_step            CadenceStep?       @relation(fields: [cadence_step_id], references: [id])
+
+  @@index([membership_id, status, scheduled_at])
+  @@index([tenant_id, type, status])
+  @@index([lead_id])
+  @@index([cadence_enrollment_id])
+  @@map("tasks")
+}
+
+// ─── CADENCE ENGINE ──────────────────────────────────────────────────────
 
 model Cadence {
-  id          String      @id @default(uuid())
+  id          String         @id @default(uuid())
+  tenant_id   String
   name        String
-  type        CadenceType @default(STANDARD)
+  purpose     CadencePurpose
   description String?
-  active      Boolean     @default(true)
-  created_at  DateTime    @default(now())
-  updated_at  DateTime    @updatedAt
+  active      Boolean        @default(true)
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
 
+  tenant      Tenant         @relation(fields: [tenant_id], references: [id])
   steps       CadenceStep[]
-  lead_cadences LeadCadence[]
+  enrollments CadenceEnrollment[]
 
+  @@index([tenant_id, purpose, active])
   @@map("cadences")
 }
 
 model CadenceStep {
-  id            String       @id @default(uuid())
+  id            String   @id @default(uuid())
   cadence_id    String
   step_order    Int
-  day_offset    Int
-  channel       StepChannel
+  day_offset    Int      // dias após step anterior
+  channel       String   // EMAIL | WHATSAPP | LIGACAO | LINKEDIN
   template_id   String?
-  instructions  String?      @db.Text
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @updatedAt
+  instructions  String?  @db.Text
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
-  cadence       Cadence      @relation(fields: [cadence_id], references: [id], onDelete: Cascade)
-  template      Template?    @relation(fields: [template_id], references: [id])
-  lead_steps    LeadCadenceStep[]
+  cadence       Cadence   @relation(fields: [cadence_id], references: [id], onDelete: Cascade)
+  template      Template? @relation(fields: [template_id], references: [id])
+  tasks         Task[]
 
   @@unique([cadence_id, step_order])
   @@map("cadence_steps")
 }
 
-model LeadCadence {
-  id          String   @id @default(uuid())
-  lead_id     String
-  cadence_id  String
-  started_at  DateTime @default(now())
-  status      String   @default("active")
-  paused_at   DateTime?
-  completed_at DateTime?
+model CadenceEnrollment {
+  id            String           @id @default(uuid())
+  lead_id       String
+  cadence_id    String
+  current_step  Int              @default(1)
+  status        EnrollmentStatus @default(ACTIVE)
+  started_at    DateTime         @default(now())
+  completed_at  DateTime?
 
-  lead        Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
-  cadence     Cadence  @relation(fields: [cadence_id], references: [id])
-  steps       LeadCadenceStep[]
+  lead          Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  cadence       Cadence  @relation(fields: [cadence_id], references: [id])
+  tasks         Task[]
 
   @@unique([lead_id, cadence_id])
   @@index([status])
-  @@map("lead_cadences")
+  @@map("cadence_enrollments")
 }
 
-model LeadCadenceStep {
-  id                String     @id @default(uuid())
-  lead_cadence_id   String
-  cadence_step_id   String
-  scheduled_at      DateTime
-  executed_at       DateTime?
-  status            StepStatus @default(PENDENTE)
-  skip_reason       String?
-
-  lead_cadence      LeadCadence @relation(fields: [lead_cadence_id], references: [id], onDelete: Cascade)
-  cadence_step      CadenceStep @relation(fields: [cadence_step_id], references: [id])
-
-  @@unique([lead_cadence_id, cadence_step_id])
-  @@index([status, scheduled_at])
-  @@map("lead_cadence_steps")
-}
+// ─── TEMPLATES ───────────────────────────────────────────────────────────
 
 model Template {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
+  tenant_id   String
   name        String
+  channel     String          // EMAIL | WHATSAPP
+  purpose     TemplatePurpose
   subject     String?
-  body        String   @db.Text
-  channel     StepChannel @default(EMAIL)
-  variables   Json?
-  version     Int      @default(1)
-  active      Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  body        String          @db.Text
+  variables   Json?           // [{key, label, default}]
+  version     Int             @default(1)
+  active      Boolean         @default(true)
+  created_at  DateTime        @default(now())
+  updated_at  DateTime        @updatedAt
 
+  tenant        Tenant        @relation(fields: [tenant_id], references: [id])
   cadence_steps CadenceStep[]
 
-  @@index([channel, active])
+  @@index([tenant_id, channel, purpose])
   @@map("templates")
 }
 
+// ─── TOUCHPOINTS & INTERACTIONS ──────────────────────────────────────────
+
+model Touchpoint {
+  id                  String           @id @default(uuid())
+  lead_id             String
+  membership_id       String
+  sequence_number     Int
+  channel             String           // call | whatsapp | email | linkedin | meeting
+  touchpoint_type     String           // attempt | effective_contact | follow_up | booking | discovery
+  outcome             TouchpointOutcome
+  answered            Boolean?
+  booked              Boolean?
+  lost                Boolean?
+  duration_seconds    Int?
+  notes               String?          @db.Text
+  created_at          DateTime         @default(now())
+
+  lead                Lead       @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  membership          Membership @relation(fields: [membership_id], references: [id])
+
+  @@index([lead_id, created_at(sort: Desc)])
+  @@map("touchpoints")
+}
+
 model Interaction {
-  id          String           @id @default(uuid())
+  id          String            @id @default(uuid())
   lead_id     String
   type        InteractionType
   source      InteractionSource @default(MANUAL)
   channel     String?
   external_id String?
   subject     String?
-  body        String?          @db.Text
+  body        String?           @db.Text
   status      String?
   metadata    Json?
-  created_at  DateTime         @default(now())
+  created_at  DateTime          @default(now())
 
   lead          Lead             @relation(fields: [lead_id], references: [id], onDelete: Cascade)
   email_events  EmailEvent[]
 
   @@index([lead_id, created_at(sort: Desc)])
-  @@index([type])
   @@index([external_id])
   @@map("interactions")
 }
 
-model HandoffBriefing {
-  id              String        @id @default(uuid())
-  lead_id         String
-  sdr_id          String
-  closer_id       String?
-  status          HandoffStatus @default(PENDENTE)
-  briefing_data   Json
-  accepted_at     DateTime?
-  returned_at     DateTime?
-  return_reason   String?
-  return_reentry_status LeadStatus?
-  created_at      DateTime      @default(now())
-  updated_at      DateTime      @updatedAt
+model EmailEvent {
+  id              String   @id @default(uuid())
+  interaction_id  String?
+  resend_email_id String
+  type            String   // email.sent | email.delivered | email.opened | email.clicked | email.bounced
+  data            Json?
+  link            String?
+  created_at      DateTime @default(now())
 
-  lead            Lead          @relation(fields: [lead_id], references: [id])
-  sdr             User          @relation("HandoffSdr", fields: [sdr_id], references: [id])
-  closer          User?         @relation("HandoffCloser", fields: [closer_id], references: [id])
+  interaction     Interaction? @relation(fields: [interaction_id], references: [id])
+
+  @@index([resend_email_id])
+  @@index([interaction_id])
+  @@map("email_events")
+}
+
+// ─── HANDOFF (SDR → CLOSER) ─────────────────────────────────────────────
+
+model HandoffBriefing {
+  id                    String        @id @default(uuid())
+  lead_id               String
+  sdr_id                String        // membership_id
+  closer_id             String?       // membership_id
+  status                HandoffStatus @default(PENDENTE)
+  briefing_data         Json
+  accepted_at           DateTime?
+  returned_at           DateTime?
+  return_reason         String?
+  return_reentry_status LeadStatus?
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+
+  lead                  Lead       @relation(fields: [lead_id], references: [id])
+  sdr                   Membership @relation("HandoffSdr", fields: [sdr_id], references: [id])
+  closer                Membership? @relation("HandoffCloser", fields: [closer_id], references: [id])
 
   @@index([sdr_id])
   @@index([closer_id])
@@ -421,210 +450,14 @@ model HandoffBriefing {
   @@map("handoff_briefings")
 }
 
-model BlockRule {
-  id            String   @id @default(uuid())
-  name          String
-  description   String?
-  condition     Json
-  justificativa String
-  active        Boolean  @default(true)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-
-  events        BlockEvent[]
-
-  @@map("block_rules")
-}
-
-model BlockEvent {
-  id            String   @id @default(uuid())
-  lead_id       String
-  rule_id       String?
-  detectado_at  DateTime @default(now())
-  confirmado    Boolean  @default(false)
-  confirmado_at DateTime?
-  confirmado_by String?
-  ignorado      Boolean  @default(false)
-  ignorado_at   DateTime?
-  ignorado_by   String?
-  justificativa String?
-  motivos       Json?
-
-  lead          Lead      @relation(fields: [lead_id], references: [id])
-  rule          BlockRule? @relation(fields: [rule_id], references: [id])
-
-  @@index([lead_id])
-  @@index([confirmado, ignorado])
-  @@map("block_events")
-}
-
-model ResendConfig {
-  id                  String   @id @default(uuid())
-  user_id             String   @unique
-  from_email          String
-  from_name           String?
-  encrypted_api_key   String
-  daily_limit         Int      @default(50)
-  sent_today          Int      @default(0)
-  last_reset_at       DateTime @default(now())
-  active              Boolean  @default(true)
-  created_at          DateTime @default(now())
-  updated_at          DateTime @updatedAt
-
-  user                User     @relation(fields: [user_id], references: [id])
-
-  @@map("resend_configs")
-}
-
-model EmailEvent {
-  id              String   @id @default(uuid())
-  interaction_id  String?
-  resend_email_id String
-  type            String   // email.sent | email.delivered | email.opened | email.clicked | email.bounced | email.complained
-  data            Json?    // payload completo do webhook
-  link            String?  // URL clicada (se type = clicked)
-  created_at      DateTime @default(now())
-
-  interaction     Interaction? @relation(fields: [interaction_id], references: [id])
-
-  @@index([resend_email_id])
-  @@index([interaction_id])
-  @@index([type])
-  @@index([created_at(sort: Desc)])
-  @@map("email_events")
-}
-
-model PushSubscription {
-  id          String   @id @default(uuid())
-  user_id     String
-  endpoint    String   @unique
-  p256dh      String
-  auth        String
-  user_agent  String?
-  created_at  DateTime @default(now())
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@index([user_id])
-  @@map("push_subscriptions")
-}
-
-model Notification {
-  id          String   @id @default(uuid())
-  user_id     String
-  tipo        String   // tier_a_parado | step_atrasado | proximo_contato | reuniao_agendada | bloqueio | meta_batida | ritmo_ruim | sdr_destaque
-  titulo      String
-  corpo       String
-  url         String?
-  lida        Boolean  @default(false)
-  enviada_at  DateTime @default(now())
-  lead_id     String?
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@index([user_id, lida])
-  @@index([user_id, enviada_at(sort: Desc)])
-  @@map("notifications")
-}
-
-model BrandConfig {
-  id              String   @id @default(uuid())
-  app_name        String   @default("Retentio")
-  logo_url        String?
-  favicon_url     String?
-  icon_192_url    String?
-  icon_512_url    String?
-  color_accent    String   @default("#2E86AB")
-  color_navy      String   @default("#1E3A5F")
-  color_green     String   @default("#1A7A5E")
-  updated_at      DateTime @updatedAt
-
-  @@map("brand_configs")
-}
-
-model AuditLog {
-  id          String   @id @default(uuid())
-  user_id     String?
-  lead_id     String?
-  action      String
-  entity_type String
-  entity_id   String
-  old_value   Json?
-  new_value   Json?
-  ip_address  String?
-  created_at  DateTime @default(now())
-
-  user        User?    @relation(fields: [user_id], references: [id])
-  lead        Lead?    @relation(fields: [lead_id], references: [id])
-
-  @@index([entity_type, entity_id])
-  @@index([user_id])
-  @@index([created_at(sort: Desc)])
-  @@map("audit_logs")
-}
-
-model DailyTask {
-  id              String          @id @default(uuid())
-  lead_id         String
-  sdr_id          String
-  date            DateTime        @default(now()) @db.Date
-  status          String          @default("PENDENTE")
-  resultado       String?
-  proximo_contato DateTime?
-  canal           String?
-  created_at      DateTime        @default(now())
-  updated_at      DateTime        @updatedAt
-
-  lead Lead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
-  sdr  User @relation(fields: [sdr_id], references: [id])
-
-  @@unique([lead_id, sdr_id, date])
-  @@index([sdr_id, date])
-  @@index([status])
-  @@map("daily_tasks")
-}
-
-model Meta {
-  id          String   @id @default(uuid())
-  sdr_id      String?
-  tipo        String   // reunioes_semana | handoffs_mes | atividades_dia
-  valor       Int
-  periodo     String   // dia | semana | mes
-  ativo       Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  sdr         User?    @relation(fields: [sdr_id], references: [id])
-
-  @@index([sdr_id])
-  @@index([tipo])
-  @@map("metas")
-}
-
-model GoogleIntegration {
-  id              String   @id @default(uuid())
-  user_id         String   @unique
-  google_email    String
-  access_token    String
-  refresh_token   String
-  token_expiry    DateTime
-  calendar_id     String   @default("primary")
-  escopos         String[]
-  ativo           Boolean  @default(true)
-  connected_at    DateTime @default(now())
-  updated_at      DateTime @updatedAt
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@map("google_integrations")
-}
+// ─── CALENDAR & GOOGLE ──────────────────────────────────────────────────
 
 model CalendarEvent {
   id              String   @id @default(uuid())
-  google_event_id String   @unique
+  google_event_id String?  @unique
   lead_id         String
-  closer_user_id  String
-  sdr_user_id     String
+  closer_id       String   // membership_id
+  sdr_id          String   // membership_id
   titulo          String
   descricao       String?  @db.Text
   inicio          DateTime
@@ -635,125 +468,148 @@ model CalendarEvent {
   sincronizado_at DateTime @default(now())
   created_at      DateTime @default(now())
 
-  lead Lead @relation(fields: [lead_id], references: [id])
+  lead            Lead @relation(fields: [lead_id], references: [id])
 
   @@index([lead_id])
-  @@index([closer_user_id])
-  @@index([sdr_user_id])
+  @@index([closer_id])
+  @@index([sdr_id])
   @@index([inicio])
   @@map("calendar_events")
 }
 
-// --- Touchpoints & Cadence Intelligence models (added per PRD)
+model GoogleIntegration {
+  id              String   @id @default(uuid())
+  membership_id   String   @unique
+  google_email    String
+  access_token    String
+  refresh_token   String
+  token_expiry    DateTime
+  calendar_id     String   @default("primary")
+  scopes          String[]
+  active          Boolean  @default(true)
+  connected_at    DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
-enum Channel {
-  call
-  whatsapp
-  email
-  sms
-  instagram
-  meeting
-  other
+  membership      Membership @relation(fields: [membership_id], references: [id], onDelete: Cascade)
+
+  @@map("google_integrations")
 }
 
-enum TouchpointType {
-  attempt
-  effective_contact
-  follow_up
-  response
-  reschedule
-  booking
-  other
+// ─── NOTIFICATIONS ───────────────────────────────────────────────────────
+
+model Notification {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  user_id     String   // membership_id
+  category    String   // SDR | GESTOR | LEADS | CADENCIA | AGENDA | METAS | ESTOQUE | AUTOMACAO
+  title       String
+  body        String
+  url         String?
+  read        Boolean  @default(false)
+  sent_at     DateTime @default(now())
+  lead_id     String?
+
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([user_id, read])
+  @@index([tenant_id, category])
+  @@index([user_id, sent_at(sort: Desc)])
+  @@map("notifications")
 }
 
-enum Outcome {
-  no_answer
-  voicemail
-  invalid_number
-  seen_no_reply
-  responded
-  spoke_to_gatekeeper
-  spoke_to_decision_maker
-  asked_to_follow_up
-  not_interested
-  booked
-  lost
+model PushSubscription {
+  id          String   @id @default(uuid())
+  membership_id String
+  endpoint    String   @unique
+  p256dh      String
+  auth        String
+  user_agent  String?
+  created_at  DateTime @default(now())
+
+  membership  Membership @relation(fields: [membership_id], references: [id], onDelete: Cascade)
+
+  @@index([membership_id])
+  @@map("push_subscriptions")
 }
 
-enum Direction {
-  outbound
-  inbound
+// ─── GOALS & METAS ───────────────────────────────────────────────────────
+
+model Goal {
+  id            String   @id @default(uuid())
+  tenant_id     String
+  membership_id String?
+  type          String   // reunioes_dia | reunioes_semana | atividades_dia | ligacoes_dia
+  target        Int
+  period        String   // dia | semana | mes
+  active        Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, membership_id])
+  @@map("goals")
 }
 
-enum LeadFinalStatus {
-  in_progress
-  booked
-  lost
+// ─── CALL SCRIPTS / FRAMEWORK DE LIGAÇÃO ────────────────────────────────
+
+model CallScript {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  name        String
+  block_type  String   // ABERTURA | DIAGNOSTICO | IMPLICACAO | CONVITE
+  content     String   @db.Text
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id, block_type])
+  @@map("call_scripts")
 }
 
-model Touchpoint {
-  id                      String         @id @default(uuid())
-  lead_id                 String
-  owner_id                String
-  sequence_number         Int
-  channel                 Channel
-  touchpoint_type         TouchpointType
-  outcome                 Outcome
-  direction               Direction?
-  answered                Boolean?
-  booked                  Boolean?
-  lost                    Boolean?
-  duration_seconds        Int?
-  notes                   String?        @db.Text
-  created_at              DateTime       @default(now())
-  hours_since_previous_touch Float?
-  days_since_lead_created Float?
-  generated_next_step     Boolean?       @default(false)
+// ─── EMAIL CONFIG ────────────────────────────────────────────────────────
 
-  lead  Lead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
-  owner User @relation(fields: [owner_id], references: [id])
+model ResendConfig {
+  id                  String   @id @default(uuid())
+  membership_id       String   @unique
+  from_email          String
+  from_name           String?
+  encrypted_api_key   String
+  daily_limit         Int      @default(50)
+  sent_today          Int      @default(0)
+  last_reset_at       DateTime @default(now())
+  active              Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 
-  @@index([lead_id, created_at(sort: Desc)])
-  @@map("touchpoints")
+  membership          Membership @relation(fields: [membership_id], references: [id])
+
+  @@map("resend_configs")
 }
 
-model LeadJourneySummary {
-  id                      String       @id @default(uuid())
-  lead_id                 String       @unique
-  total_touchpoints       Int          @default(0)
-  total_effective_contacts Int         @default(0)
-  total_no_response_attempts Int       @default(0)
-  first_contact_channel   String?
-  second_contact_channel  String?
-  last_contact_channel    String?
-  first_touch_at          DateTime?
-  last_touch_at           DateTime?
-  first_response_at       DateTime?
-  booked_at               DateTime?
-  lost_at                 DateTime?
-  days_to_first_contact   Float?
-  days_to_book            Float?
-  touchpoints_to_book     Int?
-  final_status            LeadFinalStatus @default(in_progress)
-  cadence_signature       String?
+// ─── AUDIT LOG ───────────────────────────────────────────────────────────
 
-  lead Lead @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  user_id     String?  // membership_id
+  lead_id     String?
+  action      String
+  entity_type String
+  entity_id   String
+  old_value   Json?
+  new_value   Json?
+  ip_address  String?
+  created_at  DateTime @default(now())
 
-  @@map("lead_journey_summaries")
-}
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id])
+  lead        Lead?    @relation(fields: [lead_id], references: [id])
 
-model CadenceInsight {
-  id                       String   @id @default(uuid())
-  cadence_signature        String
-  leads_count              Int
-  touchpoints_count        Int
-  response_rate            Float
-  booking_rate             Float
-  avg_days_to_book         Float?
-  median_touchpoints_to_book Float?
-  created_at               DateTime @default(now())
-  updated_at               DateTime @updatedAt
-
-  @@index([cadence_signature])
-  @@map("cadence_insights")
+  @@index([tenant_id, entity_type, entity_id])
+  @@index([user_id])
+  @@index([created_at(sort: Desc)])
+  @@map("audit_logs")
 }
