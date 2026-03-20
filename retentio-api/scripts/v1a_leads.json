@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Nome do Lead",
+    "company": "Retentio",
+    "email": "lead@empresa.com",
+    "phone": "5599999999999",
+    "status": "EM_PROSPECCAO",
+    "notes": "Observações úteis da V1A",
+    "owner_name": "Hugo"
+  },
+  {
+    "name": "Outro Lead",
+    "company": "Outra Empresa",
+    "email": "contato@outraempresa.com",
+    "phone": "5588888888888",
+    "status": "REUNIAO_AGENDADA",
+    "notes": "Lead já em estágio avançado",
+    "owner_name": "Vitória"
+  }
+]
