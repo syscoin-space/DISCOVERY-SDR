@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api/client";
-import type { Cadence, CadenceStep, StepChannel, CadenceType } from "@/lib/types";
+import type { Cadence, CadenceStep, StepChannel, CadencePurpose } from "@/lib/types";
 
 const CADENCES_KEY = "cadences";
 
@@ -17,7 +17,7 @@ export function useCadences() {
 }
 
 export function useCadence(cadenceId: string | undefined) {
-  return useQuery<Cadence & { lead_cadences?: Array<{ lead: { id: string; company_name: string; status: string } }> }>({
+  return useQuery<Cadence & { _count?: { enrollments: number } }>({
     queryKey: [CADENCES_KEY, cadenceId],
     queryFn: async () => {
       const { data } = await api.get(`/cadences/${cadenceId}`);
@@ -29,7 +29,7 @@ export function useCadence(cadenceId: string | undefined) {
 
 export interface CreateCadencePayload {
   name: string;
-  type: CadenceType;
+  purpose: CadencePurpose;
   description?: string;
   steps: Array<{
     step_order: number;

@@ -6,22 +6,81 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding V2 database...');
 
+  // ─── Plans ──────────────────────────────────────────────────
+  const standardPlan = await prisma.plan.upsert({
+    where: { key: 'STANDARD' },
+    update: {},
+    create: {
+      name: 'Standard',
+      key: 'STANDARD',
+      description: 'Plano ideal para times pequenos',
+      price_monthly: 490,
+      limits: { sdr: 3, closer: 1, leads_monthly: 500 },
+      features: { ai_guidance: true, multi_provider_ai: false, advanced_dashboard: false }
+    }
+  });
+
+  const proPlan = await prisma.plan.upsert({
+    where: { key: 'PRO' },
+    update: {},
+    create: {
+      name: 'Pro',
+      key: 'PRO',
+      description: 'Escala total para times de alta performance',
+      price_monthly: 990,
+      limits: { sdr: 10, closer: 5, leads_monthly: 5000 },
+      features: { ai_guidance: true, multi_provider_ai: true, advanced_dashboard: true }
+    }
+  });
+
+  console.log('  ✅ Plans created (Standard, Pro)');
+
   // ─── Tenant ────────────────────────────────────────────────
   const tenant = await prisma.tenant.upsert({
     where: { slug: 'discovery-demo' },
-    update: {},
+    update: {
+      plan_id: standardPlan.id,
+      onboarding_status: 'COMPLETED',
+      onboarding_step: 3
+    },
     create: {
       name: 'Discovery Demo',
       slug: 'discovery-demo',
-      plan: 'standard',
       discovery_enabled: true,
+      plan_id: standardPlan.id,
+      onboarding_status: 'COMPLETED',
+      onboarding_step: 3,
       branding: {
         app_name: 'Discovery SDR',
         color_accent: '#2E86AB',
       },
     },
   });
-  console.log(`  ✅ Tenant: ${tenant.name} (${tenant.id})`);
+
+  // ─── Subscription ──────────────────────────────────────────
+  await prisma.subscription.upsert({
+    where: { tenant_id: tenant.id },
+    update: {},
+    create: {
+      tenant_id: tenant.id,
+      plan_id: standardPlan.id,
+      status: 'ACTIVE',
+      current_period_start: new Date(),
+      current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    }
+  });
+
+  // ─── Onboarding State ──────────────────────────────────────
+  await prisma.onboardingState.upsert({
+    where: { tenant_id: tenant.id },
+    update: {},
+    create: {
+      tenant_id: tenant.id,
+      tasks_completed: { company_setup: true, team_added: true, ai_setup: true }
+    }
+  });
+
+  console.log(`  ✅ Tenant & Subscription: ${tenant.name} (${tenant.id})`);
 
   // ─── Users ─────────────────────────────────────────────────
   const passwordHash = await hash('123456', 10);

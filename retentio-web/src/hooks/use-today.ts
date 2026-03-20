@@ -2,16 +2,16 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api/client";
-import type { DailyTask, TodaySummary, DailyTaskStatus } from "@/lib/types";
+import type { Task, TodaySummary, TaskStatus } from "@/lib/types";
 
 const TODAY_KEY = "today";
 const TODAY_SUMMARY_KEY = "today-summary";
 
 export function useTodayTasks() {
-  return useQuery<DailyTask[]>({
+  return useQuery<Task[]>({
     queryKey: [TODAY_KEY],
     queryFn: async () => {
-      const { data } = await api.get<DailyTask[]>("/today");
+      const { data } = await api.get<Task[]>("/today");
       return data;
     },
     staleTime: 30_000,
@@ -32,8 +32,12 @@ export function useTodaySummary() {
 export function useAddToToday() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { lead_id: string; canal?: string }) => {
-      const { data } = await api.post<DailyTask>("/today", payload);
+    mutationFn: async (payload: { lead_id: string; channel?: string; title?: string }) => {
+      const { data } = await api.post<Task>("/today", {
+        ...payload,
+        title: payload.title ?? "Contato Manual",
+        type: "MANUAL",
+      });
       return data;
     },
     onSuccess: () => {
@@ -51,12 +55,12 @@ export function useUpdateTask() {
       ...payload
     }: {
       id: string;
-      status?: DailyTaskStatus;
-      resultado?: string;
-      proximo_contato?: string | null;
-      canal?: string | null;
+      status?: TaskStatus;
+      outcome?: string;
+      scheduled_at?: string | null;
+      channel?: string | null;
     }) => {
-      const { data } = await api.patch<DailyTask>(`/today/${id}`, payload);
+      const { data } = await api.patch<Task>(`/today/${id}`, payload);
       return data;
     },
     onSuccess: () => {

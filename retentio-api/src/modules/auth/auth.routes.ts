@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { compare } from 'bcryptjs';
+import { compare, hash } from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import { z } from 'zod';
@@ -35,6 +35,86 @@ function signTokens(payload: Omit<JwtPayload, 'iat' | 'exp'>) {
   return { access_token, refresh_token };
 }
 
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  name: z.string().min(2),
+  company_name: z.string().min(2),
+});
+
+// POST /auth/register
+authRouter.post(
+  '/register',
+  validate(registerSchema),
+  asyncHandler(async (req, res) => {
+    const { email, password, name, company_name } = req.body;
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new AppError(400, 'E-mail já cadastrado', 'USER_EXISTS');
+    }
+
+    const passwordHash = await hash(password, 10);
+    const slug = company_name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+    // Transação para criar tudo
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { email, password_hash: passwordHash, name },
+      });
+
+      const tenant = await tx.tenant.create({
+        data: {
+          name: company_name,
+          slug: `${slug}-${Math.floor(Math.random() * 1000)}`,
+          onboarding_status: 'PENDING',
+          onboarding_step: 0,
+        },
+      });
+
+      const membership = await tx.membership.create({
+        data: {
+          user_id: user.id,
+          tenant_id: tenant.id,
+          role: 'OWNER',
+        },
+      });
+
+      await tx.onboardingState.create({
+        data: {
+          tenant_id: tenant.id,
+          tasks_completed: { company_setup: false, team_added: false, ai_setup: false },
+        },
+      });
+
+      return { user, tenant, membership };
+    });
+
+    const tokens = signTokens({
+      sub: result.user.id,
+      membership_id: result.membership.id,
+      tenant_id: result.tenant.id,
+      email: result.user.email,
+      name: result.user.name,
+      role: result.membership.role,
+    });
+
+    res.status(201).json({
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        role: result.membership.role,
+        membership_id: result.membership.id,
+        tenant_id: result.tenant.id,
+        tenant: result.tenant,
+      },
+      token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+    });
+  }),
+);
+
 // POST /auth/login
 authRouter.post(
   '/login',
@@ -47,7 +127,7 @@ authRouter.post(
         memberships: {
           where: { active: true },
           include: {
-            tenant: { select: { id: true, name: true, slug: true, active: true, branding: true, discovery_enabled: true } },
+            tenant: { select: { id: true, name: true, slug: true, active: true, branding: true, discovery_enabled: true, onboarding_status: true, onboarding_step: true } },
           },
           take: 1,
         },
@@ -113,7 +193,7 @@ authRouter.post(
 
       const membership = await prisma.membership.findUnique({
         where: { id: decoded.membership_id },
-        include: { tenant: { select: { id: true, name: true, slug: true, active: true } } },
+        include: { tenant: { select: { id: true, name: true, slug: true, active: true, onboarding_status: true, onboarding_step: true } } },
       });
       if (!membership || !membership.active || !membership.tenant.active) {
         throw new AppError(401, 'Membership inativo', 'AUTH_INVALID');
@@ -156,7 +236,7 @@ authRouter.get(
     const membership = await prisma.membership.findUnique({
       where: { id: req.user!.membership_id },
       include: {
-        tenant: { select: { id: true, name: true, slug: true, active: true, branding: true, discovery_enabled: true } },
+        tenant: { select: { id: true, name: true, slug: true, active: true, branding: true, discovery_enabled: true, onboarding_status: true, onboarding_step: true } },
         team: { select: { id: true, name: true } },
       },
     });

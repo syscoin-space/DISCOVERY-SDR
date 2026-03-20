@@ -12,24 +12,27 @@ import {
   FileText,
   Mail,
   Bell,
+  ArrowRightLeft,
   BookOpen,
   Settings,
   LayoutDashboard,
   Users,
   Target,
   Palette,
+  CreditCard,
 } from "lucide-react";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import { NotificationBell } from "../shared/NotificationBell";
 import { BrandLogo } from "../shared/BrandLogo";
 import { UserAvatar } from "../shared/UserAvatar";
+import { ActivationChecklist } from "../shared/ActivationChecklist";
 import { useUnreadCount } from "@/hooks/use-notifications";
 import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 
 interface StoredUser {
   name: string;
-  role: string;
+  role: "OWNER" | "MANAGER" | "SDR" | "CLOSER";
   email: string;
   avatar_url?: string | null;
 }
@@ -45,6 +48,7 @@ const sdrNav: NavItem[] = [
   { href: "/pipeline", label: "Pipeline", icon: BarChart3 },
   { href: "/hoje", label: "Hoje", icon: ClipboardList },
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/handoffs", label: "Handoffs", icon: ArrowRightLeft },
   { href: "/dashboard", label: "Dashboard", icon: TrendingUp },
   { href: "/cadencias", label: "Cadências", icon: Zap },
   { href: "/templates", label: "Templates", icon: FileText },
@@ -59,6 +63,8 @@ const gestorNav: NavItem[] = [
   { href: "/gestor/sdrs", label: "SDRs", icon: Users },
   { href: "/gestor/metas", label: "Metas", icon: Target },
   { href: "/gestor/marca", label: "Marca", icon: Palette },
+  { href: "/configuracoes/faturamento", label: "Faturamento", icon: CreditCard },
+  { href: "/settings/ai", label: "AI & Providers", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -73,7 +79,7 @@ export function AppSidebar() {
     } catch {}
   }, []);
 
-  const isGestor = user?.role === "GESTOR";
+  const isGestor = user?.role === "MANAGER" || user?.role === "OWNER";
   const unreadCount = useUnreadCount();
 
   function handleLogout() {
@@ -150,6 +156,8 @@ export function AppSidebar() {
           );
         })}
       </nav>
+
+      <ActivationChecklist />
 
       {/* Footer */}
       <div className="border-t border-gray-100 flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">

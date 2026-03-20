@@ -91,7 +91,7 @@ export default function NotificacoesPage() {
 
   // Build query params based on active tab
   const queryParams: Record<string, string | number> = { page, limit: 20 };
-  if (activeTab === "nao_lidas") queryParams.lida = "false";
+  if (activeTab === "nao_lidas") queryParams.read = "false";
   if (activeTab === "leads") queryParams.tipo = "leads";
   if (activeTab === "cadencias") queryParams.tipo = "cadencias";
   if (activeTab === "gestor") queryParams.tipo = "gestor";
@@ -101,7 +101,7 @@ export default function NotificacoesPage() {
   const meta = data?.meta;
 
   function handleClick(n: AppNotification) {
-    if (!n.lida) markRead.mutate(n.id);
+    if (!n.read) markRead.mutate(n.id);
     if (n.url) router.push(n.url);
   }
 
@@ -179,7 +179,7 @@ export default function NotificacoesPage() {
                   key={n.id}
                   onClick={() => handleClick(n)}
                   className={`w-full text-left px-6 py-4 flex items-start gap-4 transition-colors ${
-                    !n.lida
+                    !n.read
                       ? "bg-accent/5 border-l-2 border-l-accent hover:bg-accent/10"
                       : "bg-surface opacity-70 hover:bg-surface-raised border-l-2 border-l-transparent"
                   }`}
@@ -197,11 +197,11 @@ export default function NotificacoesPage() {
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm font-semibold text-foreground ${n.lida ? "" : ""}`}>
+                      <p className={`text-sm font-semibold text-foreground ${n.read ? "" : ""}`}>
                         {n.titulo}
                       </p>
                       <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">
-                        {timeAgo(n.enviada_at)}
+                        {timeAgo(n.sent_at)}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">

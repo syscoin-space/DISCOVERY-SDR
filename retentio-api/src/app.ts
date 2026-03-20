@@ -5,21 +5,20 @@ import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 import { errorHandler } from './middlewares';
 import { authRouter } from './modules/auth/auth.routes';
+import { invitationRouter } from './modules/auth/invitation.routes';
 import { leadRouter } from './modules/leads/lead.routes';
-import { interactionRouter } from './modules/leads/interaction.routes';
-import { prrRouter } from './modules/prr/prr.routes';
-import { cadenceRouter } from './modules/cadences/cadence.routes';
-import { templateRouter } from './modules/cadences/template.routes';
-import { resendRouter } from './modules/cadences/resend.routes';
 import { handoffRouter } from './modules/handoffs/handoff.routes';
 import { dashboardRouter } from './modules/dashboard/dashboard.routes';
-import { icpRouter } from './modules/icp/icp.routes';
 import { todayRouter } from './modules/today/today.routes';
 import { gestorRouter } from './modules/gestor/gestor.routes';
 import { notificationRouter } from './modules/notifications/notification.routes';
-import { brandRouter } from './modules/brand/brand.routes';
 import { googleRouter } from './modules/google/google.routes';
 import { agendaRouter } from './modules/agenda/agenda.routes';
+import { cadenceRouter } from './modules/cadences/cadence.routes';
+import { discoveryRouter } from './modules/leads/discovery.routes';
+import { onboardingRouter } from './modules/onboarding/onboarding.routes';
+import { billingRouter } from './modules/billing/billing.routes';
+import { billingWebhookRouter } from './modules/billing/billing-webhook.routes';
 import { authGuard, roleGuard } from './middlewares/auth';
 
 export const app = express();
@@ -44,23 +43,28 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ── Routes ──
+import { aiSettingsRouter } from './modules/ai/ai-settings.routes';
+
+import { dashboardV2Router } from './modules/dashboard/dashboard.v2.routes';
+
+// ── V2 Routes ──
 app.use('/api/auth', authRouter);
+app.use('/api/invitations', invitationRouter);
 app.use('/api/leads', leadRouter);
-app.use('/api/leads/:leadId/interactions', interactionRouter);
-app.use('/api/prr', prrRouter);
-app.use('/api/cadences', cadenceRouter);
-app.use('/api/templates', templateRouter);
-app.use('/api/resend', resendRouter);
 app.use('/api/handoffs', handoffRouter);
+app.use('/api/dashboard/v2', dashboardV2Router);
 app.use('/api/dashboard', dashboardRouter);
-app.use('/api/icp-criteria', icpRouter);
 app.use('/api/today', todayRouter);
 app.use('/api/notifications', notificationRouter);
-app.use('/api/gestor', authGuard, roleGuard('GESTOR'), gestorRouter);
-app.use('/api/brand', brandRouter);
+app.use('/api/gestor', authGuard, roleGuard('GESTORES' as any), gestorRouter); // To be refactored
 app.use('/api/google', googleRouter);
 app.use('/api/agenda', authGuard, agendaRouter);
+app.use('/api/cadences', authGuard, cadenceRouter);
+app.use('/api/discovery', authGuard, discoveryRouter);
+app.use('/api/ai-settings', authGuard, aiSettingsRouter);
+app.use('/api/onboarding', onboardingRouter);
+app.use('/api/billing', billingRouter);
+app.use('/api/webhooks', billingWebhookRouter); // Rota pública para gateways
 
 // ── Error Handler (must be last) ──
 app.use(errorHandler);

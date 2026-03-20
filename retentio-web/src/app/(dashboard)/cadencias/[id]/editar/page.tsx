@@ -3,13 +3,14 @@
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCadence, useUpdateCadence, type CreateCadencePayload } from "@/hooks/use-cadences";
-import { ArrowLeft, Plus, Trash2, Mail, MessageCircle, Phone, Linkedin, GripVertical } from "lucide-react";
-import type { StepChannel, CadenceType } from "@/lib/types";
+import { ArrowLeft, Plus, Trash2, Mail, MessageCircle, Phone, Linkedin, GripVertical, Search, Rocket, RotateCcw, BellRing } from "lucide-react";
+import type { StepChannel, CadencePurpose } from "@/lib/types";
 
-const TYPES: { value: CadenceType; label: string }[] = [
-  { value: "STANDARD", label: "Standard" },
-  { value: "REATIVACAO", label: "Reativação" },
-  { value: "FAST_TRACK", label: "Fast Track" },
+const PURPOSES: { value: CadencePurpose; label: string; icon: any }[] = [
+  { value: "DISCOVERY", label: "Discovery", icon: Search },
+  { value: "PROSPECCAO", label: "Prospecção", icon: Rocket },
+  { value: "NUTRICAO", label: "Nutrição", icon: RotateCcw },
+  { value: "CONFIRMACAO", label: "Confirmação", icon: BellRing },
 ];
 
 const CHANNELS: { value: StepChannel; label: string; icon: typeof Mail; color: string }[] = [
@@ -38,7 +39,7 @@ export default function EditarCadenciaPage({ params }: { params: Promise<{ id: s
   const updateCadence = useUpdateCadence();
 
   const [name, setName] = useState("");
-  const [type, setType] = useState<CadenceType>("STANDARD");
+  const [purpose, setPurpose] = useState<CadencePurpose>("PROSPECCAO");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState<StepDraft[]>([]);
   const [initialized, setInitialized] = useState(false);
@@ -47,7 +48,7 @@ export default function EditarCadenciaPage({ params }: { params: Promise<{ id: s
   useEffect(() => {
     if (cadence && !initialized) {
       setName(cadence.name);
-      setType(cadence.type);
+      setPurpose(cadence.purpose);
       setDescription(cadence.description ?? "");
       setSteps(
         (cadence.steps ?? []).map((s) =>
@@ -79,7 +80,7 @@ export default function EditarCadenciaPage({ params }: { params: Promise<{ id: s
     const payload: Partial<CreateCadencePayload> & { id: string } = {
       id,
       name: name.trim(),
-      type,
+      purpose,
       description: description.trim() || undefined,
       steps: steps.map((s, i) => ({
         step_order: i + 1,
@@ -156,12 +157,12 @@ export default function EditarCadenciaPage({ params }: { params: Promise<{ id: s
                   Tipo
                 </label>
                 <select
-                  value={type}
-                  onChange={(e) => setType(e.target.value as CadenceType)}
+                  value={purpose}
+                  onChange={(e) => setPurpose(e.target.value as CadencePurpose)}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
                 >
-                  {TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                  {PURPOSES.map((p) => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
                   ))}
                 </select>
               </div>

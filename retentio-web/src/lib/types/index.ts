@@ -1,15 +1,26 @@
 // ─── ENUMS (espelham Prisma backend) ─────────────
 
-export type Role = "SDR" | "GESTOR" | "CLOSER";
+export type Role = "OWNER" | "MANAGER" | "SDR" | "CLOSER";
+
+export type Tenant = {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+  branding: unknown;
+  discovery_enabled: boolean;
+  created_at: string;
+};
 
 export type LeadStatus =
+  | "BANCO"
   | "CONTA_FRIA"
+  | "DISCOVERY"
   | "EM_PROSPECCAO"
   | "FOLLOW_UP"
-  | "REUNIAO_AGENDADA"
-  | "OPORTUNIDADE_QUALIFICADA"
   | "NUTRICAO"
-  | "SEM_PERFIL";
+  | "REUNIAO_MARCADA"
+  | "PERDIDO";
 
 export type PrrTier = "A" | "B" | "C";
 
@@ -19,7 +30,7 @@ export type BloqueioStatus = "LIMPO" | "ALERTA";
 
 export type MomentoCompra = "URGENTE" | "PESQUISANDO" | "FUTURO" | "SEM_TIMING";
 
-export type CadenceType = "STANDARD" | "REATIVACAO" | "FAST_TRACK";
+export type CadencePurpose = "DISCOVERY" | "PROSPECCAO" | "NUTRICAO" | "CONFIRMACAO";
 
 export type StepChannel = "EMAIL" | "WHATSAPP" | "LIGACAO" | "LINKEDIN";
 
@@ -33,8 +44,9 @@ export type HandoffStatus = "PENDENTE" | "ACEITO" | "DEVOLVIDO";
 
 export type IntegrabilityScore = "ALTA" | "MEDIA" | "DIFICIL";
 
-// Free-form string — defaults below, but custom statuses are allowed
-export type DailyTaskStatus = string;
+export type TaskStatus = "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA" | "ATRASADA";
+
+export type TaskType = "CADENCE_STEP" | "DISCOVERY_STEP" | "MANUAL" | "AUTO" | "MEETING";
 
 export type RecompraSignal = "ALTA" | "MEDIA" | "BAIXA";
 
@@ -44,7 +56,15 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: Role;
+  avatar_url?: string | null;
+  role?: Role; // Contextual role (membership)
+  membership_id?: string;
+  tenant_id?: string;
+  tenant?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
   active: boolean;
   created_at: string;
   updated_at: string;
@@ -89,9 +109,10 @@ export interface Lead {
   prr_inputs?: PrrInputs;
   icp_answers?: IcpAnswer[];
   discovered_stack?: DiscoveredStack[];
-  lead_cadences?: LeadCadence[];
+  lead_cadences?: CadenceEnrollment[];
   interactions?: Interaction[];
   handoffs?: HandoffBriefing[];
+  tasks?: Task[];
 }
 
 export interface PrrInputs {
@@ -137,8 +158,9 @@ export interface DiscoveredStack {
 
 export interface Cadence {
   id: string;
+  tenant_id: string;
   name: string;
-  type: CadenceType;
+  purpose: CadencePurpose;
   description: string | null;
   active: boolean;
   created_at: string;
@@ -158,16 +180,16 @@ export interface CadenceStep {
   updated_at: string;
 }
 
-export interface LeadCadence {
+export interface CadenceEnrollment {
   id: string;
   lead_id: string;
   cadence_id: string;
+  current_step: number;
+  status: "ACTIVE" | "PAUSED" | "COMPLETED_SUCCESS" | "COMPLETED_FAIL" | "CANCELLED";
   started_at: string;
-  status: string;
-  paused_at: string | null;
   completed_at: string | null;
   cadence?: Cadence;
-  steps?: LeadCadenceStep[];
+  tasks?: Task[];
 }
 
 export interface LeadCadenceStep {
@@ -200,7 +222,25 @@ export interface HandoffBriefing {
   sdr_id: string;
   closer_id: string | null;
   status: HandoffStatus;
-  briefing_data: Record<string, unknown>;
+  briefing_data: {
+    company: string;
+    contact: {
+      name: string | null;
+      role: string | null;
+      email: string | null;
+      phone: string | null;
+      whatsapp: string | null;
+    };
+    segment: string | null;
+    size: string | null;
+    icp_score: number | null;
+    custom_notes?: string;
+    last_interactions?: Array<{
+      type: string;
+      date: string;
+      subject: string | null;
+    }>;
+  };
   accepted_at: string | null;
   returned_at: string | null;
   return_reason: string | null;
@@ -208,8 +248,8 @@ export interface HandoffBriefing {
   created_at: string;
   updated_at: string;
   lead?: Lead;
-  sdr?: User;
-  closer?: User;
+  sdr?: { id: string; user: { name: string } };
+  closer?: { id: string; user: { name: string } };
 }
 
 export interface Template {
@@ -225,31 +265,35 @@ export interface Template {
   updated_at: string;
 }
 
-export interface DailyTask {
+export interface Task {
   id: string;
+  tenant_id: string;
+  membership_id: string;
   lead_id: string;
-  sdr_id: string;
-  date: string;
-  status: string;
-  resultado: string | null;
-  proximo_contato: string | null;
-  canal: string | null;
+  type: TaskType;
+  title: string;
+  description: string | null;
+  channel: string | null;
+  status: TaskStatus;
+  outcome: string | null;
+  scheduled_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
-  lead: Pick<Lead, "id" | "company_name" | "niche" | "prr_score" | "prr_tier" | "icp_score" | "whatsapp" | "email" | "phone" | "ecommerce_platform" | "state" | "city" | "status" | "contact_name">;
+  lead?: Pick<Lead, "id" | "company_name" | "icp_score" | "whatsapp" | "email" | "phone" | "state" | "city" | "status" | "contact_name" | "niche" | "prr_score" | "prr_tier">;
 }
 
 export interface TodaySummary {
   total: number;
   pendente: number;
-  atendeu: number;
-  nao_atendeu: number;
-  reuniao_agendada: number;
-  mensagem_enviada: number;
-  sem_interesse: number;
-  ligar_depois: number;
-  pessoa_errada: number;
-  numero_errado: number;
+  concluidos: number;
+  cancelados: number;
+  detalhado: {
+    pendente: number;
+    em_andamento: number;
+    concluida: number;
+    cancelada: number;
+  };
 }
 
 // ─── API RESPONSE SHAPES ─────────────
@@ -392,11 +436,11 @@ export interface EmailStats {
 // ─── FUNNEL CONFIG ─────────────
 
 export const FUNNEL_COLUMNS: { status: LeadStatus; label: string; color: string }[] = [
-  { status: "CONTA_FRIA", label: "Conta Fria", color: "#94a3b8" },
+  { status: "BANCO", label: "Banco", color: "#94a3b8" },
+  { status: "CONTA_FRIA", label: "Conta Fria", color: "#64748b" },
+  { status: "DISCOVERY", label: "Discovery", color: "#0ea5e9" },
   { status: "EM_PROSPECCAO", label: "Em Prospecção", color: "#2E86AB" },
-  { status: "FOLLOW_UP", label: "Follow-Up", color: "#EC4899" }, // Pink-ish for Follow-up
-  { status: "OPORTUNIDADE_QUALIFICADA", label: "Oportunidade Qualificada", color: "#1A7A5E" },
-  { status: "REUNIAO_AGENDADA", label: "Reunião Agendada", color: "#f59e0b" },
-  { status: "NUTRICAO", label: "Nutrição", color: "#8b5cf6" },
-  { status: "SEM_PERFIL", label: "Sem Perfil", color: "#ef4444" },
+  { status: "FOLLOW_UP", label: "Follow-Up", color: "#EC4899" },
+  { status: "REUNIAO_MARCADA", label: "Reunião Marcada", color: "#f59e0b" },
+  { status: "PERDIDO", label: "Perdido", color: "#ef4444" },
 ];

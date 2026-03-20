@@ -10,8 +10,8 @@ export interface AppNotification {
   titulo: string;
   corpo: string;
   url: string | null;
-  lida: boolean;
-  enviada_at: string;
+  read: boolean;
+  sent_at: string;
   lead_id: string | null;
 }
 
@@ -37,7 +37,7 @@ export function useUnreadCount() {
 // ─── List notifications (paginated, filterable) ──
 
 export function useNotifications(params?: {
-  lida?: "true" | "false";
+  read?: "true" | "false";
   tipo?: string;
   page?: number;
   limit?: number;

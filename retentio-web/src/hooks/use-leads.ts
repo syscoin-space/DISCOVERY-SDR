@@ -222,3 +222,36 @@ export function useDeleteLead() {
     },
   });
 }
+
+// ─── AI Assisted Operations ──────────────────────────────────────────
+
+export function useAcceptAISuggestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ leadId, editedData }: { leadId: string; editedData?: Record<string, any> }) => {
+      const { data } = await api.post(`/leads/${leadId}/ai/accept`, { edited_data: editedData });
+      return data;
+    },
+    onSuccess: (_, { leadId }) => {
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY, leadId] });
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY] });
+    },
+  });
+}
+
+export function useRejectAISuggestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (leadId: string) => {
+      const { data } = await api.post(`/leads/${leadId}/ai/reject`);
+      return data;
+    },
+    onSuccess: (_, leadId) => {
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY, leadId] });
+      queryClient.invalidateQueries({ queryKey: [LEADS_KEY] });
+    },
+  });
+}
+

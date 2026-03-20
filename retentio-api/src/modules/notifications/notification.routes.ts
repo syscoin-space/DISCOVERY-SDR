@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
-import { asyncHandler } from '../../middlewares';
-import { authGuard } from '../../middlewares/auth';
+import { asyncHandler, getTenantId, getMembershipId, authGuard } from '../../middlewares';
 
 export const notificationRouter = Router();
 
@@ -21,7 +20,7 @@ notificationRouter.use(authGuard);
 notificationRouter.post(
   '/subscribe',
   asyncHandler(async (req, res) => {
-    const userId = req.user!.sub;
+    const membershipId = getMembershipId(req);
     const { endpoint, keys } = req.body;
 
     if (!endpoint || !keys?.p256dh || !keys?.auth) {
@@ -31,17 +30,17 @@ notificationRouter.post(
     await prisma.pushSubscription.upsert({
       where: { endpoint },
       update: {
-        user_id: userId,
+        membership_id: membershipId,
         p256dh: keys.p256dh,
         auth: keys.auth,
-        user_agent: req.headers['user-agent'] || null,
+        user_agent: req.headers['user-agent'] as string || null,
       },
       create: {
-        user_id: userId,
+        membership_id: membershipId,
         endpoint,
         p256dh: keys.p256dh,
         auth: keys.auth,
-        user_agent: req.headers['user-agent'] || null,
+        user_agent: req.headers['user-agent'] as string || null,
       },
     });
 
@@ -53,16 +52,16 @@ notificationRouter.post(
 notificationRouter.delete(
   '/unsubscribe',
   asyncHandler(async (req, res) => {
-    const userId = req.user!.sub;
+    const membershipId = getMembershipId(req);
     const { endpoint } = req.body;
 
     if (endpoint) {
       await prisma.pushSubscription.deleteMany({
-        where: { user_id: userId, endpoint },
+        where: { membership_id: membershipId, endpoint },
       });
     } else {
       await prisma.pushSubscription.deleteMany({
-        where: { user_id: userId },
+        where: { membership_id: membershipId },
       });
     }
 
@@ -74,42 +73,41 @@ notificationRouter.delete(
 notificationRouter.get(
   '/unread-count',
   asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
+    
     const count = await prisma.notification.count({
-      where: { user_id: req.user!.sub, lida: false },
+      where: { tenant_id: tenantId, user_id: membershipId, read: false },
     });
     res.json({ count });
   }),
 );
 
-// ── List notifications (with filters + pagination) ──
+// ── List notifications ──
 notificationRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const userId = req.user!.sub;
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = { user_id: userId };
+    const where: any = { 
+      tenant_id: tenantId,
+      user_id: membershipId 
+    };
 
-    // Filter by read status
-    if (req.query.lida === 'false') where.lida = false;
-    if (req.query.lida === 'true') where.lida = true;
+    if (req.query.read === 'false') where.read = false;
+    if (req.query.read === 'true') where.read = true;
 
-    // Filter by category
-    const tipoFilter = req.query.tipo as string | undefined;
-    if (tipoFilter === 'leads') {
-      where.tipo = { in: ['tier_a_parado', 'proximo_contato', 'bloqueio'] };
-    } else if (tipoFilter === 'cadencias') {
-      where.tipo = { in: ['step_atrasado'] };
-    } else if (tipoFilter === 'gestor') {
-      where.tipo = { in: ['meta_batida', 'ritmo_ruim', 'sdr_destaque'] };
-    }
+    const category = req.query.category as string | undefined;
+    if (category) where.category = category;
 
     const [notifications, total] = await Promise.all([
       prisma.notification.findMany({
         where,
-        orderBy: { enviada_at: 'desc' },
+        orderBy: { sent_at: 'desc' },
         skip,
         take: limit,
       }),
@@ -127,11 +125,12 @@ notificationRouter.get(
 notificationRouter.patch(
   '/:id/read',
   asyncHandler(async (req, res) => {
-    const userId = req.user!.sub;
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
 
     await prisma.notification.updateMany({
-      where: { id: req.params.id as string, user_id: userId },
-      data: { lida: true },
+      where: { id: req.params.id as string, tenant_id: tenantId },
+      data: { read: true },
     });
 
     res.json({ success: true });
@@ -141,12 +140,13 @@ notificationRouter.patch(
 // ── Mark all as read ──
 notificationRouter.patch(
   '/read-all',
-  asyncHandler(async (_req, res) => {
-    const userId = _req.user!.sub;
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
 
     await prisma.notification.updateMany({
-      where: { user_id: userId, lida: false },
-      data: { lida: true },
+      where: { tenant_id: tenantId, user_id: membershipId, read: false },
+      data: { read: true },
     });
 
     res.json({ success: true });

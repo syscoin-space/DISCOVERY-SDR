@@ -18,7 +18,7 @@ export function useAuth() {
     onSuccess: (data: any) => {
       const token = data.token ?? data.access_token;
       const refreshToken = data.refreshToken ?? data.refresh_token;
-      setAuth(data.user, token, refreshToken);
+      setAuth({ user: data.user, token, refreshToken });
       router.push("/");
     },
   });

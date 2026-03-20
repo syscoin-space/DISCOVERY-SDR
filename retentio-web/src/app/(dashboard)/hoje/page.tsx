@@ -7,7 +7,7 @@ import {
   useUpdateTask,
   useRemoveFromToday,
 } from "@/hooks/use-today";
-import { X, Phone, MessageCircle, Mail, Plus, CalendarPlus, Pencil, Clock } from "lucide-react";
+import { X, Phone, MessageCircle, Mail, Plus, CalendarPlus, Pencil, Clock, ListTodo } from "lucide-react";
 import { Drawer } from "vaul";
 import { LeadSidebar } from "@/components/kanban/LeadSidebar";
 import Tooltip from "@/components/ui/Tooltip";
@@ -19,7 +19,7 @@ import { SendEmailModal } from "@/components/hoje/SendEmailModal";
 import { useToast } from "@/components/shared/Toast";
 import { getInsightForStatus } from "@/lib/insights";
 import type { Insight } from "@/lib/insights";
-import type { DailyTask } from "@/lib/types";
+import type { Task } from "@/lib/types";
 
 // ─── Status config ────────────────────────────────────────────────
 
@@ -32,17 +32,19 @@ interface StatusConf {
 
 const DEFAULT_STATUSES: Record<string, StatusConf> = {
   PENDENTE: { label: "Pendente", color: "text-amber-600 dark:text-amber-400", bg: "" },
-  ATENDEU: { label: "Atendeu", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/5" },
-  NAO_ATENDEU: { label: "Não atendeu", color: "text-red-600 dark:text-red-400", bg: "bg-red-500/5" },
-  MENSAGEM_ENVIADA: { label: "Msg enviada", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/5" },
-  REUNIAO_AGENDADA: { label: "Reunião agendada", color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-500/10 border-l-2 border-l-emerald-500" },
-  LIGAR_DEPOIS: { label: "Ligar depois", color: "text-orange-600 dark:text-orange-400", bg: "bg-amber-500/5" },
-  SEM_INTERESSE: { label: "Sem interesse", color: "text-muted-foreground", bg: "", final: true },
-  PESSOA_ERRADA: { label: "Pessoa errada", color: "text-purple-600 dark:text-purple-400", bg: "", final: true },
-  NUMERO_ERRADO: { label: "Número errado", color: "text-gray-500 dark:text-gray-400", bg: "", final: true },
+  EM_ANDAMENTO: { label: "Em andamento", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/5" },
+  CONCLUIDA: { label: "Concluída", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/5", final: true },
+  ATRASADA: { label: "Atrasada", color: "text-red-600 dark:text-red-400", bg: "bg-red-500/5" },
 };
 
-const DONE_STATUSES = new Set(["ATENDEU", "MENSAGEM_ENVIADA", "REUNIAO_AGENDADA"]);
+const DONE_STATUSES = new Set(["CONCLUIDA"]);
+
+const V2_OUTCOMES = [
+  { key: "ATENDEU", label: "Atendeu", color: "text-emerald-600" },
+  { key: "NAO_ATENDEU", label: "Não atendeu", color: "text-red-600" },
+  { key: "REUNIAO_MARCADA", label: "Reunião Marcada", color: "text-amber-600" },
+  { key: "MENSAGEM_ENVIADA", label: "Msg Enviada", color: "text-blue-600" },
+];
 
 const CUSTOM_STATUS_COLORS = [
   { name: "verde", class: "text-emerald-600 dark:text-emerald-400" },
@@ -81,31 +83,31 @@ function diffMinutes(dt: string | null): number | null {
   return Math.round((new Date(dt).getTime() - Date.now()) / 60000);
 }
 
-function taskSortPriority(task: DailyTask, allStatuses: Record<string, StatusConf>): number {
-  const conf = allStatuses[task.status];
-  if (conf?.final) return 70;
-  if (DONE_STATUSES.has(task.status)) return 60;
-  const diff = diffMinutes(task.proximo_contato);
+function taskSortPriority(task: Task, allStatuses: Record<string, StatusConf>): number {
+  if (task.status === "CONCLUIDA") return 70;
+  if (task.status === "ATRASADA") return 10;
+  
+  const diff = diffMinutes(task.scheduled_at);
   if (diff !== null) {
-    if (diff < 0) return 10;
-    if (diff <= 30) return 20;
-    if (diff <= 120) return 30;
-    if (task.status === "LIGAR_DEPOIS") return 50;
+    if (diff < 0) return 20;
+    if (diff <= 30) return 30;
+    if (diff <= 120) return 40;
   }
-  if (task.status === "PENDENTE" || task.status === "LIGAR_DEPOIS") return 40;
-  return 55;
+  
+  if (task.status === "PENDENTE") return 50;
+  return 60;
 }
 
 const TIER_ORDER: Record<string, number> = { A: 0, B: 1, C: 2 };
 
-function taskSortSecondary(a: DailyTask, b: DailyTask): number {
-  const aTime = a.proximo_contato ? new Date(a.proximo_contato).getTime() : Infinity;
-  const bTime = b.proximo_contato ? new Date(b.proximo_contato).getTime() : Infinity;
+function taskSortSecondary(a: Task, b: Task): number {
+  const aTime = a.scheduled_at ? new Date(a.scheduled_at).getTime() : Infinity;
+  const bTime = b.scheduled_at ? new Date(b.scheduled_at).getTime() : Infinity;
   if (aTime !== bTime && aTime !== Infinity && bTime !== Infinity) return aTime - bTime;
-  const aTier = TIER_ORDER[a.lead.prr_tier ?? "C"] ?? 2;
-  const bTier = TIER_ORDER[b.lead.prr_tier ?? "C"] ?? 2;
-  if (aTier !== bTier) return aTier - bTier;
-  return (b.lead.prr_score ?? 0) - (a.lead.prr_score ?? 0);
+  
+  const aIcp = a.lead?.icp_score ?? 0;
+  const bIcp = b.lead?.icp_score ?? 0;
+  return bIcp - aIcp;
 }
 
 // ─── Contact style (animation + color) ───────────────────────────
@@ -177,12 +179,14 @@ function ContactPills({
   onEmailClick,
   isMobile,
 }: {
-  task: DailyTask;
+  task: Task;
   onEmailClick: () => void;
   isMobile: boolean;
 }) {
   const { toast } = useToast();
-  const { whatsapp, email, phone } = task.lead;
+  const whatsapp = task.lead?.whatsapp;
+  const email = task.lead?.email;
+  const phone = task.lead?.phone;
   const hasAny = whatsapp || email || phone;
 
   if (!hasAny) return <span className="text-xs text-muted-foreground">—</span>;
@@ -258,10 +262,10 @@ export default function HojePage() {
   const pickerTask = useMemo(() => tasks?.find((t) => t.id === pickerTaskId), [tasks, pickerTaskId]);
 
   // Send Email Modal state
-  const [emailTask, setEmailTask] = useState<DailyTask | null>(null);
+  const [emailTask, setEmailTask] = useState<Task | null>(null);
 
   // Post-call sheet state (mobile)
-  const [postCallTask, setPostCallTask] = useState<DailyTask | null>(null);
+  const [postCallTask, setPostCallTask] = useState<Task | null>(null);
 
   // Insights
   const [activeInsight, setActiveInsight] = useState<Insight | null>(null);
@@ -330,7 +334,13 @@ export default function HojePage() {
   }, [tasks, filter, allStatuses]);
 
   function handleStatusChange(taskId: string, status: string) {
-    updateTask.mutate({ id: taskId, status });
+    // If status is one of the V2_OUTCOMES, record it as outcome and mark as CONCLUIDA
+    const outcomeMatch = V2_OUTCOMES.find(o => o.key === status);
+    if (outcomeMatch) {
+      updateTask.mutate({ id: taskId, status: "CONCLUIDA" as any, outcome: status });
+    } else {
+      updateTask.mutate({ id: taskId, status: status as any });
+    }
 
     if (status === "LIGAR_DEPOIS") {
       setPickerTaskId(taskId);
@@ -339,13 +349,13 @@ export default function HojePage() {
     // Show contextual insight
     const task = tasks?.find((t) => t.id === taskId);
     const naoAtendeuCount = tasks?.filter(
-      (t) => t.lead_id === task?.lead_id && t.status === "NAO_ATENDEU"
+      (t) => t.lead_id === task?.lead_id && t.outcome === "NAO_ATENDEU"
     ).length ?? 0;
 
     const insight = getInsightForStatus(status, {
       tentativas: naoAtendeuCount + (status === "NAO_ATENDEU" ? 1 : 0),
-      ultimo_canal: task?.canal ?? undefined,
-      contact_name: task?.lead.contact_name ?? undefined,
+      ultimo_canal: task?.channel ?? undefined,
+      contact_name: task?.lead?.contact_name ?? undefined,
     });
     if (insight) {
       setActiveInsight(insight);
@@ -355,13 +365,7 @@ export default function HojePage() {
 
   function handleScheduleConfirm(iso: string) {
     if (!pickerTaskId) return;
-    const task = tasks?.find((t) => t.id === pickerTaskId);
-    // If task was PENDENTE and user schedules, auto-change to LIGAR_DEPOIS
-    if (task?.status === "PENDENTE") {
-      updateTask.mutate({ id: pickerTaskId, proximo_contato: iso, status: "LIGAR_DEPOIS" });
-    } else {
-      updateTask.mutate({ id: pickerTaskId, proximo_contato: iso });
-    }
+    updateTask.mutate({ id: pickerTaskId, scheduled_at: iso, status: "PENDENTE" as any });
     const d = new Date(iso);
     const formatted = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + ` ${d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
     toast(`Contato agendado para ${formatted}`);
@@ -369,12 +373,12 @@ export default function HojePage() {
 
   function handleScheduleClear() {
     if (!pickerTaskId) return;
-    updateTask.mutate({ id: pickerTaskId, proximo_contato: null });
+    updateTask.mutate({ id: pickerTaskId, scheduled_at: null });
     toast("Agendamento removido");
   }
 
   function handleResultadoSave(taskId: string) {
-    updateTask.mutate({ id: taskId, resultado: resultadoText });
+    updateTask.mutate({ id: taskId, outcome: resultadoText });
     setEditingResultado(null);
   }
 
@@ -396,7 +400,8 @@ export default function HojePage() {
   }
 
   // Mobile call action
-  function handleMobileCall(task: DailyTask) {
+  function handleMobileCall(task: Task) {
+    if (!task.lead) return;
     const number = task.lead.whatsapp || task.lead.phone;
     if (!number) {
       toast("Nenhum número cadastrado para esse lead", "error");
@@ -424,9 +429,9 @@ export default function HojePage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Carregando fila...</p>
+        <div className="flex flex-col items-center gap-3 opacity-70">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+          <p className="text-sm font-medium text-muted-foreground">Sincronizando tarefas...</p>
         </div>
       </div>
     );
@@ -442,7 +447,7 @@ export default function HojePage() {
             <span className="capitalize hidden sm:inline">{formatDate()} — </span>
             <strong className="text-foreground">{summary?.total ?? 0}</strong> leads
             {" · "}
-            <span className="text-emerald-500"><strong>{summary?.atendeu ?? 0}</strong> feitos</span>
+            <span className="text-emerald-500"><strong>{summary?.concluidos ?? 0}</strong> concluídos</span>
             {" · "}
             <span className="text-amber-500"><strong>{summary?.pendente ?? 0}</strong> pendentes</span>
           </p>
@@ -551,13 +556,13 @@ export default function HojePage() {
       <DateTimePicker
         open={!!pickerTaskId}
         onOpenChange={(open) => { if (!open) setPickerTaskId(null); }}
-        value={pickerTask?.proximo_contato}
+        value={pickerTask?.scheduled_at}
         onConfirm={handleScheduleConfirm}
         onClear={handleScheduleClear}
       />
 
       {/* Send Email Modal */}
-      {emailTask && (
+        {emailTask && emailTask.lead && (
         <SendEmailModal
           open={!!emailTask}
           onOpenChange={(open) => { if (!open) setEmailTask(null); }}
@@ -582,7 +587,7 @@ export default function HojePage() {
               <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
             </div>
             <Drawer.Title className="px-4 pb-2 text-sm font-bold text-foreground">
-              Como foi a ligação com {postCallTask?.lead.company_name}?
+              Como foi a ligação com {postCallTask?.lead?.company_name}?
             </Drawer.Title>
             <div className="px-4 pb-safe space-y-3">
               <div className="grid grid-cols-3 gap-2">
@@ -622,11 +627,13 @@ export default function HojePage() {
       {/* Content */}
       <div className="flex-1 overflow-auto">
         {sortedTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-24 opacity-60">
+            <ListTodo className="w-10 h-10 text-muted-foreground mb-4 opacity-50" />
+            <h3 className="text-sm font-semibold text-foreground">Fila zerada</h3>
+            <p className="text-xs text-muted-foreground mt-1 text-center max-w-[250px]">
               {filter === "ALL"
-                ? "Nenhum lead na fila de hoje. Adicione leads pelo Pipeline."
-                : "Nenhum lead com este status."}
+                ? "Nenhum lead pendente para hoje. Adicione mais leads pelo Pipeline para continuar a prospecção."
+                : "Não há tarefas com este status no momento."}
             </p>
           </div>
         ) : (
@@ -650,7 +657,7 @@ export default function HojePage() {
                   {sortedTasks.map((task) => {
                     const statusConf = allStatuses[task.status];
                     const isFinal = statusConf?.final === true;
-                    const contactStyle = getContactStyle(task.proximo_contato);
+                    const contactStyle = getContactStyle(task.scheduled_at);
                     const rowClasses = isFinal
                       ? "opacity-40"
                       : contactStyle?.rowBg
@@ -665,24 +672,24 @@ export default function HojePage() {
                         {/* Empresa */}
                         <td className="px-4 py-2.5">
                           <button
-                            onClick={() => setSelectedLeadId(task.lead.id)}
+                            onClick={() => task.lead && setSelectedLeadId(task.lead.id)}
                             className="text-left w-full"
                           >
                             <Tooltip content="Abrir cartão do lead">
-                              <div className="text-sm font-medium text-foreground hover:text-accent hover:underline">{task.lead.company_name}</div>
+                              <div className="text-sm font-medium text-foreground hover:text-accent hover:underline">{task.lead?.company_name}</div>
                             </Tooltip>
-                            {task.lead.niche && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.lead.niche}</div>}
+                            {task.lead?.niche && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{task.lead.niche}</div>}
                           </button>
                         </td>
                         {/* PRR */}
-                        <td className="px-3 py-2.5"><PRRBadge tier={task.lead.prr_tier} score={task.lead.prr_score} /></td>
+                        <td className="px-3 py-2.5"><PRRBadge tier={task.lead?.prr_tier ?? null} score={task.lead?.prr_score ?? null} /></td>
                         {/* ICP */}
-                        <td className="px-3 py-2.5"><span className="text-xs text-muted-foreground">{task.lead.icp_score != null ? `${task.lead.icp_score}/14` : "—"}</span></td>
+                        <td className="px-3 py-2.5"><span className="text-xs text-muted-foreground">{task.lead?.icp_score != null ? `${task.lead.icp_score}/14` : "—"}</span></td>
                         {/* Contato (new) */}
                         <td className="px-3 py-2.5">
                           <ContactPills
                             task={task}
-                            onEmailClick={() => task.lead.email && setEmailTask(task)}
+                            onEmailClick={() => task.lead?.email && setEmailTask(task)}
                             isMobile={false}
                           />
                         </td>
@@ -701,7 +708,7 @@ export default function HojePage() {
                           {editingResultado === task.id ? (
                             <input autoFocus type="text" value={resultadoText} onChange={(e) => setResultadoText(e.target.value)} onBlur={() => handleResultadoSave(task.id)} onKeyDown={(e) => { if (e.key === "Enter") handleResultadoSave(task.id); if (e.key === "Escape") setEditingResultado(null); }} className="w-full rounded border border-border bg-surface-raised px-2 py-1 text-xs text-foreground font-medium focus:border-accent focus:outline-none" />
                           ) : (
-                            <button onClick={() => { setEditingResultado(task.id); setResultadoText(task.resultado ?? ""); }} className={`w-full text-left text-xs transition-colors truncate max-w-[200px] ${task.resultado ? "text-foreground font-medium hover:text-accent" : "text-muted-foreground italic hover:text-foreground"}`}>{task.resultado || "O que aconteceu?"}</button>
+                            <button onClick={() => { setEditingResultado(task.id); setResultadoText(task.outcome ?? ""); }} className={`w-full text-left text-xs transition-colors truncate max-w-[200px] ${task.outcome ? "text-foreground font-medium hover:text-accent" : "text-muted-foreground italic hover:text-foreground"}`}>{task.outcome || "O que aconteceu?"}</button>
                           )}
                         </td>
                         {/* Próximo Contato */}
@@ -718,7 +725,7 @@ export default function HojePage() {
                               </button>
                               <button
                                 onClick={() => {
-                                  updateTask.mutate({ id: task.id, proximo_contato: null });
+                                  updateTask.mutate({ id: task.id, scheduled_at: null });
                                   toast("Agendamento removido");
                                 }}
                                 className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors"
@@ -753,7 +760,7 @@ export default function HojePage() {
               {sortedTasks.map((task) => {
                 const statusConf = allStatuses[task.status];
                 const isFinal = statusConf?.final === true;
-                const contactStyle = getContactStyle(task.proximo_contato);
+                const contactStyle = getContactStyle(task.scheduled_at);
                 const borderColor = contactStyle?.rowBg?.includes("red")
                   ? "border-l-red-500"
                   : contactStyle?.rowBg?.includes("orange")
@@ -770,9 +777,9 @@ export default function HojePage() {
                     {/* Line 1: PRR + Company + Status */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <PRRBadge tier={task.lead.prr_tier} score={task.lead.prr_score} />
+                        <PRRBadge tier={task.lead?.prr_tier ?? null} score={task.lead?.prr_score ?? null} />
                         <span className="text-sm font-semibold text-foreground truncate">
-                          {task.lead.company_name}
+                          {task.lead?.company_name}
                         </span>
                       </div>
                       <select
@@ -785,7 +792,7 @@ export default function HojePage() {
                     </div>
 
                     {/* Line 2: Niche + city */}
-                    {(task.lead.niche || task.lead.city) && (
+                    {(task.lead?.niche || task.lead?.city) && (
                       <p className="text-xs text-muted-foreground mt-1 truncate">
                         {task.lead.niche}{task.lead.niche && task.lead.city ? " · " : ""}{task.lead.city}
                       </p>
@@ -795,7 +802,7 @@ export default function HojePage() {
                     <div className="mt-2">
                       <ContactPills
                         task={task}
-                        onEmailClick={() => task.lead.email && setEmailTask(task)}
+                        onEmailClick={() => task.lead?.email && setEmailTask(task)}
                         isMobile={true}
                       />
                     </div>
@@ -805,8 +812,8 @@ export default function HojePage() {
                       {editingResultado === task.id ? (
                         <input autoFocus type="text" value={resultadoText} onChange={(e) => setResultadoText(e.target.value)} onBlur={() => handleResultadoSave(task.id)} onKeyDown={(e) => { if (e.key === "Enter") handleResultadoSave(task.id); if (e.key === "Escape") setEditingResultado(null); }} className="w-full rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none" placeholder="O que aconteceu?" />
                       ) : (
-                        <button onClick={() => { setEditingResultado(task.id); setResultadoText(task.resultado ?? ""); }} className={`text-xs ${task.resultado ? "text-foreground" : "text-muted-foreground italic"}`}>
-                          {task.resultado ? `Resultado: ${task.resultado}` : "O que aconteceu? \u270F\uFE0F"}
+                        <button onClick={() => { setEditingResultado(task.id); setResultadoText(task.outcome ?? ""); }} className={`text-xs ${task.outcome ? "text-foreground" : "text-muted-foreground italic"}`}>
+                          {task.outcome ? `Resultado: ${task.outcome}` : "O que aconteceu? \u270F\uFE0F"}
                         </button>
                       )}
                     </div>
@@ -841,9 +848,9 @@ export default function HojePage() {
                       >
                         <Phone className="h-3.5 w-3.5" /> Ligar
                       </button>
-                      {task.lead.whatsapp && (
+                      {task.lead?.whatsapp && (
                         <button
-                          onClick={() => window.open(`https://wa.me/${formatWaNumber(task.lead.whatsapp!)}`, "_blank")}
+                          onClick={() => window.open(`https://wa.me/${formatWaNumber(task.lead?.whatsapp!)}`, "_blank")}
                           className="flex items-center gap-1.5 rounded-lg bg-green-500/10 px-3 py-2 text-xs font-medium text-green-600 min-h-[40px]"
                         >
                           <MessageCircle className="h-3.5 w-3.5" /> WhatsApp

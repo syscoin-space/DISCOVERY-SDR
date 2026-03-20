@@ -37,7 +37,7 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
   const updateStatus = useUpdateLeadStatus();
 
   // Mobile: active column tab
-  const [mobileColumn, setMobileColumn] = useState<LeadStatus>("CONTA_FRIA" as LeadStatus);
+  const [mobileColumn, setMobileColumn] = useState<LeadStatus>("BANCO" as LeadStatus);
 
   // Filters
   const [filterPrr, setFilterPrr] = useState<PrrTier | "ALL">("ALL");
@@ -69,8 +69,8 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
 
       const leadId = active.id as string;
       const validStatuses = new Set<string>([
-        "CONTA_FRIA", "EM_PROSPECCAO", "FOLLOW_UP", "REUNIAO_AGENDADA",
-        "OPORTUNIDADE_QUALIFICADA", "NUTRICAO", "SEM_PERFIL",
+        "BANCO", "CONTA_FRIA", "DISCOVERY", "EM_PROSPECCAO", "FOLLOW_UP",
+        "REUNIAO_MARCADA", "PERDIDO"
       ]);
 
       // Determine target status: over.id can be a column status or a lead id

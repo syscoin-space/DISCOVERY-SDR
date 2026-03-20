@@ -1,5 +1,16 @@
 import { config } from 'dotenv';
-config({ override: false }); // Don't override existing env vars (e.g. from Docker/Easypanel)
+const result = config({ override: false });
+if (result.error) {
+  console.warn('[Env] .env file not found, relying on process.env');
+} else {
+  console.log(`[Env] Loaded ${Object.keys(result.parsed || {}).length} variables from .env`);
+}
+
+if (!process.env.JWT_SECRET) {
+  console.warn('[Env] WARNING: JWT_SECRET is not set in process.env');
+} else {
+  console.log('[Env] JWT_SECRET is present');
+}
 
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -36,4 +47,8 @@ export const env = {
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
   GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/api/google/callback',
+
+  // Asaas Billing
+  ASAAS_API_KEY: process.env.ASAAS_API_KEY || '',
+  ASAAS_BASE_URL: process.env.ASAAS_BASE_URL || 'https://sandbox.asaas.com/api/v3',
 } as const;

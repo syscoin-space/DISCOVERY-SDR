@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api/client";
+import type { Task } from "@/lib/types";
 
 // ─── Types ──────────────────────────────────────
 
@@ -27,42 +28,8 @@ export interface AgendaReuniao {
   };
 }
 
-export interface AgendaContato {
-  id: string;
-  lead_id: string;
-  sdr_id: string;
-  status: string;
-  resultado?: string;
-  proximo_contato: string;
-  canal?: string;
-  lead: {
-    id: string;
-    company_name: string;
-    contact_name?: string;
-    email?: string;
-    niche?: string;
-    status: string;
-  };
-}
-
-export interface AgendaStep {
-  id: string;
-  scheduled_at: string;
-  status: string;
-  cadence_step: {
-    step_order: number;
-    day_offset: number;
-    channel: string;
-    cadence: { id: string; name: string };
-  };
-  lead_cadence: {
-    lead: {
-      id: string;
-      company_name: string;
-      contact_name?: string;
-      email?: string;
-    };
-  };
+export interface AgendaTask extends Task {
+  lead: NonNullable<Task["lead"]>;
 }
 
 export interface GoogleCalEvent {
@@ -77,8 +44,7 @@ export interface GoogleCalEvent {
 
 export interface AgendaData {
   reunioes: AgendaReuniao[];
-  contatos: AgendaContato[];
-  steps: AgendaStep[];
+  tasks: AgendaTask[];
   google_events: GoogleCalEvent[];
 }
 

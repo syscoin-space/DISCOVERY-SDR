@@ -2,16 +2,16 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
-import { asyncHandler, validate, authGuard } from '../../middlewares';
+import { asyncHandler, validate, authGuard, getTenantId, getMembershipId } from '../../middlewares';
 import { AppError } from '../../shared/types';
-import { InteractionType, InteractionSource } from '@prisma/client';
+import { InteractionType, InteractionSource, LeadStatus } from '@prisma/client';
 import {
   getAuthUrl,
   exchangeCodeForTokens,
   getCloserAvailability,
   createCalendarEvent,
   cancelCalendarEvent,
-  listCalendarEvents,
+  listGoogleCalendarEvents,
   sendGmailEmail,
 } from './google.service';
 
@@ -27,24 +27,25 @@ googleRouter.get(
     if (!env.GOOGLE_CLIENT_ID) {
       throw new AppError(500, 'Google OAuth não configurado no servidor', 'GOOGLE_NOT_CONFIGURED');
     }
-    const url = getAuthUrl(req.user!.sub);
+    const membershipId = getMembershipId(req);
+    const url = getAuthUrl(membershipId);
     res.json({ url });
   }),
 );
 
-// GET /google/callback — callback do OAuth (sem authGuard, é redirect do Google)
+// GET /google/callback — callback do OAuth
 googleRouter.get(
   '/callback',
   asyncHandler(async (req, res) => {
-    const { code, state: userId } = req.query as { code?: string; state?: string };
+    const { code, state: membershipId } = req.query as { code?: string; state?: string };
 
-    if (!code || !userId) {
+    if (!code || !membershipId) {
       throw new AppError(400, 'Parâmetros inválidos no callback', 'INVALID_CALLBACK');
     }
 
-    await exchangeCodeForTokens(code, userId);
+    await exchangeCodeForTokens(code, membershipId);
 
-    // Redirect para o frontend com indicador de sucesso
+    // Redirect para o frontend
     const frontendUrl = env.CORS_ORIGIN || 'http://localhost:3000';
     res.redirect(`${frontendUrl}/configuracoes?google=connected`);
   }),
@@ -55,12 +56,13 @@ googleRouter.get(
   '/status',
   authGuard,
   asyncHandler(async (req, res) => {
+    const membershipId = getMembershipId(req);
     const integration = await prisma.googleIntegration.findUnique({
-      where: { user_id: req.user!.sub },
-      select: { google_email: true, escopos: true, ativo: true },
+      where: { membership_id: membershipId },
+      select: { google_email: true, scopes: true, active: true },
     });
 
-    if (!integration || !integration.ativo) {
+    if (!integration || !integration.active) {
       res.json({ connected: false });
       return;
     }
@@ -68,7 +70,7 @@ googleRouter.get(
     res.json({
       connected: true,
       email: integration.google_email,
-      escopos: integration.escopos,
+      scopes: integration.scopes,
     });
   }),
 );
@@ -78,8 +80,9 @@ googleRouter.delete(
   '/disconnect',
   authGuard,
   asyncHandler(async (req, res) => {
+    const membershipId = getMembershipId(req);
     await prisma.googleIntegration.deleteMany({
-      where: { user_id: req.user!.sub },
+      where: { membership_id: membershipId },
     });
     res.json({ success: true });
   }),
@@ -87,9 +90,8 @@ googleRouter.delete(
 
 // ─── Calendar ─────────────────────────────────────────────────────────
 
-// GET /google/calendar/availability
 const availabilitySchema = z.object({
-  closerUserId: z.string().uuid(),
+  closerMembershipId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   duration: z.coerce.number().min(15).max(180).default(60),
 });
@@ -98,16 +100,15 @@ googleRouter.get(
   '/calendar/availability',
   authGuard,
   asyncHandler(async (req, res) => {
-    const { closerUserId, date, duration } = availabilitySchema.parse(req.query);
-    const slots = await getCloserAvailability(closerUserId, new Date(date), duration);
+    const { closerMembershipId, date, duration } = availabilitySchema.parse(req.query);
+    const slots = await getCloserAvailability(closerMembershipId, new Date(date), duration);
     res.json(slots);
   }),
 );
 
-// POST /google/calendar/events
 const createEventSchema = z.object({
   leadId: z.string().uuid(),
-  closerUserId: z.string().uuid(),
+  closerMembershipId: z.string().uuid(),
   titulo: z.string().min(1),
   descricao: z.string().optional(),
   inicio: z.string().datetime(),
@@ -121,11 +122,13 @@ googleRouter.post(
   authGuard,
   validate(createEventSchema),
   asyncHandler(async (req, res) => {
-    const { leadId, closerUserId, titulo, descricao, inicio, fim, convidados, criarMeet } = req.body;
+    const tenantId = getTenantId(req);
+    const sdrMembershipId = getMembershipId(req);
+    const { leadId, closerMembershipId, titulo, descricao, inicio, fim, convidados, criarMeet } = req.body;
 
     const result = await createCalendarEvent({
-      closerUserId,
-      sdrUserId: req.user!.sub,
+      closerMembershipId,
+      sdrMembershipId,
       leadId,
       titulo,
       descricao,
@@ -135,7 +138,7 @@ googleRouter.post(
       criarGoogleMeet: criarMeet,
     });
 
-    // Register interaction
+    // Interaction inside the tenant
     await prisma.interaction.create({
       data: {
         lead_id: leadId,
@@ -147,10 +150,10 @@ googleRouter.post(
       },
     });
 
-    // Move lead to REUNIAO_AGENDADA
+    // Move lead to REUNIAO_MARCADA (V2 status)
     await prisma.lead.update({
-      where: { id: leadId },
-      data: { status: 'REUNIAO_AGENDADA' },
+      where: { id: leadId, tenant_id: tenantId },
+      data: { status: LeadStatus.REUNIAO_MARCADA },
     });
 
     res.status(201).json(result);
@@ -162,28 +165,18 @@ googleRouter.delete(
   '/calendar/events/:id',
   authGuard,
   asyncHandler(async (req, res) => {
+    const membershipId = getMembershipId(req);
     const eventId = req.params.id as string;
     const event = await prisma.calendarEvent.findUnique({ where: { id: eventId } });
     if (!event) throw new AppError(404, 'Evento não encontrado');
 
-    // Allow closer or SDR to cancel
-    if (event.closer_user_id !== req.user!.sub && event.sdr_user_id !== req.user!.sub) {
+    // Security: check if membership participates in the event
+    if (event.closer_id !== membershipId && event.sdr_id !== membershipId) {
       throw new AppError(403, 'Sem permissão para cancelar este evento');
     }
 
-    await cancelCalendarEvent(event.closer_user_id, eventId);
+    await cancelCalendarEvent(event.closer_id!, eventId);
     res.json({ success: true });
-  }),
-);
-
-// GET /google/calendar/events
-googleRouter.get(
-  '/calendar/events',
-  authGuard,
-  asyncHandler(async (req, res) => {
-    const leadId = req.query.leadId as string | undefined;
-    const events = await listCalendarEvents(req.user!.sub, leadId);
-    res.json(events);
   }),
 );
 
@@ -194,7 +187,6 @@ const gmailSendSchema = z.object({
   to: z.string().email(),
   subject: z.string().min(1),
   body: z.string().min(1),
-  templateId: z.string().uuid().optional(),
 });
 
 googleRouter.post(
@@ -202,10 +194,11 @@ googleRouter.post(
   authGuard,
   validate(gmailSendSchema),
   asyncHandler(async (req, res) => {
-    const { leadId, to, subject, body, templateId } = req.body;
+    const membershipId = getMembershipId(req);
+    const { leadId, to, subject, body } = req.body;
 
     const result = await sendGmailEmail({
-      sdrUserId: req.user!.sub,
+      membershipId,
       to,
       subject,
       htmlBody: body.replace(/\n/g, '<br>'),
@@ -221,7 +214,7 @@ googleRouter.post(
         subject,
         body,
         status: 'SENT',
-        metadata: templateId ? { template_id: templateId, via: 'gmail' } : { via: 'gmail' },
+        metadata: { via: 'gmail' },
       },
     });
 

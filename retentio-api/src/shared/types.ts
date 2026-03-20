@@ -11,8 +11,11 @@ export type PaginationInput = z.infer<typeof paginationSchema>;
 
 export interface PaginatedResult<T> {
   data: T[];
-  nextCursor: string | null;
-  total?: number;
+  meta: {
+    total: number;
+    cursor: string | null;
+    hasMore: boolean;
+  };
 }
 
 // ─── AppError ────────────

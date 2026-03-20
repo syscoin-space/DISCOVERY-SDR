@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api/client";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import { useBrand } from "@/hooks/use-brand";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setAuth } = useAuthStore();
   const { data: brand } = useBrand();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,15 +22,24 @@ export default function LoginPage() {
 
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      localStorage.setItem("accessToken", data.token ?? data.access_token);
-      if (data.refreshToken || data.refresh_token) {
-        localStorage.setItem("refreshToken", data.refreshToken ?? data.refresh_token);
-      }
-      if (data.user) {
-        localStorage.setItem("retentio_user", JSON.stringify(data.user));
-      }
+      
+      // Centralized V2 Auth
+      setAuth({
+        token: data.token || data.access_token,
+        refreshToken: data.refreshToken || data.refresh_token,
+        user: data.user,
+      });
+
       const role = data.user?.role;
-      router.push(role === "GESTOR" ? "/gestor" : "/pipeline");
+      
+      // V2 Redirection logic
+      if (role === "OWNER" || role === "MANAGER") {
+        router.push("/gestor");
+      } else if (role === "CLOSER") {
+        router.push("/agenda");
+      } else {
+        router.push("/pipeline");
+      }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "response" in err) {
         const axiosErr = err as { response?: { data?: { message?: string } } };

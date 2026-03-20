@@ -9,6 +9,7 @@ import { PRRBadge } from "@/components/shared/PRRBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
 import { ChannelIcons } from "@/components/shared/ChannelIcons";
+import { AiSuggestionReview } from "@/components/lead/AiSuggestionReview";
 import {
   Sheet,
   SheetContent,
@@ -234,7 +235,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   <ExternalLink className="h-3 w-3" />
                   Ver página
                 </Link>
-                {user?.role === "GESTOR" && (
+                {(user?.role === "MANAGER" || user?.role === "OWNER") && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -262,6 +263,9 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
               </div>
             </div>
 
+            {/* Injeção do bloco de revisão de IA (Lead HIL) */}
+            <AiSuggestionReview leadId={lead.id} metadata={(lead as any).ai_metadata} />
+
             {/* Tier A stale insight + channel suggestion */}
             {(() => {
               const tierInsight = getTierAInsight(lead.prr_tier, lead.updated_at);
@@ -282,8 +286,9 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
             <Tabs defaultValue="perfil" className="mt-4">
               <div className="px-6">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="perfil">Perfil</TabsTrigger>
+                  <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
                   <TabsTrigger value="historico">Histórico</TabsTrigger>
                   <TabsTrigger value="reunioes">Reuniões</TabsTrigger>
                 </TabsList>
@@ -371,6 +376,32 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   >
                     {calculatePrr.isPending ? "Calculando..." : "Calcular PRR"}
                   </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="tarefas" className="pt-4 space-y-4 px-6 pb-10">
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Próximas Tarefas</h4>
+                  {!lead.tasks || lead.tasks.length === 0 ? (
+                    <p className="text-center py-8 text-sm text-muted-foreground italic">Nenhuma tarefa pendente</p>
+                  ) : (
+                    lead.tasks.map((task) => (
+                      <div key={task.id} className="p-3 rounded-lg border border-border bg-surface-raised flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{task.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-[9px] uppercase">{task.channel ?? 'Geral'}</Badge>
+                            {task.scheduled_at && (
+                              <span className="text-[10px] text-muted-foreground">
+                                Scheduled: {format(new Date(task.scheduled_at), "dd MMM, HH:mm", { locale: ptBR })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="text-[9px]">{task.status}</Badge>
+                      </div>
+                    ))
+                  )}
                 </div>
               </TabsContent>
 

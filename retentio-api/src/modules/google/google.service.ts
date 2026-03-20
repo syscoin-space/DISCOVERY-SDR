@@ -2,7 +2,7 @@ import { google, calendar_v3 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
-import { encryptApiKey, decryptApiKey } from '../cadences/resend.service';
+import { encrypt, decrypt } from '../../shared/utils/crypto';
 import { AppError } from '../../shared/types';
 import { logger } from '../../config/logger';
 
@@ -15,8 +15,8 @@ export interface TimeSlot {
 }
 
 interface CreateEventParams {
-  closerUserId: string;
-  sdrUserId: string;
+  closerMembershipId: string;
+  sdrMembershipId: string;
   leadId: string;
   titulo: string;
   descricao?: string;
@@ -39,8 +39,8 @@ export function getOAuth2Client(): OAuth2Client {
 export function getAuthenticatedClient(accessToken: string, refreshToken: string): OAuth2Client {
   const client = getOAuth2Client();
   client.setCredentials({
-    access_token: decryptApiKey(accessToken),
-    refresh_token: decryptApiKey(refreshToken),
+    access_token: decrypt(accessToken),
+    refresh_token: decrypt(refreshToken),
   });
   return client;
 }
@@ -53,19 +53,19 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
 ];
 
-export function getAuthUrl(userId: string): string {
+export function getAuthUrl(membershipId: string): string {
   const client = getOAuth2Client();
   return client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
-    state: userId,
+    state: membershipId,
     prompt: 'consent',
   });
 }
 
 // ─── Token Exchange ───────────────────────────────────────────────────
 
-export async function exchangeCodeForTokens(code: string, userId: string) {
+export async function exchangeCodeForTokens(code: string, membershipId: string) {
   const client = getOAuth2Client();
   const { tokens } = await client.getToken(code);
 
@@ -78,26 +78,26 @@ export async function exchangeCodeForTokens(code: string, userId: string) {
   const oauth2 = google.oauth2({ version: 'v2', auth: client });
   const { data: userInfo } = await oauth2.userinfo.get();
 
-  const encryptedAccess = encryptApiKey(tokens.access_token);
-  const encryptedRefresh = encryptApiKey(tokens.refresh_token);
+  const encryptedAccess = encrypt(tokens.access_token);
+  const encryptedRefresh = encrypt(tokens.refresh_token);
 
   await prisma.googleIntegration.upsert({
-    where: { user_id: userId },
+    where: { membership_id: membershipId },
     create: {
-      user_id: userId,
+      membership_id: membershipId,
       google_email: userInfo.email!,
       access_token: encryptedAccess,
       refresh_token: encryptedRefresh,
       token_expiry: new Date(tokens.expiry_date ?? Date.now() + 3600 * 1000),
-      escopos: tokens.scope?.split(' ') ?? SCOPES,
+      scopes: tokens.scope?.split(' ') ?? SCOPES,
     },
     update: {
       google_email: userInfo.email!,
       access_token: encryptedAccess,
       refresh_token: encryptedRefresh,
       token_expiry: new Date(tokens.expiry_date ?? Date.now() + 3600 * 1000),
-      escopos: tokens.scope?.split(' ') ?? SCOPES,
-      ativo: true,
+      scopes: tokens.scope?.split(' ') ?? SCOPES,
+      active: true,
     },
   });
 
@@ -106,11 +106,11 @@ export async function exchangeCodeForTokens(code: string, userId: string) {
 
 // ─── Token Refresh Helper ─────────────────────────────────────────────
 
-async function getClientForUser(userId: string): Promise<OAuth2Client> {
+async function getClientForMembership(membershipId: string): Promise<OAuth2Client> {
   const integration = await prisma.googleIntegration.findUnique({
-    where: { user_id: userId },
+    where: { membership_id: membershipId },
   });
-  if (!integration || !integration.ativo) {
+  if (!integration || !integration.active) {
     throw new AppError(400, 'Google não conectado', 'GOOGLE_NOT_CONNECTED');
   }
 
@@ -122,9 +122,9 @@ async function getClientForUser(userId: string): Promise<OAuth2Client> {
       const { credentials } = await client.refreshAccessToken();
       if (credentials.access_token) {
         await prisma.googleIntegration.update({
-          where: { user_id: userId },
+          where: { membership_id: membershipId },
           data: {
-            access_token: encryptApiKey(credentials.access_token),
+            access_token: encrypt(credentials.access_token),
             token_expiry: new Date(credentials.expiry_date ?? Date.now() + 3600 * 1000),
           },
         });
@@ -142,11 +142,11 @@ async function getClientForUser(userId: string): Promise<OAuth2Client> {
 // ─── Calendar: Availability ───────────────────────────────────────────
 
 export async function getCloserAvailability(
-  closerUserId: string,
+  membershipId: string,
   date: Date,
   durationMinutes: number = 60,
 ): Promise<TimeSlot[]> {
-  const client = await getClientForUser(closerUserId);
+  const client = await getClientForMembership(membershipId);
   const calendar = google.calendar({ version: 'v3', auth: client });
 
   const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 8, 0);
@@ -189,7 +189,7 @@ export async function getCloserAvailability(
 // ─── Calendar: Create Event ───────────────────────────────────────────
 
 export async function createCalendarEvent(params: CreateEventParams) {
-  const client = await getClientForUser(params.closerUserId);
+  const client = await getClientForMembership(params.closerMembershipId);
   const calendar = google.calendar({ version: 'v3', auth: client });
 
   const eventBody: calendar_v3.Schema$Event = {
@@ -226,8 +226,8 @@ export async function createCalendarEvent(params: CreateEventParams) {
     data: {
       google_event_id: event.id!,
       lead_id: params.leadId,
-      closer_user_id: params.closerUserId,
-      sdr_user_id: params.sdrUserId,
+      closer_id: params.closerMembershipId,
+      sdr_id: params.sdrMembershipId,
       titulo: params.titulo,
       descricao: params.descricao,
       inicio: params.inicio,
@@ -242,41 +242,22 @@ export async function createCalendarEvent(params: CreateEventParams) {
 
 // ─── Calendar: Cancel Event ───────────────────────────────────────────
 
-export async function cancelCalendarEvent(closerUserId: string, eventId: string) {
+export async function cancelCalendarEvent(membershipId: string, eventId: string) {
   const dbEvent = await prisma.calendarEvent.findUnique({ where: { id: eventId } });
   if (!dbEvent) throw new AppError(404, 'Evento não encontrado');
 
-  const client = await getClientForUser(closerUserId);
+  const client = await getClientForMembership(membershipId);
   const calendar = google.calendar({ version: 'v3', auth: client });
 
   await calendar.events.delete({
     calendarId: 'primary',
-    eventId: dbEvent.google_event_id,
+    eventId: dbEvent.google_event_id!,
     sendUpdates: 'all',
   });
 
   await prisma.calendarEvent.update({
     where: { id: eventId },
     data: { status: 'cancelled' },
-  });
-}
-
-// ─── Calendar: List Events ────────────────────────────────────────────
-
-export async function listCalendarEvents(userId: string, leadId?: string) {
-  const where: Record<string, unknown> = {
-    OR: [{ closer_user_id: userId }, { sdr_user_id: userId }],
-  };
-  if (leadId) {
-    (where as Record<string, unknown>).lead_id = leadId;
-  }
-
-  return prisma.calendarEvent.findMany({
-    where,
-    orderBy: { inicio: 'asc' },
-    include: {
-      lead: { select: { id: true, company_name: true, contact_name: true, email: true } },
-    },
   });
 }
 
@@ -292,13 +273,13 @@ export interface GoogleCalEvent {
   attendees: string[];
 }
 
-export async function listGoogleCalendarEventsForUser(
-  userId: string,
+export async function listGoogleCalendarEvents(
+  membershipId: string,
   timeMin: Date,
   timeMax: Date,
 ): Promise<GoogleCalEvent[]> {
   try {
-    const client = await getClientForUser(userId);
+    const client = await getClientForMembership(membershipId);
     const calendar = google.calendar({ version: 'v3', auth: client });
 
     const { data } = await calendar.events.list({
@@ -324,7 +305,7 @@ export async function listGoogleCalendarEventsForUser(
         attendees: (e.attendees ?? []).map((a) => a.email!).filter(Boolean),
       }));
   } catch (err) {
-    logger.warn('Failed to fetch Google Calendar events for user', { userId, err });
+    logger.warn('Failed to fetch Google Calendar events', { membershipId, err });
     return [];
   }
 }
@@ -332,18 +313,18 @@ export async function listGoogleCalendarEventsForUser(
 // ─── Gmail: Send Email ────────────────────────────────────────────────
 
 export async function sendGmailEmail(params: {
-  sdrUserId: string;
+  membershipId: string;
   to: string;
   subject: string;
   htmlBody: string;
   replyTo?: string;
 }): Promise<{ messageId: string }> {
-  const client = await getClientForUser(params.sdrUserId);
+  const client = await getClientForMembership(params.membershipId);
   const gmail = google.gmail({ version: 'v1', auth: client });
 
   // Get sender email
   const integration = await prisma.googleIntegration.findUnique({
-    where: { user_id: params.sdrUserId },
+    where: { membership_id: params.membershipId },
     select: { google_email: true },
   });
 

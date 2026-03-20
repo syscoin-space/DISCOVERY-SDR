@@ -1,15 +1,17 @@
 import { Router } from 'express';
 import { prisma } from '../../config/prisma';
-import { asyncHandler } from '../../middlewares';
-import { listGoogleCalendarEventsForUser } from '../google/google.service';
+import { asyncHandler, getTenantId, getMembershipId, authGuard } from '../../middlewares';
+import { Role, TaskStatus } from '@prisma/client';
 
 export const agendaRouter = Router();
+agendaRouter.use(authGuard);
 
 // ── GET /agenda — events for a date range ──
 agendaRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const userId = req.user!.sub;
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
     const inicio = req.query.inicio as string;
     const fim = req.query.fim as string;
     const closerId = req.query.closer_id as string | undefined;
@@ -22,15 +24,17 @@ agendaRouter.get(
     const endDate = new Date(fim);
 
     // 1. CalendarEvent (CRM meetings)
-    const reunioesWhere: Record<string, unknown> = {
+    const reunioesWhere: any = {
+      lead: { tenant_id: tenantId },
       inicio: { gte: startDate, lte: endDate },
     };
+
     if (closerId) {
-      reunioesWhere.closer_user_id = closerId;
+      reunioesWhere.closer_id = closerId;
     } else {
       reunioesWhere.OR = [
-        { closer_user_id: userId },
-        { sdr_user_id: userId },
+        { closer_id: membershipId },
+        { sdr_id: membershipId },
       ];
     }
 
@@ -39,98 +43,82 @@ agendaRouter.get(
       orderBy: { inicio: 'asc' },
       include: {
         lead: {
-          select: { id: true, company_name: true, contact_name: true, email: true, niche: true },
+          select: { id: true, company_name: true, contact_name: true, email: true },
         },
       },
     });
 
-    // 2. DailyTasks with proximo_contato
-    const contatos = await prisma.dailyTask.findMany({
+    // 2. Tasks with scheduled_at in range (Combined ContactTasks & CadenceSteps in V2)
+    const tasks = await prisma.task.findMany({
       where: {
-        sdr_id: userId,
-        proximo_contato: { gte: startDate, lte: endDate },
-      },
-      orderBy: { proximo_contato: 'asc' },
-      include: {
-        lead: {
-          select: { id: true, company_name: true, contact_name: true, email: true, niche: true, status: true },
-        },
-      },
-    });
-
-    // 3. Cadence steps scheduled in range
-    const steps = await prisma.leadCadenceStep.findMany({
-      where: {
+        tenant_id: tenantId,
+        membership_id: membershipId,
         scheduled_at: { gte: startDate, lte: endDate },
-        status: { in: ['PENDENTE', 'ATRASADO'] },
-        lead_cadence: {
-          lead: { sdr_id: userId },
-          status: 'ATIVA',
-        },
+        status: { in: [TaskStatus.PENDENTE, TaskStatus.EM_ANDAMENTO, TaskStatus.ATRASADA] },
       },
       orderBy: { scheduled_at: 'asc' },
       include: {
-        cadence_step: {
-          select: {
-            step_order: true,
-            day_offset: true,
-            channel: true,
-            cadence: { select: { id: true, name: true } },
-          },
-        },
-        lead_cadence: {
-          select: {
-            lead: {
-              select: { id: true, company_name: true, contact_name: true, email: true },
-            },
-          },
+        lead: {
+          select: { id: true, company_name: true, contact_name: true, email: true, status: true },
         },
       },
     });
 
-    // 4. Google Calendar events (if user has Google connected)
-    let google_events: unknown[] = [];
-    const targetUserId = closerId ?? userId;
+    // 3. Google Calendar events (Simulated for V2 foundation)
+    // In V2 we'll use membership_id for google integration lookup
+    let google_events: any[] = [];
+    const targetMembershipId = closerId ?? membershipId;
     const integration = await prisma.googleIntegration.findUnique({
-      where: { user_id: targetUserId },
-      select: { ativo: true },
+      where: { membership_id: targetMembershipId },
+      select: { active: true },
     });
 
-    if (integration?.ativo) {
-      google_events = await listGoogleCalendarEventsForUser(targetUserId, startDate, endDate);
-    }
+    // google_service call would be here, but using placeholder or empty for now
+    // as we are refactoring existing structure first.
+    // google_events = await listGoogleCalendarEventsForMembership(targetMembershipId, startDate, endDate);
 
-    res.json({ reunioes, contatos, steps, google_events });
+    res.json({ 
+      reunioes, 
+      tasks, // replaces contatos and steps from V1
+      google_events 
+    });
   }),
 );
 
-// ── GET /agenda/closers — users with Google connected ──
+// ── GET /agenda/closers — memberships with roles CLOSER or MANAGER in this tenant ──
 agendaRouter.get(
   '/closers',
-  asyncHandler(async (_req, res) => {
-    const closers = await prisma.user.findMany({
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+
+    const closers = await prisma.membership.findMany({
       where: {
-        role: { in: ['CLOSER', 'GESTOR'] },
-        google_integration: { ativo: true },
+        tenant_id: tenantId,
+        role: { in: [Role.CLOSER, Role.MANAGER, Role.OWNER] },
+        active: true,
       },
       select: {
         id: true,
-        name: true,
-        email: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          }
+        },
         google_integration: {
-          select: { google_email: true },
+          select: { google_email: true, active: true },
         },
       },
     });
 
-    const result = closers.map((c) => ({
-      id: c.id,
-      name: c.name,
-      email: c.email,
-      google_email: c.google_integration?.google_email ?? null,
-      avatar_initials: c.name
+    const result = closers.map((m) => ({
+      id: m.id,
+      name: m.user.name,
+      email: m.user.email,
+      google_email: m.google_integration?.active ? m.google_integration.google_email : null,
+      avatar_initials: m.user.name
         .split(' ')
-        .map((n) => n[0])
+        .map((n: string) => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2),

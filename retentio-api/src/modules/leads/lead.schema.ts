@@ -1,32 +1,37 @@
 import { z } from 'zod';
-import { LeadStatus, PrrTier, IcpTier, BloqueioStatus, MomentoCompra, RecompraSignal, IntegrabilityScore, InteractionType } from '@prisma/client';
+import { LeadStatus, InteractionType } from '@prisma/client';
 
 export const createLeadSchema = z.object({
   company_name: z.string().min(1).max(255),
-  niche: z.string().max(100).optional(),
-  cnpj: z.string().max(18).optional(),
-  contact_name: z.string().max(150).optional(),
-  contact_role: z.string().max(100).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().max(20).optional(),
-  whatsapp: z.string().max(20).optional(),
-  instagram_handle: z.string().max(50).optional(),
-  linkedin_url: z.string().url().optional(),
-  website_url: z.string().url().optional(),
-  state: z.string().max(2).optional(),
-  city: z.string().max(100).optional(),
-  ecommerce_platform: z.string().max(50).optional(),
-  estimated_base_size: z.number().int().nonnegative().optional(),
-  avg_ticket_estimated: z.number().nonnegative().optional(),
-  notes_import: z.string().optional(),
-  source: z.string().max(50).optional(),
+  domain: z.string().max(255).optional().nullable(),
+  cnpj: z.string().max(18).optional().nullable(),
+  segment: z.string().max(100).optional().nullable(),
+  company_size: z.string().max(50).optional().nullable(),
+  contact_name: z.string().max(150).optional().nullable(),
+  contact_role: z.string().max(100).optional().nullable(),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().max(20).optional().nullable(),
+  whatsapp: z.string().max(20).optional().nullable(),
+  instagram: z.string().max(50).optional().nullable(),
+  linkedin: z.string().max(255).optional().nullable(),
+  city: z.string().max(100).optional().nullable(),
+  state: z.string().max(100).optional().nullable(),
+  source: z.string().max(100).optional().nullable(),
+  notes: z.string().optional().nullable(),
+  icp_score: z.number().int().min(0).max(10).optional().nullable(),
+  dm_name: z.string().max(150).optional().nullable(),
+  dm_role: z.string().max(100).optional().nullable(),
+  direct_phone: z.string().max(20).optional().nullable(),
+  direct_email: z.string().email().optional().nullable(),
+  preferred_channel: z.enum(['EMAIL', 'WHATSAPP', 'PHONE', 'LINKEDIN']).optional().nullable(),
+  discovery_notes: z.string().optional().nullable(),
 });
 
 export const updateLeadSchema = createLeadSchema.partial().extend({
   status: z.nativeEnum(LeadStatus).optional(),
-  momento_compra: z.nativeEnum(MomentoCompra).optional(),
-  recompra_signal: z.nativeEnum(RecompraSignal).optional(),
-  integrability: z.nativeEnum(IntegrabilityScore).optional(),
+  sdr_id: z.string().uuid().optional().nullable(),
+  best_channel: z.string().max(100).optional().nullable(),
+  discovery_status: z.string().optional(), // DiscoveryStatus enum string
 });
 
 export const updateLeadStatusSchema = z.object({
@@ -35,27 +40,11 @@ export const updateLeadStatusSchema = z.object({
 
 export const leadFiltersSchema = z.object({
   status: z.nativeEnum(LeadStatus).optional(),
-  prr_tier: z.nativeEnum(PrrTier).optional(),
-  icp_tier: z.nativeEnum(IcpTier).optional(),
-  bloqueio_status: z.nativeEnum(BloqueioStatus).optional(),
   search: z.string().max(100).optional(),
+  sdr_id: z.string().uuid().optional(), // Para managers filtrarem por SDR
   cursor: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(500).default(20),
 });
-
-export const blockDecisionSchema = z.object({
-  action: z.enum(['confirm', 'ignore']),
-  justificativa: z.string().min(20).optional(),
-}).refine(data => {
-  if (data.action === 'ignore' && (!data.justificativa || data.justificativa.length < 20)) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Justificativa é obrigatória (mínimo 20 caracteres) para ignorar o bloqueio',
-  path: ['justificativa'],
-});
-
 
 export const createInteractionSchema = z.object({
   type: z.nativeEnum(InteractionType),

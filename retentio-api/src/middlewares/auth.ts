@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import { env } from '../config/env';
 import { AppError } from '../shared/types';
@@ -37,10 +37,13 @@ export function authGuard(req: Request, _res: Response, next: NextFunction) {
 
   const token = header.slice(7);
   try {
+    console.log('[AuthGuard] Verifying token...');
     const payload = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
     req.user = payload;
     next();
-  } catch {
+  } catch (err: any) {
+    console.error('[AuthGuard] Verification failed:', err.message);
+    console.error('[AuthGuard] Secret used:', env.JWT_SECRET?.substring(0, 5) + '...');
     throw new AppError(401, 'Token inválido ou expirado', 'AUTH_INVALID');
   }
 }

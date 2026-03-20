@@ -1,15 +1,23 @@
 import { Router } from 'express';
 import { prisma } from '../../config/prisma';
-import { asyncHandler, authGuard, roleGuard } from '../../middlewares';
+import { asyncHandler, authGuard, roleGuard, getTenantId, getMembershipId } from '../../middlewares';
+import { LeadStatus, Role, TaskStatus } from '@prisma/client';
 
 export const dashboardRouter = Router();
 dashboardRouter.use(authGuard);
 
-// GET /dashboard/pipeline — counts por status (Gestor vê todos, SDR vê só os seus)
+// GET /dashboard/pipeline — counts por status
 dashboardRouter.get(
   '/pipeline',
   asyncHandler(async (req, res) => {
-    const where = req.user!.role === 'GESTOR' ? {} : { sdr_id: req.user!.sub };
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
+    
+    // SDR checks only their own. Manager/Owner sees everything for the tenant.
+    const where: any = { tenant_id: tenantId };
+    if (req.user!.role === 'SDR') {
+      where.sdr_id = membershipId;
+    }
 
     const raw = await prisma.lead.groupBy({
       by: ['status'],
@@ -17,63 +25,54 @@ dashboardRouter.get(
       _count: { id: true },
     });
 
-    const pipeline = Object.fromEntries(raw.map(r => [r.status, r._count.id]));
-    const total = raw.reduce((acc, r) => acc + r._count.id, 0);
+    const pipeline = Object.values(LeadStatus).reduce((acc: any, s) => {
+      acc[s] = 0;
+      return acc;
+    }, {});
+
+    raw.forEach(r => {
+      pipeline[r.status] = r._count.id;
+    });
 
     res.json(pipeline);
   }),
 );
 
-// GET /dashboard/prr-distribution
-dashboardRouter.get(
-  '/prr-distribution',
-  asyncHandler(async (req, res) => {
-    const where = req.user!.role === 'GESTOR' ? {} : { sdr_id: req.user!.sub };
-
-    const raw = await prisma.lead.groupBy({
-      by: ['prr_tier'],
-      where: { ...where, prr_tier: { not: null } },
-      _count: { id: true },
-      _avg: { prr_score: true },
-    });
-
-    res.json(raw.map((r: { prr_tier: string | null; _count: { id: number }; _avg: { prr_score: number | null } }) => ({
-      tier: r.prr_tier,
-      count: r._count.id,
-      avg_score: +(r._avg.prr_score ?? 0).toFixed(2),
-    })));
-  }),
-);
-
-// GET /dashboard/stats — KPI metrics for SDR (personal) or Gestor (global)
+// GET /dashboard/stats — KPI metrics
 dashboardRouter.get(
   '/stats',
   asyncHandler(async (req, res) => {
-    const isGestor = req.user!.role === 'GESTOR';
-    const sdrId = req.user!.sub;
-    const where = isGestor ? {} : { sdr_id: sdrId };
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
+    const isGestor = req.user!.role !== 'SDR';
+    
+    const where: any = { tenant_id: tenantId };
+    if (!isGestor) {
+      where.sdr_id = membershipId;
+    }
 
     const now = new Date();
     const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1); // Monday
+    startOfWeek.setDate(startOfWeek.getDate() - (startOfWeek.getDay() || 7) + 1); // Monday
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [totalLeads, leadsHot, leadsWarm, leadsCold, avgPrr, meetings, handoffs] = await Promise.all([
+    const [totalLeads, leadsHot, tasksDone, handoffs] = await Promise.all([
       prisma.lead.count({ where }),
-      prisma.lead.count({ where: { ...where, prr_tier: 'A' } }),
-      prisma.lead.count({ where: { ...where, prr_tier: 'B' } }),
-      prisma.lead.count({ where: { ...where, prr_tier: 'C' } }),
-      prisma.lead.aggregate({ where, _avg: { prr_score: true } }),
-      prisma.dailyTask.count({
+      prisma.lead.count({ 
+        where: { ...where, icp_score: { gte: 8 } } 
+      }),
+      prisma.task.count({
         where: {
-          sdr_id: isGestor ? undefined : sdrId,
-          date: { gte: startOfWeek },
-          resultado: 'REUNIAO_AGENDADA',
+          tenant_id: tenantId,
+          membership_id: isGestor ? undefined : membershipId,
+          completed_at: { gte: startOfWeek },
+          status: TaskStatus.CONCLUIDA,
         },
       }),
       prisma.handoffBriefing.count({
         where: {
-          sdr_id: isGestor ? undefined : sdrId,
+          lead: { tenant_id: tenantId },
+          sdr_id: isGestor ? undefined : membershipId,
           created_at: { gte: startOfMonth },
         },
       }),
@@ -81,80 +80,47 @@ dashboardRouter.get(
 
     res.json({
       total_leads: totalLeads,
-      leads_hot: leadsHot,
-      leads_warm: leadsWarm,
-      leads_cold: leadsCold,
-      avg_prr_score: avgPrr._avg.prr_score ?? 0,
-      meetings_this_week: meetings,
+      leads_hot: leadsHot, // Score 8+
+      activities_this_week: tasksDone,
       handoffs_this_month: handoffs,
     });
   }),
 );
 
-// GET /dashboard/sdr-metrics — Gestor only
+// GET /dashboard/sdr-metrics — Managers/Owners only
 dashboardRouter.get(
   '/sdr-metrics',
-  roleGuard('GESTOR'),
-  asyncHandler(async (_req, res) => {
-    const sdrs = await prisma.user.findMany({
-      where: { role: 'SDR', active: true },
-      select: {
-        id: true,
-        name: true,
+  roleGuard('MANAGER' as any, 'OWNER' as any),
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+
+    const sdrMemberships = await prisma.membership.findMany({
+      where: { tenant_id: tenantId, role: Role.SDR, active: true },
+      include: {
+        user: { select: { name: true } },
         _count: {
-          select: { leads: true, handoffs_sent: true },
+          select: { assigned_leads: true, handoffs_sent: true, tasks: { where: { status: TaskStatus.CONCLUIDA } } },
         },
       },
     });
 
-    const metrics = await Promise.all(sdrs.map(async (sdr) => {
+    const metrics = await Promise.all(sdrMemberships.map(async (m) => {
       const statusBreakdown = await prisma.lead.groupBy({
         by: ['status'],
-        where: { sdr_id: sdr.id },
+        where: { sdr_id: m.id, tenant_id: tenantId },
         _count: { id: true },
       });
 
       return {
-        sdr_id: sdr.id,
-        name: sdr.name,
-        total_leads: sdr._count.leads,
-        total_handoffs: sdr._count.handoffs_sent,
+        membership_id: m.id,
+        name: m.user.name,
+        total_leads: m._count.assigned_leads,
+        total_handoffs: m._count.handoffs_sent,
+        total_tasks_completed: m._count.tasks,
         status_breakdown: Object.fromEntries(statusBreakdown.map(s => [s.status, s._count.id])),
       };
     }));
 
     res.json(metrics);
-  }),
-);
-
-// GET /dashboard/cadence-performance
-dashboardRouter.get(
-  '/cadence-performance',
-  asyncHandler(async (_req, res) => {
-    const cadences = await prisma.cadence.findMany({
-      where: { active: true },
-      select: {
-        id: true,
-        name: true,
-        _count: { select: { lead_cadences: true } },
-      },
-    });
-
-    const enriched = await Promise.all(cadences.map(async (c: { id: string; name: string; _count: { lead_cadences: number } }) => {
-      const stepStats = await prisma.leadCadenceStep.groupBy({
-        by: ['status'],
-        where: { cadence_step: { cadence_id: c.id } },
-        _count: { id: true },
-      });
-
-      return {
-        cadence_id: c.id,
-        name: c.name,
-        total_enrolled: c._count.lead_cadences,
-        step_stats: Object.fromEntries(stepStats.map((s: { status: string; _count: { id: number } }) => [s.status, s._count.id])),
-      };
-    }));
-
-    res.json(enriched);
   }),
 );

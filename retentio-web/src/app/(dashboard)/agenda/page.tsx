@@ -46,14 +46,13 @@ import {
   useAgenda,
   useClosers,
   type AgendaReuniao,
-  type AgendaContato,
-  type AgendaStep,
+  type AgendaTask,
   type GoogleCalEvent,
 } from "@/hooks/use-agenda";
 
 // ─── Unified event type ─────────────────────────────────────────────
 
-type EventKind = "reuniao" | "contato" | "step" | "google";
+type EventKind = "reuniao" | "task" | "google";
 
 interface CalEvent {
   id: string;
@@ -62,20 +61,18 @@ interface CalEvent {
   subtitle: string;
   start: Date;
   end: Date;
-  raw: AgendaReuniao | AgendaContato | AgendaStep | GoogleCalEvent;
+  raw: AgendaReuniao | AgendaTask | GoogleCalEvent;
 }
 
 const KIND_STYLES: Record<EventKind, { border: string; bg: string; dot: string }> = {
   reuniao: { border: "border-l-emerald-500", bg: "bg-emerald-500/10", dot: "bg-emerald-500" },
-  contato: { border: "border-l-amber-500", bg: "bg-amber-500/10", dot: "bg-amber-500" },
-  step: { border: "border-l-blue-500", bg: "bg-blue-500/10", dot: "bg-blue-500" },
+  task: { border: "border-l-amber-500", bg: "bg-amber-500/10", dot: "bg-amber-500" },
   google: { border: "border-l-red-400", bg: "bg-red-400/10", dot: "bg-red-400" },
 };
 
 const KIND_LABELS: Record<EventKind, string> = {
   reuniao: "Reunião",
-  contato: "Contato",
-  step: "Cadência",
+  task: "Tarefa",
   google: "Google",
 };
 
@@ -100,30 +97,17 @@ function normalizeEvents(data: ReturnType<typeof useAgenda>["data"]): CalEvent[]
     });
   }
 
-  for (const c of data.contatos) {
-    if (!c.proximo_contato) continue;
-    const s = new Date(c.proximo_contato);
+  for (const t of data.tasks) {
+    if (!t.scheduled_at) continue;
+    const s = new Date(t.scheduled_at);
     events.push({
-      id: `c-${c.id}`,
-      kind: "contato",
-      title: c.lead?.company_name ?? "Contato",
-      subtitle: c.canal ? `${c.canal}` : "Contato agendado",
+      id: `t-${t.id}`,
+      kind: "task",
+      title: t.lead?.company_name ?? t.title,
+      subtitle: t.title,
       start: s,
-      end: new Date(s.getTime() + 30 * 60000),
-      raw: c,
-    });
-  }
-
-  for (const st of data.steps) {
-    const s = new Date(st.scheduled_at);
-    events.push({
-      id: `s-${st.id}`,
-      kind: "step",
-      title: st.lead_cadence?.lead?.company_name ?? "Step",
-      subtitle: `${st.cadence_step?.cadence?.name ?? "Cadência"} — Step ${st.cadence_step?.step_order}`,
-      start: s,
-      end: new Date(s.getTime() + 15 * 60000),
-      raw: st,
+      end: new Date(s.getTime() + 15 * 60000), // Default 15 min for tasks
+      raw: t,
     });
   }
 
@@ -147,7 +131,7 @@ function normalizeEvents(data: ReturnType<typeof useAgenda>["data"]): CalEvent[]
 export default function AgendaPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [view, setView] = useState<"day" | "week" | "month">("week");
+  const [view, setView] = useState<"day" | "week" | "month">("day");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [closerId, setCloserId] = useState<string | undefined>();
   const [selectedEvent, setSelectedEvent] = useState<CalEvent | null>(null);
@@ -495,6 +479,7 @@ function WeekView({
             nowHour={nowHour}
             onEventClick={onEventClick}
             layoutByDay={layoutByDay}
+            isDayView={days.length === 1}
           />
         ))}
       </div>
@@ -510,6 +495,7 @@ function HourRow({
   nowHour,
   onEventClick,
   layoutByDay,
+  isDayView,
 }: {
   hour: number;
   days: Date[];
@@ -518,12 +504,18 @@ function HourRow({
   nowHour: number;
   onEventClick: (e: CalEvent) => void;
   layoutByDay: Map<string, Map<string, { col: number; maxCols: number }>>;
+  isDayView: boolean;
 }) {
+  const pxPerHour = isDayView ? 96 : 64; // Bigger scale for Day View
+
   return (
     <>
       {/* Time label */}
-      <div className="relative border-b border-border/50 h-14 flex items-start justify-end pr-2 pt-0.5">
-        <span className="text-[10px] text-muted-foreground font-medium">
+      <div 
+        className="relative border-b border-border/50 flex items-start justify-end pr-3 pt-1"
+        style={{ height: pxPerHour }}
+      >
+        <span className="text-[11px] text-muted-foreground font-semibold">
           {String(hour).padStart(2, "0")}:00
         </span>
       </div>
@@ -544,9 +536,10 @@ function HourRow({
         return (
           <div
             key={dayStr}
-            className={`relative border-b border-l border-border/50 h-14 ${
-              isToday(day) ? "bg-accent/[0.03]" : ""
+            className={`relative border-b border-l border-border/50 ${
+              isToday(day) ? "bg-accent/[0.02]" : ""
             }`}
+            style={{ height: pxPerHour }}
           >
             {/* Now line */}
             {showNowLine && (
@@ -554,8 +547,8 @@ function HourRow({
                 className="absolute left-0 right-0 z-20 flex items-center"
                 style={{ top: `${nowOffset}%` }}
               >
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500 -ml-[5px]" />
-                <div className="h-[2px] flex-1 bg-red-500" />
+                <div className="h-2.5 w-2.5 rounded-full bg-red-500 -ml-[5px] shadow-sm" />
+                <div className="h-[2px] flex-1 bg-red-500 shadow-sm" />
               </div>
             )}
 
@@ -566,30 +559,35 @@ function HourRow({
               const leftPct = layout.col * widthPct;
 
               const durationMin = (evt.end.getTime() - evt.start.getTime()) / 60000;
-              const heightPx = Math.max(24, (durationMin / 60) * 56);
+              const heightPx = Math.max(28, (durationMin / 60) * pxPerHour - 2);
               const startMin = evt.start.getMinutes();
-              const topPx = (startMin / 60) * 56;
+              const topPx = (startMin / 60) * pxPerHour;
               const style = KIND_STYLES[evt.kind];
 
               return (
                 <button
                   key={evt.id}
                   onClick={() => onEventClick(evt)}
-                  className={`absolute z-10 rounded border-l-[3px] px-1.5 py-0.5 text-left overflow-hidden transition-shadow hover:shadow-md cursor-pointer ${style.border} ${style.bg} border-y border-r border-border/50`}
+                  className={`absolute z-10 rounded-md border-l-[4px] px-2 py-1.5 text-left overflow-hidden transition-all hover:shadow-lg hover:z-20 cursor-pointer ${style.border} ${style.bg} border-y border-r border-border/40 backdrop-blur-[2px]`}
                   style={{ 
                     top: topPx, 
                     height: heightPx,
-                    left: `calc(${leftPct}% + 2px)`,
-                    width: `calc(${widthPct}% - 4px)`
+                    left: `calc(${leftPct}% + 4px)`,
+                    width: `calc(${widthPct}% - 8px)`
                   }}
                   title={`${evt.title} — ${format(evt.start, "HH:mm")} - ${format(evt.end, "HH:mm")}`}
                 >
-                  <p className="text-[10px] font-semibold text-foreground truncate leading-tight">
+                  <p className={`font-bold text-foreground truncate leading-tight ${isDayView ? "text-xs" : "text-[10px]"}`}>
                     {evt.title}
                   </p>
-                  <p className="text-[9px] text-muted-foreground truncate leading-tight">
-                    {format(evt.start, "HH:mm")}
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className={`text-muted-foreground truncate leading-tight ${isDayView ? "text-[11px]" : "text-[9px]"}`}>
+                      {format(evt.start, "HH:mm")} - {format(evt.end, "HH:mm")}
+                    </p>
+                    {isDayView && evt.subtitle && (
+                      <span className="text-[10px] text-muted-foreground/60">• {evt.subtitle}</span>
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -826,17 +824,35 @@ function EventDetailModal({
             );
           })()}
 
-          {/* Contato */}
-          {event.kind === "contato" && (() => {
-            const c = event.raw as AgendaContato;
+          {/* Task (V2 Unified) */}
+          {event.kind === "task" && (() => {
+            const t = event.raw as AgendaTask;
             return (
               <>
                 <div className="space-y-2 text-sm">
-                  <Row label="Empresa" value={`${c.lead?.company_name} (${c.lead?.niche ?? ""})`} />
-                  <Row label="Canal" value={c.canal} />
-                  <Row label="Status" value={c.lead?.status?.replace(/_/g, " ")} />
+                  <Row label="Lead" value={t.lead?.company_name} />
+                  <Row label="Tarefa" value={t.title} />
+                  <Row label="Canal" value={t.channel ?? "N/A"} />
+                  <Row label="Status" value={t.status} />
+                  {t.description && (
+                    <div className="mt-2 text-xs text-muted-foreground border-t border-border pt-2">
+                      <p className="font-semibold uppercase text-[9px] mb-1">Descrição</p>
+                      {t.description}
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-accent hover:bg-accent-hover"
+                    onClick={() => {
+                      onOpenChange(false);
+                      router.push(`/leads/${t.lead_id}`);
+                    }}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-2" />
+                    Abrir Lead
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -845,34 +861,7 @@ function EventDetailModal({
                       router.push("/hoje");
                     }}
                   >
-                    Ir para Fila de Hoje
-                  </Button>
-                </div>
-              </>
-            );
-          })()}
-
-          {/* Cadence step */}
-          {event.kind === "step" && (() => {
-            const s = event.raw as AgendaStep;
-            return (
-              <>
-                <div className="space-y-2 text-sm">
-                  <Row label="Cadência" value={s.cadence_step?.cadence?.name} />
-                  <Row label="Step" value={`Step ${s.cadence_step?.step_order} — ${s.cadence_step?.channel}`} />
-                  <Row label="Lead" value={s.lead_cadence?.lead?.company_name} />
-                  <Row label="Status" value={s.status} />
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      onOpenChange(false);
-                      router.push(`/cadencias`);
-                    }}
-                  >
-                    Ver cadência
+                    Fila de Hoje
                   </Button>
                 </div>
               </>

@@ -92,7 +92,7 @@ export function MobileHeader() {
   const notifications = preview?.data ?? [];
 
   const handleNotifClick = (n: AppNotification) => {
-    if (!n.lida) markRead.mutate(n.id);
+    if (!n.read) markRead.mutate(n.id);
     if (n.url) {
       setNotifOpen(false);
       router.push(n.url);
@@ -197,7 +197,7 @@ export function MobileHeader() {
                     key={n.id}
                     onClick={() => handleNotifClick(n)}
                     className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-border/50 transition-colors active:bg-surface-raised ${
-                      !n.lida ? "bg-accent/5" : "opacity-60"
+                      !n.read ? "bg-accent/5" : "opacity-60"
                     }`}
                   >
                     {(() => {
@@ -212,10 +212,10 @@ export function MobileHeader() {
                         {n.corpo}
                       </p>
                       <p className="text-[10px] text-muted-foreground/70 mt-1">
-                        {timeAgo(n.enviada_at)}
+                        {timeAgo(n.sent_at)}
                       </p>
                     </div>
-                    {!n.lida && (
+                    {!n.read && (
                       <span className="mt-1 h-2 w-2 rounded-full bg-accent shrink-0" />
                     )}
                   </button>

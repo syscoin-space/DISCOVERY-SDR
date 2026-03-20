@@ -80,7 +80,7 @@ export function NotificationBell() {
   }, [open]);
 
   const handleNotificationClick = (n: AppNotification) => {
-    if (!n.lida) markRead.mutate(n.id);
+    if (!n.read) markRead.mutate(n.id);
     if (n.url) {
       router.push(n.url);
       setOpen(false);
@@ -134,7 +134,7 @@ export function NotificationBell() {
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
                   className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-border/50 transition-colors ${
-                    !n.lida
+                    !n.read
                       ? "bg-accent/5 hover:bg-accent/10"
                       : "opacity-60 hover:bg-surface-raised"
                   }`}
@@ -151,10 +151,10 @@ export function NotificationBell() {
                       {n.corpo}
                     </p>
                     <p className="text-[10px] text-muted-foreground/70 mt-1">
-                      {timeAgo(n.enviada_at)}
+                      {timeAgo(n.sent_at)}
                     </p>
                   </div>
-                  {!n.lida && (
+                  {!n.read && (
                     <span className="mt-1 h-2 w-2 rounded-full bg-accent shrink-0" />
                   )}
                 </button>

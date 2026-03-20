@@ -99,6 +99,8 @@ function logout() {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("retentio_user");
+  localStorage.removeItem("tenantId");
+  localStorage.removeItem("membershipId");
   window.location.href = "/login";
 }
 

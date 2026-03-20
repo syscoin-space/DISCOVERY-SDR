@@ -7,6 +7,7 @@ import {
 } from "@dnd-kit/sortable";
 import type { Lead, LeadStatus } from "@/lib/types";
 import { LeadCard } from "./LeadCard";
+import { Inbox } from "lucide-react";
 
 interface KanbanColumnProps {
   status: LeadStatus;
@@ -45,18 +46,21 @@ export function KanbanColumn({
       <div
         ref={setNodeRef}
         className={`
-          flex flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-dashed p-2
+          flex flex-1 flex-col overflow-y-auto rounded-xl border border-dashed p-2 transition-colors
           ${isOver
             ? "border-accent/50 bg-accent/5"
+            : leads.length === 0
+            ? "border-border/30 bg-surface/20"
             : "border-border/50 bg-surface/50"
           }
         `}
-        style={{ maxHeight: "calc(100vh - 220px)" }}
+        style={{ maxHeight: "calc(100vh - 220px)", gap: '0.5rem' }}
       >
         <SortableContext items={leadIds} strategy={verticalListSortingStrategy}>
           {leads.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
-              <p className="text-xs text-muted-foreground">Nenhum lead aqui</p>
+            <div className="flex flex-1 flex-col items-center justify-center py-10 opacity-60">
+              <Inbox className="w-8 h-8 text-muted-foreground mb-3 opacity-50" />
+              <p className="text-xs font-medium text-muted-foreground">Nenhum lead nesta etapa</p>
             </div>
           ) : (
             leads.map((lead) => (

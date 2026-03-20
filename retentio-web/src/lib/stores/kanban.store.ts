@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { Lead, LeadStatus } from "@/lib/types";
 
 interface KanbanState {
-  columns: Record<LeadStatus, Lead[]>;
+  columns: Partial<Record<LeadStatus, Lead[]>>;
   draggedLeadId: string | null;
   selectedLeadId: string | null;
 
@@ -25,26 +25,26 @@ interface KanbanState {
 
 export const useKanbanStore = create<KanbanState>((set) => ({
   columns: {
-      CONTA_FRIA: [],
-      EM_PROSPECCAO: [],
-      FOLLOW_UP: [],
-      REUNIAO_AGENDADA: [],
-      OPORTUNIDADE_QUALIFICADA: [],
-      NUTRICAO: [],
-      SEM_PERFIL: [],
+    BANCO: [],
+    CONTA_FRIA: [],
+    DISCOVERY: [],
+    EM_PROSPECCAO: [],
+    FOLLOW_UP: [],
+    REUNIAO_MARCADA: [],
+    PERDIDO: [],
   },
   draggedLeadId: null,
   selectedLeadId: null,
 
   setLeadsByStatus: (leads) => {
-    const grouped: Record<LeadStatus, Lead[]> = {
+    const grouped: Partial<Record<LeadStatus, Lead[]>> = {
+      BANCO: [],
       CONTA_FRIA: [],
+      DISCOVERY: [],
       EM_PROSPECCAO: [],
       FOLLOW_UP: [],
-      REUNIAO_AGENDADA: [],
-      OPORTUNIDADE_QUALIFICADA: [],
-      NUTRICAO: [],
-      SEM_PERFIL: [],
+      REUNIAO_MARCADA: [],
+      PERDIDO: [],
     };
     
     // Deduplicate leads by id
@@ -56,15 +56,17 @@ export const useKanbanStore = create<KanbanState>((set) => ({
     });
 
     for (const lead of unique) {
-      if (grouped[lead.status]) {
-        grouped[lead.status].push(lead);
+      const col = grouped[lead.status];
+      if (col) {
+        col.push(lead);
       }
     }
     // Sort each column by prr_score descending
     for (const key of Object.keys(grouped) as LeadStatus[]) {
-      grouped[key].sort(
-        (a, b) => (b.prr_score ?? 0) - (a.prr_score ?? 0)
-      );
+      const col = grouped[key];
+      if (col) {
+        col.sort((a, b) => (b.prr_score ?? 0) - (a.prr_score ?? 0));
+      }
     }
     set({ columns: grouped });
   },
@@ -99,12 +101,15 @@ export const useKanbanStore = create<KanbanState>((set) => ({
   revertMove: (leadId, originalStatus, targetStatus) => {
     set((state) => {
       const targetCol = state.columns[targetStatus];
+      const originalCol = state.columns[originalStatus];
+      if (!targetCol || !originalCol) return state;
+
       const leadIndex = targetCol.findIndex((l) => l.id === leadId);
       if (leadIndex === -1) return state;
 
       const lead = { ...targetCol[leadIndex], status: originalStatus };
       const newTarget = targetCol.filter((_, i) => i !== leadIndex);
-      const newOriginal = [...state.columns[originalStatus], lead].sort(
+      const newOriginal = [...originalCol, lead].sort(
         (a, b) => (b.prr_score ?? 0) - (a.prr_score ?? 0)
       );
 

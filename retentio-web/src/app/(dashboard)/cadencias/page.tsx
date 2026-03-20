@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { useCadences } from "@/hooks/use-cadences";
-import { Plus, Zap, RotateCcw, Rocket, Mail, MessageCircle, Phone, Linkedin } from "lucide-react";
-import type { CadenceType, StepChannel } from "@/lib/types";
+import { Plus, Zap, RotateCcw, Rocket, Mail, MessageCircle, Phone, Linkedin, Search, BellRing } from "lucide-react";
+import type { CadencePurpose, StepChannel } from "@/lib/types";
 
-const TYPE_CONFIG: Record<CadenceType, { label: string; icon: typeof Zap; color: string }> = {
-  STANDARD: { label: "Standard", icon: Zap, color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
-  REATIVACAO: { label: "Reativação", icon: RotateCcw, color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
-  FAST_TRACK: { label: "Fast Track", icon: Rocket, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+const PURPOSE_CONFIG: Record<CadencePurpose, { label: string; icon: any; color: string }> = {
+  DISCOVERY: { label: "Discovery", icon: Search, color: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
+  PROSPECCAO: { label: "Prospecção", icon: Rocket, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+  NUTRICAO: { label: "Nutrição", icon: RotateCcw, color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+  CONFIRMACAO: { label: "Confirmação", icon: BellRing, color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
 };
 
-const CHANNEL_ICON: Record<StepChannel, { icon: typeof Mail; color: string }> = {
+const CHANNEL_ICON: Record<StepChannel, { icon: any; color: string }> = {
   EMAIL: { icon: Mail, color: "text-blue-500" },
   WHATSAPP: { icon: MessageCircle, color: "text-green-500" },
   LIGACAO: { icon: Phone, color: "text-amber-500" },
@@ -43,99 +44,109 @@ export default function CadenciasPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-4">
+      <div className="flex items-center justify-between border-b border-border bg-surface px-6 py-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Cadencias</h1>
-          <p className="text-sm text-muted-foreground">
-            {cadences?.length ?? 0} cadencias configuradas
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Cadências de Engajamento</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Configure e gerencie fluxos de contato automáticos e manuais.
           </p>
         </div>
         <Link
           href="/cadencias/nova"
-          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover"
+          className="flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all hover:bg-accent-hover hover:scale-[1.02] active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" />
-          Nova Cadencia
+          Nova Cadência
         </Link>
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 lg:p-8">
         {!cadences?.length ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/10 mb-4">
-              <Zap className="h-8 w-8 text-accent" />
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-accent/10 mb-6 group transform transition-transform hover:rotate-12 duration-500">
+              <Zap className="h-10 w-10 text-accent group-hover:fill-accent transition-all" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground mb-1">Nenhuma cadência ainda</h2>
-            <p className="text-sm text-muted-foreground mb-4">Crie sua primeira cadência de prospecção</p>
+            <h2 className="text-xl font-bold text-foreground mb-2">Aumente sua produtividade</h2>
+            <p className="text-muted-foreground max-w-sm mb-8">
+              Crie sequências de passos (Email, WhatsApp, Ligação) para guiar seus SDRs no dia a dia.
+            </p>
             <Link
               href="/cadencias/nova"
-              className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-hover"
+              className="flex items-center gap-2 rounded-xl bg-accent px-6 py-3 text-sm font-bold text-white shadow-lg shadow-accent/25 hover:bg-accent-hover transition-all"
             >
-              <Plus className="h-4 w-4" />
-              Criar Cadencia
+              <Plus className="h-5 w-5" />
+              Criar Primeira Cadência
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {cadences.map((cadence) => {
-              const typeConf = TYPE_CONFIG[cadence.type];
-              const TypeIcon = typeConf.icon;
-              const enrolledCount = (cadence as unknown as { _count?: { lead_cadences?: number } })._count?.lead_cadences ?? 0;
+              const purposeConf = PURPOSE_CONFIG[cadence.purpose] || PURPOSE_CONFIG.PROSPECCAO;
+              const PurposeIcon = purposeConf.icon;
+              const enrolledCount = (cadence as any)._count?.enrollments ?? 0;
               const steps = cadence.steps ?? [];
 
               return (
                 <Link
                   key={cadence.id}
                   href={`/cadencias/${cadence.id}`}
-                  className="group flex flex-col rounded-xl border border-border bg-surface p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-accent/30"
+                  className="group flex flex-col rounded-2xl border border-border/60 bg-surface p-5 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-accent/40 hover:-translate-y-1"
                 >
                   {/* Type badge + name */}
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-accent transition-colors">
+                      <h3 className="text-sm font-bold text-foreground truncate group-hover:text-accent transition-colors">
                         {cadence.name}
                       </h3>
                       {cadence.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{cadence.description}</p>
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                          {cadence.description}
+                        </p>
                       )}
                     </div>
-                    <span className={`ml-2 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${typeConf.color}`}>
-                      <TypeIcon className="h-3 w-3" />
-                      {typeConf.label}
+                    <span className={`ml-3 flex items-center gap-1 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider ${purposeConf.color}`}>
+                      <PurposeIcon className="h-3 w-3" />
+                      {purposeConf.label}
                     </span>
                   </div>
 
                   {/* Steps timeline */}
-                  {steps.length > 0 && (
-                    <div className="flex items-center gap-1 mb-3">
-                      {steps.map((step, i) => {
-                        const ch = CHANNEL_ICON[step.channel];
-                        const ChIcon = ch.icon;
-                        return (
-                          <div key={step.id ?? i} className="flex items-center">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-raised" title={`Dia ${step.day_offset} - ${step.channel}`}>
-                              <ChIcon className={`h-3 w-3 ${ch.color}`} />
-                            </div>
-                            {i < steps.length - 1 && (
-                              <div className="w-3 h-px bg-border" />
-                            )}
+                  <div className="flex items-center gap-1.5 mb-5 mt-2 overflow-x-hidden">
+                    {steps.slice(0, 6).map((step, i) => {
+                      const ch = CHANNEL_ICON[step.channel as StepChannel] || CHANNEL_ICON.EMAIL;
+                      const ChIcon = ch.icon;
+                      return (
+                        <div key={step.id ?? i} className="flex items-center shrink-0">
+                          <div 
+                            className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-raised border border-border/40 shadow-sm group-hover:border-accent/20 group-hover:bg-accent/5 transition-colors" 
+                            title={`Dia ${step.day_offset} - ${step.channel}`}
+                          >
+                            <ChIcon className={`h-3.5 w-3.5 ${ch.color}`} />
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          {i < Math.min(steps.length - 1, 5) && (
+                            <div className="w-2 h-[1px] bg-border/50" />
+                          )}
+                          {i === 5 && steps.length > 6 && (
+                            <span className="text-[10px] text-muted-foreground ml-1">+{steps.length - 6}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
 
                   {/* Footer stats */}
-                  <div className="flex items-center justify-between border-t border-border/50 pt-2 mt-auto">
-                    <span className="text-xs text-muted-foreground">
-                      {steps.length} {steps.length === 1 ? "step" : "steps"}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {enrolledCount} {enrolledCount === 1 ? "lead inscrito" : "leads inscritos"}
-                    </span>
+                  <div className="flex items-center justify-between border-t border-border/40 pt-4 mt-auto">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Passos</span>
+                      <span className="text-xs font-semibold text-foreground">{steps.length} etapas</span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Inscritos</span>
+                      <span className="text-xs font-semibold text-foreground">{enrolledCount} leads</span>
+                    </div>
                   </div>
                 </Link>
               );

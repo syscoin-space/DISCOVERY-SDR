@@ -2,19 +2,16 @@ import * as XLSX from 'xlsx';
 import { parse } from 'csv-parse/sync';
 import { parse as parseDate } from 'date-fns';
 import { prisma } from '../../config/prisma';
-import { LeadStatus, IcpTier } from '@prisma/client';
-import { prrService } from '../prr/prr.service';
+import { LeadStatus } from '@prisma/client';
 import { logger } from '../../config/logger';
 
-// Map spreadsheet ICP tier letters to Prisma enum
-const ICP_TIER_MAP: Record<string, IcpTier> = {
-  A: IcpTier.CONTRATO_CERTO,
-  B: IcpTier.QUENTE,
-  C: IcpTier.PARCIAL,
-  D: IcpTier.FORA,
-};
-
-export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: string, originalname?: string) {
+export async function importFromBuffer(
+  buffer: Buffer, 
+  mimetype: string, 
+  tenantId: string, 
+  membershipId: string, 
+  originalname?: string
+) {
   let rows: any[] = [];
 
   const isXlsx = mimetype.includes('spreadsheet') || mimetype.includes('excel') || mimetype.includes('vnd.openxmlformats-officedocument.spreadsheetml.sheet') || originalname?.endsWith('.xlsx');
@@ -37,7 +34,6 @@ export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: 
   // Remove header se existir e validar colunas
   if (rows.length > 0) {
     const firstRow = rows[0];
-    // Se a primeira linha parece um header (ex: contém "Domínio" ou "Empresa"), removemos
     if (String(firstRow[0]).toLowerCase().includes('domínio') || String(firstRow[1]).toLowerCase().includes('empresa')) {
       rows.shift();
     }
@@ -51,6 +47,23 @@ export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: 
     leadIds: [] as string[],
   };
 
+  const normalize = (val: any) => {
+    if (val === undefined || val === null) return null;
+    const str = String(val).trim();
+    if (str.toLowerCase() === 'desconhecido' || str === '') return null;
+    return str;
+  };
+
+  const normalizeDate = (val: any) => {
+    const str = normalize(val);
+    if (!str) return null;
+    try {
+      return parseDate(str, 'dd/MM/yyyy', new Date());
+    } catch {
+      return null;
+    }
+  };
+
   for (const row of rows) {
     try {
       if (!row[1]) { // Empresa é obrigatório
@@ -58,116 +71,79 @@ export async function importFromBuffer(buffer: Buffer, mimetype: string, sdrId: 
         continue;
       }
 
-      const normalize = (val: any) => {
-        if (val === undefined || val === null) return null;
-        const str = String(val).trim();
-        if (str.toLowerCase() === 'desconhecido' || str === '') return null;
-        return str;
-      };
-
-      const normalizeDate = (val: any) => {
-        const str = normalize(val);
-        if (!str) return null;
-        try {
-          // Tenta parsear DD/MM/YYYY
-          return parseDate(str, 'dd/MM/yyyy', new Date());
-        } catch {
-          return null;
-        }
-      };
-
       const domain = normalize(row[0]);
       const company_name = normalize(row[1])!;
       const cnpj = normalize(row[2]);
-      const niche = normalize(row[3]);
+      const segment = normalize(row[3]);
       const company_size = normalize(row[4]);
-      const lead_status_origin = normalize(row[5]);
-      // row[6] is Data de Registro, ignored for now
-      const rawIcpScore = parseInt(row[7]) || 0;
-      // If score > 14, treat as percentage and map to 0-14 scale
-      const icp_score = rawIcpScore > 14 ? Math.round((rawIcpScore / 100) * 14) : rawIcpScore;
-      const rawIcpTier = normalize(row[8]);
-      const icp_tier = rawIcpTier ? (ICP_TIER_MAP[rawIcpTier] ?? null) : null;
+      // row[5] ignored (old status origin)
+      // row[6] ignored (registration date)
+      const icp_score = parseInt(row[7]) || null;
+      // row[8] ignored (old icp tier)
       
       const iaEval = normalize(row[9]);
       const aboutLead = normalize(row[10]);
-      let notes_import = [iaEval ? `Avaliação IA: ${iaEval}` : '', aboutLead ? `Sobre o Lead: ${aboutLead}` : ''].filter(Boolean).join('\n\n');
-      if (!notes_import) notes_import = null as any;
+      let notes = [iaEval ? `Avaliação IA: ${iaEval}` : '', aboutLead ? `Sobre o Lead: ${aboutLead}` : ''].filter(Boolean).join('\n\n');
+      if (!notes) notes = null as any;
 
-      const ecommerce_platform = normalize(row[11]);
+      // row[11] ignored (ecommerce platform)
       const whatsapp = normalize(row[12]);
       const email = normalize(row[13]);
-      const instagram_handle = normalize(row[14]);
-      const linkedin_url = normalize(row[15]);
+      const instagram = normalize(row[14]);
+      const linkedin = normalize(row[15]);
       const state = normalize(row[16]);
       const city = normalize(row[17]);
-      const processed_at = normalizeDate(row[18]) || normalizeDate(row[19]);
+      // row[18/19] can be used for custom metadata if needed
 
-      // Deduplicação por domain, email, whatsapp OU telefone (relativos ao SDR)
+      // Deduplicação por domain ou email no tenant
       const orConditions: any[] = [];
       if (domain) orConditions.push({ domain });
       if (email) orConditions.push({ email });
-      if (whatsapp) {
-        orConditions.push({ whatsapp });
-        orConditions.push({ phone: whatsapp }); // Often numbers are mixed
-      }
 
       let existingLead = null;
       if (orConditions.length > 0) {
         existingLead = await prisma.lead.findFirst({
           where: {
-            sdr_id: sdrId,
+            tenant_id: tenantId,
             OR: orConditions,
           }
         });
       }
 
       if (existingLead) {
-        // APENAS IGNORE - não sobrescreva para não perder anotações e status
+        // IGNORE - user requested to not override duplicates
         result.duplicatas++;
         continue;
       }
 
-      const leadData = {
-        domain,
-        company_name,
-        cnpj,
-        niche,
-        company_size,
-        lead_status_origin,
-        icp_score,
-        icp_tier,
-        ecommerce_platform,
-        whatsapp,
-        email,
-        instagram_handle,
-        linkedin_url,
-        state,
-        city,
-        notes_import,
-        processed_at,
-        sdr_id: sdrId,
-        status: LeadStatus.CONTA_FRIA,
-        imported_at: new Date(),
-      };
-
       const newLead = await prisma.lead.create({
-        data: leadData,
+        data: {
+          tenant_id: tenantId,
+          // If imported by SDR, assign to them. If by Manager/Owner, goes to pool (BANCO)
+          sdr_id: membershipId, // Defaulting to the importer for now, can be changed via Banco de Leads
+          status: LeadStatus.BANCO,
+          company_name,
+          domain,
+          cnpj,
+          segment,
+          company_size,
+          email,
+          phone: row[12] ? String(row[12]) : null, // Fallback phone
+          whatsapp,
+          instagram,
+          linkedin,
+          state,
+          city,
+          notes,
+          icp_score,
+          imported_at: new Date(),
+        },
       });
+
       result.importados++;
-      const leadId = newLead.id;
-
-      result.leadIds.push(leadId);
-
-      // Calculate PRR synchronously if prrInputs exist (skip gracefully otherwise)
-      try {
-        await prrService.calculate(leadId);
-      } catch {
-        // No PRR inputs available — leave prr_score as null
-        logger.debug(`PRR skipped for lead ${leadId}: no inputs`);
-      }
+      result.leadIds.push(newLead.id);
     } catch (error) {
-      console.error('Erro ao importar linha:', error, row);
+      logger.error('Erro ao importar linha:', { error, row });
       result.erros++;
     }
   }
