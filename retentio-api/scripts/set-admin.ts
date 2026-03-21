@@ -3,8 +3,8 @@ import { PrismaClient, Role } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'hugo@syscoin.com.br';
-  const tenantId = 'b16868db-7dc7-4589-9ae6-9ece6edb4842';
+  const email = 'hugo@retente.com.br';
+  const tenantId = '5c7c3e4a-6d8a-44c4-84dc-6e669a689a45';
 
   console.log(`🚀 Elevando usuário ${email} para ADMIN no Tenant Retentio...`);
 
@@ -23,7 +23,7 @@ async function main() {
       }
     },
     data: {
-      role: Role.ADMIN
+      role: 'ADMIN' as any
     }
   });
 
