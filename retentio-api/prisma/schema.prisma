@@ -562,6 +562,7 @@ model OnboardingState {
 }
 
 enum Role {
+  ADMIN
   OWNER
   MANAGER
   SDR

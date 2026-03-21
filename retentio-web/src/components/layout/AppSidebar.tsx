@@ -32,7 +32,7 @@ import type { LucideIcon } from "lucide-react";
 
 interface StoredUser {
   name: string;
-  role: "OWNER" | "MANAGER" | "SDR" | "CLOSER";
+  role: "ADMIN" | "OWNER" | "MANAGER" | "SDR" | "CLOSER";
   email: string;
   avatar_url?: string | null;
 }
@@ -67,6 +67,13 @@ const gestorNav: NavItem[] = [
   { href: "/settings/ai", label: "AI & Providers", icon: Settings },
 ];
 
+const adminNav: NavItem[] = [
+  { href: "/admin/dashboard", label: "SaaS Overview", icon: LayoutDashboard },
+  { href: "/admin/tenants", label: "Tenants/Clientes", icon: Globe },
+  { href: "/admin/plans", label: "Gestão de Planos", icon: CreditCard },
+  { href: "/admin/financeiro", label: "Financeiro", icon: BarChart3 },
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -79,6 +86,7 @@ export function AppSidebar() {
     } catch {}
   }, []);
 
+  const isAdmin = user?.role === "ADMIN";
   const isGestor = user?.role === "MANAGER" || user?.role === "OWNER";
   const unreadCount = useUnreadCount();
 
@@ -98,13 +106,13 @@ export function AppSidebar() {
 
       {/* Nav */}
       <nav className="flex flex-1 flex-col gap-1 p-3 overflow-y-auto">
-        {isGestor && (
+        {isAdmin ? (
           <>
             <span className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Gestão
+              SaaS Administration
             </span>
-            {gestorNav.map((item) => {
-              const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
+            {adminNav.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
@@ -124,37 +132,68 @@ export function AppSidebar() {
                 </Link>
               );
             })}
-            <span className="mb-1 mt-3 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-              Operação
-            </span>
+          </>
+        ) : (
+          <>
+            {isGestor && (
+              <>
+                <span className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  Gestão
+                </span>
+                {gestorNav.map((item) => {
+                  const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`
+                        flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm
+                        transition-colors duration-150
+                        ${
+                          isActive
+                            ? "bg-accent/10 font-medium text-accent"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                        }
+                      `}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+                <span className="mb-1 mt-3 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  Operação
+                </span>
+              </>
+            )}
+            {sdrNav.map((item) => {
+              const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm
+                    transition-colors duration-150
+                    ${
+                      isActive
+                        ? "bg-accent/10 font-medium text-accent"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                    }
+                  `}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {item.label}
+                  {item.hasBadge && unreadCount > 0 && (
+                    <span className="ml-auto flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </>
         )}
-        {sdrNav.map((item) => {
-          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm
-                transition-colors duration-150
-                ${
-                  isActive
-                    ? "bg-accent/10 font-medium text-accent"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-                }
-              `}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-              {item.hasBadge && unreadCount > 0 && (
-                <span className="ml-auto flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
       </nav>
 
       <ActivationChecklist />
