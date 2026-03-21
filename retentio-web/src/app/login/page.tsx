@@ -33,7 +33,9 @@ export default function LoginPage() {
       const role = data.user?.role;
       
       // V2 Redirection logic
-      if (role === "OWNER" || role === "MANAGER") {
+      if (role === "ADMIN") {
+        router.push("/admin/dashboard");
+      } else if (role === "OWNER" || role === "MANAGER") {
         router.push("/gestor");
       } else if (role === "CLOSER") {
         router.push("/agenda");
