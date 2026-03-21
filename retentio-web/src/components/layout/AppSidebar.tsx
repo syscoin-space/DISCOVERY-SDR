@@ -14,12 +14,8 @@ import {
   Bell,
   ArrowRightLeft,
   BookOpen,
-  Settings,
-  LayoutDashboard,
-  Users,
-  Target,
-  Palette,
   CreditCard,
+  Globe,
 } from "lucide-react";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import { NotificationBell } from "../shared/NotificationBell";
