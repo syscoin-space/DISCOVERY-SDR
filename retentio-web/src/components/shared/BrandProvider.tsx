@@ -25,7 +25,7 @@ export function BrandProvider() {
     root.style.setProperty("--green", brand.color_green);
 
     // Compute accent-hover (darken by 15%)
-    const accentHover = darkenHex(brand.color_accent, 15);
+    const accentHover = darkenHex(brand.color_accent || "#4F46E5", 15);
     root.style.setProperty("--accent-hover", accentHover);
 
     // Update document title
@@ -64,6 +64,7 @@ export function BrandProvider() {
 }
 
 function darkenHex(hex: string, percent: number): string {
+  if (!hex || typeof hex !== 'string') return "#000000";
   const num = parseInt(hex.replace("#", ""), 16);
   const r = Math.max(0, Math.round(((num >> 16) & 0xff) * (1 - percent / 100)));
   const g = Math.max(0, Math.round(((num >> 8) & 0xff) * (1 - percent / 100)));
