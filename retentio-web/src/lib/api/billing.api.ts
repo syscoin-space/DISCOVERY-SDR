@@ -22,6 +22,7 @@ export interface PlanDetails {
   currency: string;
   limits: any;
   features: any;
+  is_active: boolean;
 }
 
 export const billingApi = {
