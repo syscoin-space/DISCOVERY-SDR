@@ -1,12 +1,11 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = 'hugo@syscoin.com.br';
-  const tenantId = 'b16868db-7dc7-4589-9ae6-9ece6edb4842';
+  const email = 'hugo@retente.com.br';
 
-  console.log(`🚀 Elevando usuário ${email} para ADMIN no Tenant Retentio...`);
+  console.log(`🚀 Elevando usuário ${email} para ADMIN em todas as suas memberships...`);
 
   const user = await prisma.user.findUnique({ where: { email } });
   
@@ -15,20 +14,16 @@ async function main() {
     return;
   }
 
-  const membership = await prisma.membership.update({
+  const result = await prisma.membership.updateMany({
     where: {
-      user_id_tenant_id: {
-        user_id: user.id,
-        tenant_id: tenantId
-      }
+      user_id: user.id
     },
     data: {
-      role: Role.ADMIN
+      role: 'ADMIN' as any
     }
   });
 
-  console.log('✅ Usuário agora é ADMIN!');
-  console.log('Membership atualizada:', membership.id);
+  console.log(`✅ ${result.count} memberships elevadas para ADMIN!`);
 }
 
 main()
