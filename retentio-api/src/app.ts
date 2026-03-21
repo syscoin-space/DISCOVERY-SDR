@@ -66,7 +66,7 @@ app.use('/api/cadences', authGuard, cadenceRouter);
 app.use('/api/discovery', authGuard, discoveryRouter);
 app.use('/api/ai-settings', authGuard, aiSettingsRouter);
 app.use('/api/onboarding', onboardingRouter);
-app.use('/api/billing', authGuard, billingRouter);
+app.use('/api/billing', billingRouter);
 app.use('/api/webhooks', billingWebhookRouter); // Rota pública para gateways
 
 // ── Error Handler (must be last) ──
