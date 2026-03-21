@@ -1,4 +1,3 @@
-```typescript
 import { Router } from "express";
 import { asyncHandler, authGuard } from "../../middlewares";
 import { getTenantId } from "../../middlewares/auth";
