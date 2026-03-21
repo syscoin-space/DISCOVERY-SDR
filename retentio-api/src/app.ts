@@ -19,11 +19,14 @@ import { discoveryRouter } from './modules/leads/discovery.routes';
 import { onboardingRouter } from './modules/onboarding/onboarding.routes';
 import { billingRouter } from './modules/billing/billing.routes';
 import { billingWebhookRouter } from './modules/billing/billing-webhook.routes';
+import { brandRouter } from './modules/brand/brand.routes';
 import { authGuard, roleGuard } from './middlewares/auth';
+import { Role } from '@prisma/client';
 
 export const app = express();
 
 // ── Global Middlewares ──
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
@@ -44,26 +47,26 @@ app.get('/health', (_req, res) => {
 });
 
 import { aiSettingsRouter } from './modules/ai/ai-settings.routes';
-
 import { dashboardV2Router } from './modules/dashboard/dashboard.v2.routes';
 
 // ── V2 Routes ──
+app.use('/api/brand', brandRouter); // Público
 app.use('/api/auth', authRouter);
 app.use('/api/invitations', invitationRouter);
-app.use('/api/leads', leadRouter);
-app.use('/api/handoffs', handoffRouter);
-app.use('/api/dashboard/v2', dashboardV2Router);
-app.use('/api/dashboard', dashboardRouter);
-app.use('/api/today', todayRouter);
-app.use('/api/notifications', notificationRouter);
-app.use('/api/gestor', authGuard, roleGuard('GESTORES' as any), gestorRouter); // To be refactored
-app.use('/api/google', googleRouter);
+app.use('/api/leads', authGuard, leadRouter);
+app.use('/api/handoffs', authGuard, handoffRouter);
+app.use('/api/dashboard/v2', authGuard, dashboardV2Router);
+app.use('/api/dashboard', authGuard, dashboardRouter);
+app.use('/api/today', authGuard, todayRouter);
+app.use('/api/notifications', authGuard, notificationRouter);
+app.use('/api/gestor', authGuard, roleGuard(Role.OWNER, Role.MANAGER), gestorRouter);
+app.use('/api/google', authGuard, googleRouter);
 app.use('/api/agenda', authGuard, agendaRouter);
 app.use('/api/cadences', authGuard, cadenceRouter);
 app.use('/api/discovery', authGuard, discoveryRouter);
 app.use('/api/ai-settings', authGuard, aiSettingsRouter);
 app.use('/api/onboarding', onboardingRouter);
-app.use('/api/billing', billingRouter);
+app.use('/api/billing', authGuard, billingRouter);
 app.use('/api/webhooks', billingWebhookRouter); // Rota pública para gateways
 
 // ── Error Handler (must be last) ──
