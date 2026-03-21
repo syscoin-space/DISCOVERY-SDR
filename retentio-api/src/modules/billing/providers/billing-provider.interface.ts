@@ -1,4 +1,9 @@
-import { SubscriptionStatus, BillingProvider as ProviderEnum } from "@prisma/client";
+import { SubscriptionStatus } from "@prisma/client";
+
+export enum BillingProviderEnum {
+  ASAAS = 'ASAAS',
+  STRIPE = 'STRIPE'
+}
 
 export interface BillingCustomer {
   externalId: string;
@@ -38,7 +43,7 @@ export interface CreateSubscriptionInput {
 }
 
 export interface BillingProvider {
-  readonly name: ProviderEnum;
+  readonly name: BillingProviderEnum;
 
   // Clientes
   createCustomer(data: { tenantId: string; email: string; name: string; cpfCnpj?: string }): Promise<BillingCustomer>;

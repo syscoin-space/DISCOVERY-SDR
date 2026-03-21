@@ -1,11 +1,11 @@
 import axios, { AxiosInstance } from "axios";
-import { BillingProvider, BillingCustomer, BillingSubscription, CreateSubscriptionInput, WebhookResult } from "./billing-provider.interface";
-import { SubscriptionStatus, BillingProvider as ProviderEnum } from "@prisma/client";
+import { BillingProvider, BillingCustomer, BillingSubscription, CreateSubscriptionInput, WebhookResult, BillingProviderEnum } from "./billing-provider.interface";
+import { SubscriptionStatus } from "@prisma/client";
 import { AppError } from "../../../shared/types";
 import { env } from "../../../config/env";
 
 export class AsaasProvider implements BillingProvider {
-  readonly name = ProviderEnum.ASAAS;
+  readonly name = BillingProviderEnum.ASAAS;
   private api: AxiosInstance;
 
   constructor() {
