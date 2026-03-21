@@ -5,7 +5,7 @@ import { AppError } from "../../../shared/types";
 import { env } from "../../../config/env";
 
 export class AsaasProvider implements BillingProvider {
-  readonly name = BillingProviderEnum.ASAAS;
+  readonly name = "ASAAS" as BillingProviderEnum;
   private api: AxiosInstance;
 
   constructor() {

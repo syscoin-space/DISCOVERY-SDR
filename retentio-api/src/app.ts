@@ -23,6 +23,8 @@ import { authGuard, roleGuard } from './middlewares/auth';
 
 export const app = express();
 
+app.set('trust proxy', 1);
+
 // ── Global Middlewares ──
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
