@@ -21,7 +21,7 @@ export default function DashboardLayout({
         {/* Mobile header */}
         <MobileHeader />
         {/* pt-[calc(56px+env(safe-area-inset-top))] for mobile header, pb-[calc(56px+env(safe-area-inset-bottom))] for bottom nav */}
-        <main className="flex flex-1 flex-col overflow-hidden pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] lg:pt-0 lg:pb-0">
+        <main className="flex flex-1 flex-col overflow-y-auto pt-[calc(3.5rem+env(safe-area-inset-top,0px))] pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] lg:pt-0 lg:pb-0">
           {children}
         </main>
       </div>
