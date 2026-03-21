@@ -10,29 +10,60 @@ const prisma = new PrismaClient();
 async function migrate() {
   console.log('🚀 Iniciando Migração Seletiva V1A -> V2...');
 
+  // 0. Garantir Planos Básicos (Necessário para o Tenant existir)
+  console.log('📦 Garantindo planos STANDARD e PRO...');
+  const standardPlan = await prisma.plan.upsert({
+    where: { key: 'STANDARD' },
+    update: {},
+    create: {
+      name: 'Standard',
+      key: 'STANDARD',
+      description: 'Plano ideal para times pequenos',
+      price_monthly: 490,
+      limits: { sdr: 3, closer: 1, leads_monthly: 500 },
+      features: { ai_guidance: true, multi_provider_ai: false, advanced_dashboard: false }
+    }
+  });
+
+  const proPlan = await prisma.plan.upsert({
+    where: { key: 'PRO' },
+    update: {},
+    create: {
+      name: 'Pro',
+      key: 'PRO',
+      description: 'Escala total para times de alta performance',
+      price_monthly: 990,
+      limits: { sdr: 10, closer: 5, leads_monthly: 5000 },
+      features: { ai_guidance: true, multi_provider_ai: true, advanced_dashboard: true }
+    }
+  });
+
   // 1. Garantir Tenant Retentio
   const tenant = await prisma.tenant.upsert({
     where: { slug: 'retentio' },
     update: {
       name: 'Retentio',
+      plan_id: standardPlan.id,
     },
     create: {
       name: 'Retentio',
       slug: 'retentio',
       discovery_enabled: true,
+      plan_id: standardPlan.id,
       // @ts-ignore
-      onboarding_status: 'PENDING',
-      onboarding_step: 0,
+      onboarding_status: 'COMPLETED',
+      onboarding_step: 3,
     },
   });
   console.log(`✅ Tenant: ${tenant.name} (${tenant.id})`);
 
-  // 2. Garantir Usuários Hugo e Vitória (Preservando e-mails reais conforme solicitado)
+  // 2. Garantir Usuários Hugo e Vitória
   const passwordHash = await hash('Retentio@2026', 10);
-
+  
+  // E-mails reais confirmados pelo usuário
   const userData = [
     { email: 'hugo@retente.com.br', name: 'Hugo', role: Role.OWNER },
-    { email: 'vitoria@retente.com.br', name: 'Vitória', role: Role.SDR },
+    { email: 'vitoria@retentio.com.br', name: 'Vitória', role: Role.SDR },
   ];
 
   const memberships: any = {};
@@ -63,7 +94,8 @@ async function migrate() {
   }
 
   // 3. Migrar Leads (se houver arquivo de input)
-  const leadsPath = '/Users/hugocandido/Discovery-SDR/retentio-api/scripts/v1a_leads.json';
+  // @ts-ignore
+  const leadsPath = path.join(process.cwd(), 'scripts', 'v1a_leads.json');
   if (fs.existsSync(leadsPath)) {
     const leadsRaw = fs.readFileSync(leadsPath, 'utf-8');
     const leads = JSON.parse(leadsRaw);
@@ -137,6 +169,7 @@ async function migrate() {
 migrate()
   .catch((e) => {
     console.error('❌ Erro na migração:', e);
+    // @ts-ignore
     process.exit(1);
   })
   .finally(async () => {
