@@ -7,7 +7,7 @@ import { prisma } from "../../config/prisma";
 
 export const billingRouter = Router();
 
-// Todos os endpoints de billing requerem autenticação e normalmente Role OWNER ou MANAGER
+// Todos os endpoints de billing requerem autenticação
 billingRouter.use(authGuard);
 
 // GET /api/billing/plan
@@ -36,7 +36,7 @@ billingRouter.get(
       plan: sub.plan,
       status: sub.status,
       current_period_end: sub.current_period_end,
-      next_billing_at: sub.current_period_end, // Fallback para data de expiração
+      next_billing_at: sub.current_period_end,
       gateway_subscription_id: sub.gateway_subscription_id,
       usage
     });
@@ -55,7 +55,7 @@ billingRouter.get(
   })
 );
 
-billingRouter.post('/subscribe', authGuard, asyncHandler(async (req, res) => {
+billingRouter.post('/subscribe', asyncHandler(async (req, res) => {
   const tenantId = getTenantId(req);
   const { planKey, paymentMethod } = req.body;
   
