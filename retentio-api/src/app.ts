@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
+import { Role } from '@prisma/client';
 import { errorHandler } from './middlewares';
 import { authRouter } from './modules/auth/auth.routes';
 import { invitationRouter } from './modules/auth/invitation.routes';
@@ -19,6 +20,7 @@ import { discoveryRouter } from './modules/leads/discovery.routes';
 import { onboardingRouter } from './modules/onboarding/onboarding.routes';
 import { billingRouter } from './modules/billing/billing.routes';
 import { billingWebhookRouter } from './modules/billing/billing-webhook.routes';
+import { brandRouter } from './modules/brand/brand.routes';
 import { authGuard, roleGuard } from './middlewares/auth';
 
 export const app = express();
@@ -58,7 +60,7 @@ app.use('/api/dashboard/v2', dashboardV2Router);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/today', todayRouter);
 app.use('/api/notifications', notificationRouter);
-app.use('/api/gestor', authGuard, roleGuard('GESTORES' as any), gestorRouter); // To be refactored
+app.use('/api/gestor', authGuard, roleGuard(Role.OWNER, Role.MANAGER), gestorRouter);
 app.use('/api/google', googleRouter);
 app.use('/api/agenda', authGuard, agendaRouter);
 app.use('/api/cadences', authGuard, cadenceRouter);
@@ -66,6 +68,7 @@ app.use('/api/discovery', authGuard, discoveryRouter);
 app.use('/api/ai-settings', authGuard, aiSettingsRouter);
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/billing', billingRouter);
+app.use('/api/brand', brandRouter);
 app.use('/api/webhooks', billingWebhookRouter); // Rota pública para gateways
 
 // ── Error Handler (must be last) ──

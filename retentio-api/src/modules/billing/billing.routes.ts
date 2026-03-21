@@ -23,7 +23,11 @@ billingRouter.get(
     });
 
     if (!sub) {
-      throw new Error('Assinatura não encontrada');
+      return res.json({
+        plan: null,
+        status: 'INACTIVE',
+        message: 'Assinatura não encontrada para este tenant'
+      });
     }
 
     const usage = await planService.getUsageSummary(tenantId);
