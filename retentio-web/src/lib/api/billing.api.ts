@@ -1,7 +1,7 @@
 import api from "./client";
 
 export interface PlanUsage {
-  plan: PlanDetails;
+  plan: PlanDetails | null;
   status: string;
   current_period_end: string | null;
   next_billing_at: string | null;

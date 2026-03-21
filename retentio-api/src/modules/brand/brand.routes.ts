@@ -5,15 +5,14 @@ import { asyncHandler, getTenantId, authGuard } from '../../middlewares';
 export const brandRouter = Router();
 
 // GET /api/brand
-// Pega as configurações de branding do tenant atual
+// Pega as configurações de branding (Público ou Contextual)
 brandRouter.get(
   '/',
-  authGuard,
   asyncHandler(async (req, res) => {
-    const tenantId = getTenantId(req);
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { branding: true, name: true, slug: true }
+    // Tenta pegar o primeiro tenant ativo para branding padrão do SaaS
+    const tenant = await prisma.tenant.findFirst({
+      where: { active: true },
+      select: { branding: true, name: true }
     });
 
     res.json(tenant?.branding || {

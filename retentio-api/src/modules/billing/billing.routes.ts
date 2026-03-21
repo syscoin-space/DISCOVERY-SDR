@@ -36,7 +36,7 @@ billingRouter.get(
       plan: sub.plan,
       status: sub.status,
       current_period_end: sub.current_period_end,
-      next_billing_at: sub.next_billing_at,
+      next_billing_at: sub.current_period_end, // Fallback para data de expiração
       gateway_subscription_id: sub.gateway_subscription_id,
       usage
     });
