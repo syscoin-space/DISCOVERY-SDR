@@ -8,11 +8,10 @@ import { prisma } from "../../config/prisma";
 export const billingRouter = Router();
 
 // Todos os endpoints de billing requerem autenticação
-billingRouter.use(authGuard);
-
 // GET /api/billing/plan
 billingRouter.get(
   "/plan",
+  authGuard,
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const sub = await prisma.subscription.findUnique({
@@ -55,7 +54,7 @@ billingRouter.get(
   })
 );
 
-billingRouter.post('/subscribe', asyncHandler(async (req, res) => {
+billingRouter.post('/subscribe', authGuard, asyncHandler(async (req, res) => {
   const tenantId = getTenantId(req);
   const { planKey, paymentMethod } = req.body;
   
