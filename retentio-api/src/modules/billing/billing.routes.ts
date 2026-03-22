@@ -1,16 +1,20 @@
 import { Router } from "express";
-import { asyncHandler, authGuard, getTenantId } from "../../middlewares";
+import { asyncHandler, authGuard, getTenantId, roleGuard } from "../../middlewares";
 import { planService } from "./plan.service";
 import { subscriptionService } from "./subscription.service";
 import { prisma } from "../../config/prisma";
+import { Role } from "@prisma/client";
 
 export const billingRouter = Router();
 
-// Todos os endpoints de billing requerem autenticação
+// Todos os endpoints de billing requerem autenticação e permissão de gestão (Owner/Manager/Admin)
+const billingGuard = roleGuard(Role.OWNER, Role.MANAGER, Role.ADMIN);
+
 // GET /api/billing/plan
 billingRouter.get(
   "/plan",
   authGuard,
+  billingGuard,
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const sub = await prisma.subscription.findUnique({

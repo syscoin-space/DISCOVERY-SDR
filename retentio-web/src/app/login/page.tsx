@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import api from "@/lib/api/client";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useBrand } from "@/hooks/use-brand";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tenantSlug = searchParams.get("tenant") || searchParams.get("s");
+  
   const { setAuth } = useAuthStore();
-  const { data: brand } = useBrand();
+  const { data: brand } = useBrand(tenantSlug || undefined);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -84,7 +88,9 @@ export default function LoginPage() {
               </h1>
             </>
           )}
-          <p className="mt-1 text-xs text-gray-500">CRM de Prospecção SDR</p>
+          <p className="mt-1 text-xs text-gray-500">
+            {tenantSlug ? `Acessando ${brand?.app_name}` : "CRM de Prospecção SDR"}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
