@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { asyncHandler, authGuard } from "../../middlewares";
-import { getTenantId } from "../../middlewares/auth";
+import { asyncHandler, authGuard, getTenantId } from "../../middlewares";
 import { planService } from "./plan.service";
 import { subscriptionService } from "./subscription.service";
 import { prisma } from "../../config/prisma";
@@ -60,5 +59,11 @@ billingRouter.post('/subscribe', authGuard, asyncHandler(async (req, res) => {
   
   const result = await subscriptionService.createSubscription(tenantId, planKey, paymentMethod);
   
+  res.json(result);
+}));
+
+billingRouter.get('/portal', authGuard, asyncHandler(async (req, res) => {
+  const tenantId = getTenantId(req);
+  const result = await subscriptionService.getCustomerPortal(tenantId);
   res.json(result);
 }));

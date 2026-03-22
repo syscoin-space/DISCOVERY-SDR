@@ -107,6 +107,16 @@ export class SubscriptionService {
       }
     });
   }
+
+  async getCustomerPortal(tenantId: string) {
+    const sub = await prisma.subscription.findUnique({ where: { tenant_id: tenantId } });
+    if (!sub || !sub.gateway_customer_id) {
+      throw new AppError(404, "Cliente não possui integração financeira ativa", "NO_GATEWAY_CUSTOMER");
+    }
+
+    const url = await this.provider.getCustomerPortalUrl(sub.gateway_customer_id);
+    return { url };
+  }
 }
 
 export const subscriptionService = new SubscriptionService();

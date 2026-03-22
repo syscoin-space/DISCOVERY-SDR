@@ -54,6 +54,7 @@ export interface BillingProvider {
   getSubscription(externalId: string): Promise<BillingSubscription | null>;
   cancelSubscription(externalId: string): Promise<void>;
   updateSubscription(externalId: string, data: { planKey?: string }): Promise<BillingSubscription>;
+  getCustomerPortalUrl(externalCustomerId: string): Promise<string>;
 
   // Webhooks
   handleWebhookPayload(header: string, body: any): Promise<WebhookResult | null>;
