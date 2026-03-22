@@ -20,6 +20,7 @@ import { onboardingRouter } from './modules/onboarding/onboarding.routes';
 import { billingRouter } from './modules/billing/billing.routes';
 import { billingWebhookRouter } from './modules/billing/billing-webhook.routes';
 import { brandRouter } from './modules/brand/brand.routes';
+import { templateRouter } from './modules/cadences/template.routes';
 import { authGuard, roleGuard } from './middlewares/auth';
 import { Role } from '@prisma/client';
 
@@ -59,13 +60,14 @@ app.use('/api/dashboard/v2', authGuard, dashboardV2Router);
 app.use('/api/dashboard', authGuard, dashboardRouter);
 app.use('/api/today', authGuard, todayRouter);
 app.use('/api/notifications', authGuard, notificationRouter);
-app.use('/api/gestor', authGuard, roleGuard(Role.OWNER, Role.MANAGER), gestorRouter);
+app.use('/api/gestor', authGuard, roleGuard(Role.ADMIN, Role.OWNER, Role.MANAGER), gestorRouter);
 app.use('/api/google', authGuard, googleRouter);
 app.use('/api/agenda', authGuard, agendaRouter);
 app.use('/api/cadences', authGuard, cadenceRouter);
 app.use('/api/discovery', authGuard, discoveryRouter);
 app.use('/api/ai-settings', authGuard, aiSettingsRouter);
-app.use('/api/onboarding', onboardingRouter);
+app.use('/api/onboarding', authGuard, roleGuard(Role.ADMIN, Role.OWNER), onboardingRouter);
+app.use('/api/templates', authGuard, templateRouter);
 app.use('/api/billing', billingRouter);
 app.use('/api/webhooks', billingWebhookRouter); // Rota pública para gateways
 
