@@ -145,6 +145,12 @@ export class AsaasProvider implements BillingProvider {
       default: return SubscriptionStatus.ACTIVE;
     }
   }
+
+  async getCustomerPortalUrl(externalCustomerId: string): Promise<string> {
+    // No Asaas Sandbox, o portal do cliente pode ser simulado ou retornado via link de extrato
+    // Para simplificar e atender o pedido de 'integração direta', retornamos o link do dashboard de pagamentos do cliente
+    return `https://sandbox.asaas.com/customer/dashboard/${externalCustomerId}`;
+  }
 }
 
 export const asaasProvider = new AsaasProvider();
