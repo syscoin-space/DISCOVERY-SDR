@@ -46,58 +46,71 @@ const registerSchema = z.object({
 authRouter.get(
   '/check-slug/:slug',
   asyncHandler(async (req, res) => {
-    const slug = req.params.slug as string;
+    const slug = (req.params.slug as string)
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '-');
+
+    if (slug.length < 3) {
+      return res.json({ available: false, message: 'Slug muito curto' });
+    }
+
+    const reserved = ['admin', 'api', 'saas', 'support', 'billing', 'config', 'auth', 'login', 'register'];
+    if (reserved.includes(slug)) {
+      return res.json({ available: false, message: 'Palavra reservada' });
+    }
+
     const existing = await prisma.tenant.findUnique({ where: { slug } });
     res.json({ available: !existing });
   })
 );
 
-// POST /auth/register (Self-Service Signup)
+// POST /auth/register (Self-Service Signup Atômico)
 authRouter.post(
   '/register',
   validate(registerSchema),
   asyncHandler(async (req, res) => {
     const { email, password, name, company_name } = req.body;
 
+    // 1. Validações Prévias
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       throw new AppError(400, 'Este e-mail já está em uso.', 'USER_EXISTS');
     }
 
-    // Slug generation and validation
-    const baseSlug = company_name.toLowerCase()
+    const slug = company_name.toLowerCase()
       .trim()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]/g, '-');
     
-    let slug = baseSlug;
     const existingTenant = await prisma.tenant.findUnique({ where: { slug } });
     if (existingTenant) {
-      // Se já existe, adicionamos um sufixo aleatório curto
-      slug = `${baseSlug}-${Math.random().toString(36).substring(2, 5)}`;
+      throw new AppError(400, 'Este nome de empresa já está em uso para o endereço da conta.', 'SLUG_EXISTS');
     }
 
     const passwordHash = await hash(password, 10);
 
-    // Transação Atômica: User -> Tenant -> Membership -> Subscription -> Onboarding
+    // 2. Transação Atômica (User -> Tenant -> Membership -> Subscription -> Onboarding)
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Criar Usuário
+      // Cria Usuário
       const user = await tx.user.create({
         data: { email, password_hash: passwordHash, name },
       });
 
-      // 2. Criar Tenant
+      // Cria Tenant (Com Onboarding PENDING)
       const tenant = await tx.tenant.create({
         data: {
           name: company_name,
-          slug: slug,
+          slug,
           onboarding_status: 'PENDING',
           onboarding_step: 0,
         },
       });
 
-      // 3. Criar Membership (OWNER)
+      // Cria Membership (Role: OWNER)
       const membership = await tx.membership.create({
         data: {
           user_id: user.id,
@@ -106,26 +119,28 @@ authRouter.post(
         },
       });
 
-      // 4. Atribuir Plano Trial (Buscamos pelo key 'FREE' ou 'STANDARD' se houver)
-      const defaultPlan = await tx.plan.findFirst({ where: { key: 'FREE' } });
-      if (defaultPlan) {
+      // Cria Subscription TRIAL (14 dias)
+      const trialPlan = await tx.plan.findFirst({ where: { key: 'TRIAL' } }) 
+                       || await tx.plan.findFirst({ where: { key: 'FREE' } });
+
+      if (trialPlan) {
         await tx.tenant.update({
           where: { id: tenant.id },
-          data: { plan_id: defaultPlan.id }
+          data: { plan_id: trialPlan.id }
         });
 
         await tx.subscription.create({
           data: {
             tenant_id: tenant.id,
-            plan_id: defaultPlan.id,
+            plan_id: trialPlan.id,
             status: 'TRIAL',
             current_period_start: new Date(),
-            current_period_end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 dias
+            current_period_end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 
           }
         });
       }
 
-      // 5. Iniciar Estado de Onboarding
+      // Cria Estado de Onboarding Explícito
       await tx.onboardingState.create({
         data: {
           tenant_id: tenant.id,
@@ -135,6 +150,18 @@ authRouter.post(
             ai_setup: false 
           },
         },
+      });
+
+      // Log de Auditoria Inicial
+      await tx.auditLog.create({
+        data: {
+          tenant_id: tenant.id,
+          user_id: user.id,
+          action: 'TENANT_SIGNUP',
+          entity_type: 'TENANT',
+          entity_id: tenant.id,
+          new_value: { slug, plan: trialPlan?.key }
+        }
       });
 
       return { user, tenant, membership };
@@ -160,7 +187,7 @@ authRouter.post(
         tenant: result.tenant,
       },
       token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
+      refreshToken: tokens.refresh_token,
     });
   }),
 );

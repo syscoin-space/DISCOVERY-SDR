@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api/client";
 import { useAuthStore } from "@/lib/stores/auth.store";
-import { Check, X, Loader2 } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, ShieldCheck, Globe, Rocket } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,6 +23,7 @@ export default function RegisterPage() {
   
   const [slug, setSlug] = useState("");
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [slugMessage, setSlugMessage] = useState("");
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,6 +43,7 @@ export default function RegisterPage() {
   useEffect(() => {
     if (slug.length < 3) {
       setSlugAvailable(null);
+      setSlugMessage("");
       return;
     }
 
@@ -47,18 +52,21 @@ export default function RegisterPage() {
       try {
         const { data } = await api.get(`/auth/check-slug/${slug}`);
         setSlugAvailable(data.available);
+        setSlugMessage(data.message || "");
       } catch {
         setSlugAvailable(null);
       } finally {
         setCheckingSlug(false);
       }
-    }, 500);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [slug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (slugAvailable === false) return;
+    
     setError("");
     setLoading(true);
 
@@ -67,124 +75,194 @@ export default function RegisterPage() {
       
       setAuth({
         token: data.token,
-        refreshToken: data.refresh_token,
+        refreshToken: data.refreshToken,
         user: data.user,
       });
 
-      // Redirect to onboarding wizard
       router.push("/onboarding");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Falha ao criar conta");
+      setError(err.response?.data?.message || "Erro ao criar sua jornada comercial. Tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-navy via-accent to-green p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white/95 p-8 shadow-2xl backdrop-blur-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-navy">Comece seu Trial Grátis</h1>
-          <p className="mt-2 text-sm text-gray-500">Crie sua conta em menos de 1 minuto.</p>
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex lg:grid lg:grid-cols-2 overflow-hidden">
+      {/* Left side: branding/copy */}
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-navy text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-navy via-navy to-accent opacity-50" />
+        <div className="relative z-10">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Rocket className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-black tracking-tighter">RETENTIO <span className="text-accent underline decoration-4 underline-offset-4">V2</span></span>
+          </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Seu Nome</label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none"
-                placeholder="Ex: Hugo"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">E-mail Corporativo</label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none"
-                placeholder="hugo@empresa.com"
-              />
-            </div>
+        <div className="relative z-10 space-y-8">
+          <div className="space-y-4">
+            <h2 className="text-5xl font-extrabold tracking-tight leading-tight">
+              Sua operação de <br />
+              <span className="text-accent">SDR em escala</span>, <br />
+              começa hoje.
+            </h2>
+            <p className="text-lg text-zinc-400 font-medium max-w-md">
+              A V2 foi desenhada para transformar prospecção em um processo previsível, auditável e altamente lucrativo.
+            </p>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Nome da Empresa</label>
-            <input
-              type="text"
-              required
-              value={formData.company_name}
-              onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none"
-              placeholder="Ex: Retentio"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-gray-600">URL da sua conta</label>
-              {checkingSlug ? (
-                <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
-              ) : slugAvailable === true ? (
-                <span className="flex items-center gap-1 text-[10px] text-green-600">
-                  <Check className="h-3 w-3" /> Disponível
-                </span>
-              ) : slugAvailable === false ? (
-                <span className="flex items-center gap-1 text-[10px] text-red-600">
-                  <X className="h-3 w-3" /> Já em uso
-                </span>
-              ) : null}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Self-Service Onboarding</p>
+                <p className="text-xs text-zinc-500">Configuração guiada e ativação imediata.</p>
+              </div>
             </div>
-            <div className="relative">
-              <input
-                type="text"
-                value={slug}
-                readOnly
-                className="w-full rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-500 outline-none cursor-not-allowed"
-              />
-              <span className="absolute right-3 top-2 text-xs text-gray-400">.retentio.com.br</span>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Escopo Corporativo</p>
+                <p className="text-xs text-zinc-500">Múltiplos times, faturamento único e controle total.</p>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Senha</label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 outline-none"
-              placeholder="••••••••"
-            />
+        <div className="relative z-10 text-xs text-zinc-500 font-medium tracking-widest uppercase">
+          Discovery SDR V2 — 2026 Edition
+        </div>
+      </div>
+
+      {/* Right side: form */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
+        <div className="w-full max-w-md space-y-8">
+          <div className="space-y-2 lg:hidden">
+             <span className="text-2xl font-black tracking-tighter text-navy dark:text-white">RETENTIO <span className="text-accent italic">V2</span></span>
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-3xl font-extrabold tracking-tight">Criar sua conta</h1>
+            <p className="text-zinc-500 font-medium italic">Teste todas as funcionalidades por 14 dias grátis.</p>
           </div>
 
-          {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600">
-              {error}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Seu Nome</Label>
+                  <Input 
+                    id="name" 
+                    required 
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Hugo"
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail Corporativo</Label>
+                  <Input 
+                    id="email" 
+                    type="email"
+                    required 
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="hugo@empresa.com"
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company_name">Nome da Empresa</Label>
+                <Input 
+                  id="company_name" 
+                  required 
+                  value={formData.company_name}
+                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                  placeholder="Minha Empresa Ltda"
+                  className="h-11 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-zinc-600">Endereço da sua conta</Label>
+                  {checkingSlug ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-zinc-400" />
+                  ) : slugAvailable === true ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-green-600">
+                      <CheckCircle2 className="h-3 w-3" /> Disponível
+                    </span>
+                  ) : slugAvailable === false ? (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-red-500">
+                      <XCircle className="h-3 w-3" /> {slugMessage || "Indisponível"}
+                    </span>
+                  ) : null}
+                </div>
+                <div className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between gap-2 overflow-hidden ${
+                  slugAvailable === true ? "border-green-500/20 bg-green-500/5" : "border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900"
+                }`}>
+                  <div className="flex items-center gap-2 truncate">
+                    <Globe className="w-4 h-4 text-zinc-400 shrink-0" />
+                    <span className={`text-sm font-bold truncate ${slugAvailable === true ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400"}`}>
+                      {slug || "empresa"}
+                    </span>
+                    <span className="text-zinc-400 text-xs">.retentio.com.br</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Criar Senha</Label>
+                <Input 
+                  id="password" 
+                  type="password"
+                  required 
+                  minLength={6}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="No mínimo 6 caracteres"
+                  className="h-11 rounded-xl"
+                />
+              </div>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading || slugAvailable === false}
-            className="w-full rounded-lg bg-accent py-3 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all hover:bg-accent-hover disabled:opacity-50"
-          >
-            {loading ? "Criando conta..." : "Criar minha conta agora"}
-          </button>
-        </form>
+            {error && (
+              <div className="p-4 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-2 animate-in fade-in zoom-in">
+                <XCircle className="w-4 h-4 shrink-0" />
+                {error}
+              </div>
+            )}
 
-        <div className="mt-6 text-center text-xs text-gray-500">
-          Já tem uma conta?{" "}
-          <Link href="/login" className="font-semibold text-accent hover:underline">
-            Entrar
-          </Link>
+            <Button 
+              type="submit" 
+              disabled={loading || slugAvailable === false}
+              className="w-full h-12 rounded-xl bg-accent hover:bg-accent/90 text-white font-bold shadow-lg shadow-accent/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                "Começar minha jornada grátis"
+              )}
+            </Button>
+          </form>
+
+          <div className="pt-4 text-center">
+            <p className="text-sm text-zinc-500 font-medium">
+              Já faz parte do time?{" "}
+              <Link href="/login" className="text-accent font-bold hover:underline underline-offset-4">
+                Entrar agora
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

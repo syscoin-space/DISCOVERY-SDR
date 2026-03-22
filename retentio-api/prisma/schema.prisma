@@ -696,3 +696,9 @@ enum AIProviderType {
   CLAUDE
   GEMINI
 }
+
+enum BillingProvider {
+  ASAAS
+  STRIPE
+  HOTMART
+}

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../../config/prisma';
-import { asyncHandler, authGuard, getTenantId, roleGuard } from '../../middlewares';
+import { asyncHandler, authGuard, getTenantId, roleGuard, validate } from '../../middlewares';
 import { z } from 'zod';
 import { AppError } from '../../shared/types';
 import { OnboardingStatus } from '@prisma/client';
@@ -12,6 +12,7 @@ onboardingRouter.use(roleGuard('OWNER' as any));
 
 const companySetupSchema = z.object({
   name: z.string().min(2),
+  logo_url: z.string().optional(),
   branding: z.record(z.any()).optional(),
 });
 
@@ -21,6 +22,11 @@ const teamSetupSchema = z.object({
     name: z.string().min(2),
     role: z.enum(['SDR', 'CLOSER', 'MANAGER']),
   })),
+});
+
+const aiSetupSchema = z.object({
+  provider: z.enum(['OPENROUTER', 'OPENAI', 'CLAUDE', 'GEMINI']),
+  api_key: z.string().min(10),
 });
 
 // GET /onboarding/state
@@ -68,10 +74,9 @@ onboardingRouter.get(
   })
 );
 
-// PATCH /onboarding/company
 onboardingRouter.patch(
   '/company',
-  validate(companySetupSchema),
+  validate(companySetupSchema, 'body'),
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const { name, branding } = req.body;
@@ -96,6 +101,18 @@ onboardingRouter.patch(
       }
     });
 
+    // Log de Auditoria
+    await prisma.auditLog.create({
+      data: {
+        tenant_id: tenantId,
+        user_id: (req as any).user.sub,
+        action: 'ONBOARDING_COMPANY_SETUP',
+        entity_type: 'TENANT',
+        entity_id: tenantId,
+        new_value: { name }
+      }
+    });
+
     res.json(tenant);
   })
 );
@@ -103,7 +120,7 @@ onboardingRouter.patch(
 // POST /onboarding/team
 onboardingRouter.post(
   '/team',
-  validate(teamSetupSchema),
+  validate(teamSetupSchema, 'body'),
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const { members } = req.body;
@@ -142,6 +159,18 @@ onboardingRouter.post(
       }
     });
 
+    // Log de Auditoria
+    await prisma.auditLog.create({
+      data: {
+        tenant_id: tenantId,
+        user_id: (req as any).user.sub,
+        action: 'ONBOARDING_TEAM_ADDED',
+        entity_type: 'TENANT',
+        entity_id: tenantId,
+        new_value: { count: results.length }
+      }
+    });
+
     res.json({ count: results.length, members: results });
   })
 );
@@ -149,17 +178,22 @@ onboardingRouter.post(
 // PATCH /onboarding/ai
 onboardingRouter.patch(
   '/ai',
+  validate(aiSetupSchema, 'body'),
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const { provider, api_key } = req.body;
 
-    if (provider && api_key) {
+    const normalizedProvider = provider.toUpperCase() as any;
+
+    if (normalizedProvider && api_key) {
+      const aiProvider = normalizedProvider;
+
       await prisma.tenantAIProvider.upsert({
-        where: { tenant_id_provider: { tenant_id: tenantId, provider } },
+        where: { tenant_id_provider: { tenant_id: tenantId, provider: aiProvider } },
         update: { api_key_encrypted: api_key, is_enabled: true, is_default: true },
         create: {
           tenant_id: tenantId,
-          provider,
+          provider: aiProvider,
           api_key_encrypted: api_key,
           is_enabled: true,
           is_default: true
@@ -168,11 +202,11 @@ onboardingRouter.patch(
 
       await prisma.tenantAISettings.upsert({
         where: { tenant_id: tenantId },
-        update: { ai_enabled: true, default_provider: provider },
+        update: { ai_enabled: true, default_provider: aiProvider },
         create: {
           tenant_id: tenantId,
           ai_enabled: true,
-          default_provider: provider
+          default_provider: aiProvider
         }
       });
     }
@@ -184,6 +218,18 @@ onboardingRouter.patch(
           ...(await prisma.onboardingState.findUnique({ where: { tenant_id: tenantId } }))?.tasks_completed as any,
           ai_setup: true 
         } 
+      }
+    });
+
+    // Log de Auditoria
+    await prisma.auditLog.create({
+      data: {
+        tenant_id: tenantId,
+        user_id: (req as any).user.sub,
+        action: 'ONBOARDING_AI_SETUP',
+        entity_type: 'TENANT',
+        entity_id: tenantId,
+        new_value: { provider }
       }
     });
 
@@ -212,19 +258,19 @@ onboardingRouter.post(
       }
     });
 
+    // Log de Auditoria de Conclusão Final
+    await prisma.auditLog.create({
+      data: {
+        tenant_id: tenantId,
+        user_id: (req as any).user.sub,
+        action: 'ONBOARDING_COMPLETED',
+        entity_type: 'TENANT',
+        entity_id: tenantId,
+        new_value: { status: 'COMPLETED' }
+      }
+    });
+
     res.json({ message: 'Onboarding completed successfully', tenant });
   })
 );
 
-// Helper function to validate within this file since I can't import the midleware 'validate' directly here without defining it or importing properly
-// Actually I should verify how 'validate' is exported in middlewares/index.ts
-function validate(schema: z.ZodSchema) {
-  return (req: any, _res: any, next: any) => {
-    try {
-      schema.parse(req.body);
-      next();
-    } catch (error: any) {
-      next(new AppError(400, error.message || 'Validation error'));
-    }
-  };
-}

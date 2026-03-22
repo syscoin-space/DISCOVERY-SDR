@@ -9,6 +9,8 @@ export type Tenant = {
   active: boolean;
   branding: unknown;
   discovery_enabled: boolean;
+  onboarding_status?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+  onboarding_step?: number;
   created_at: string;
 };
 
@@ -64,6 +66,8 @@ export interface User {
     id: string;
     name: string;
     slug: string;
+    onboarding_status?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
+    onboarding_step?: number;
   };
   active: boolean;
   created_at: string;
