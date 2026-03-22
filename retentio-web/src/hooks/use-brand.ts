@@ -18,11 +18,13 @@ export interface BrandConfig {
 
 const BRAND_KEY = "brand";
 
-export function useBrand() {
+export function useBrand(slug?: string) {
   return useQuery<BrandConfig>({
-    queryKey: [BRAND_KEY],
+    queryKey: [BRAND_KEY, slug],
     queryFn: async () => {
-      const { data } = await api.get<BrandConfig>("/brand");
+      const { data } = await api.get<BrandConfig>("/brand", {
+        params: { slug }
+      });
       return data;
     },
     staleTime: 5 * 60_000,

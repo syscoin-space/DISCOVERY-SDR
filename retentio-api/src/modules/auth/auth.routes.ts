@@ -42,36 +42,62 @@ const registerSchema = z.object({
   company_name: z.string().min(2),
 });
 
-// POST /auth/register
+// GET /auth/check-slug/:slug
+authRouter.get(
+  '/check-slug/:slug',
+  asyncHandler(async (req, res) => {
+    const slug = req.params.slug as string;
+    const existing = await prisma.tenant.findUnique({ where: { slug } });
+    res.json({ available: !existing });
+  })
+);
+
+// POST /auth/register (Self-Service Signup)
 authRouter.post(
   '/register',
   validate(registerSchema),
   asyncHandler(async (req, res) => {
     const { email, password, name, company_name } = req.body;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      throw new AppError(400, 'E-mail já cadastrado', 'USER_EXISTS');
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      throw new AppError(400, 'Este e-mail já está em uso.', 'USER_EXISTS');
+    }
+
+    // Slug generation and validation
+    const baseSlug = company_name.toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '-');
+    
+    let slug = baseSlug;
+    const existingTenant = await prisma.tenant.findUnique({ where: { slug } });
+    if (existingTenant) {
+      // Se já existe, adicionamos um sufixo aleatório curto
+      slug = `${baseSlug}-${Math.random().toString(36).substring(2, 5)}`;
     }
 
     const passwordHash = await hash(password, 10);
-    const slug = company_name.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
-    // Transação para criar tudo
+    // Transação Atômica: User -> Tenant -> Membership -> Subscription -> Onboarding
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Criar Usuário
       const user = await tx.user.create({
         data: { email, password_hash: passwordHash, name },
       });
 
+      // 2. Criar Tenant
       const tenant = await tx.tenant.create({
         data: {
           name: company_name,
-          slug: `${slug}-${Math.floor(Math.random() * 1000)}`,
+          slug: slug,
           onboarding_status: 'PENDING',
           onboarding_step: 0,
         },
       });
 
+      // 3. Criar Membership (OWNER)
       const membership = await tx.membership.create({
         data: {
           user_id: user.id,
@@ -80,10 +106,34 @@ authRouter.post(
         },
       });
 
+      // 4. Atribuir Plano Trial (Buscamos pelo key 'FREE' ou 'STANDARD' se houver)
+      const defaultPlan = await tx.plan.findFirst({ where: { key: 'FREE' } });
+      if (defaultPlan) {
+        await tx.tenant.update({
+          where: { id: tenant.id },
+          data: { plan_id: defaultPlan.id }
+        });
+
+        await tx.subscription.create({
+          data: {
+            tenant_id: tenant.id,
+            plan_id: defaultPlan.id,
+            status: 'TRIAL',
+            current_period_start: new Date(),
+            current_period_end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 dias
+          }
+        });
+      }
+
+      // 5. Iniciar Estado de Onboarding
       await tx.onboardingState.create({
         data: {
           tenant_id: tenant.id,
-          tasks_completed: { company_setup: false, team_added: false, ai_setup: false },
+          tasks_completed: { 
+            company_setup: false, 
+            team_added: false, 
+            ai_setup: false 
+          },
         },
       });
 

@@ -16,6 +16,11 @@ import {
   BookOpen,
   CreditCard,
   Globe,
+  Settings,
+  LayoutDashboard,
+  Users,
+  Target,
+  Palette,
 } from "lucide-react";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import { NotificationBell } from "../shared/NotificationBell";
@@ -51,7 +56,7 @@ const sdrNav: NavItem[] = [
   { href: "/emails", label: "Emails", icon: Mail },
   { href: "/notificacoes", label: "Notificações", icon: Bell, hasBadge: true },
   { href: "/glossario", label: "Glossário", icon: BookOpen },
-  { href: "/configuracoes", label: "Configurações", icon: Settings },
+  { href: "/configuracoes/perfil", label: "Meu Perfil", icon: Settings },
 ];
 
 const gestorNav: NavItem[] = [
