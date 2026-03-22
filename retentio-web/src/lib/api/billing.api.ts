@@ -39,6 +39,10 @@ export const billingApi = {
   async createSubscription(planKey: string, paymentMethod: any) {
     const response = await api.post('/billing/subscribe', { planKey, paymentMethod });
     return response.data;
+  },
+
+  async getPortalUrl() {
+    return api.get('/billing/portal');
   }
 };
 

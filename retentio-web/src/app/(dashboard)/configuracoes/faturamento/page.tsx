@@ -47,7 +47,26 @@ export default function BillingPage() {
     }
   };
 
+  const handleManageAsaas = async () => {
+    try {
+      const { data } = await billingApi.getPortalUrl();
+      if (data?.url) {
+        window.open(data.url, "_blank");
+      }
+    } catch (error) {
+      console.error("Failed to get portal URL", error);
+    }
+  };
+
+  const handleUpgrade = (planKey: string) => {
+    // Para V2, redirecionamos para o checkout ou abrimos modal
+    // Por enquanto, apenas logamos, mas o ideal é chamar createSubscription
+    console.log("Upgrading to", planKey);
+    alert(`Iniciando upgrade para o plano ${planKey}. Você será redirecionado para o Checkout.`);
+  };
+
   const getPercentage = (used: number, limit: number) => {
+    if (!limit || limit === 0) return 0;
     return Math.min(Math.round((used / limit) * 100), 100);
   };
 
@@ -92,10 +111,18 @@ export default function BillingPage() {
             </div>
             
             <div className="pt-4 border-t border-primary/10 flex gap-4">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20">
+              <Button 
+                size="lg" 
+                className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                onClick={() => handleUpgrade('PRO')}
+              >
                 Fazer Upgrade
               </Button>
-              <Button variant="outline" size="lg">
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={handleManageAsaas}
+              >
                 Gerenciar no Asaas
               </Button>
             </div>
@@ -166,6 +193,7 @@ export default function BillingPage() {
                       : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
                   }`}
                   disabled={plan.key === usage.plan.key}
+                  onClick={() => handleUpgrade(plan.key)}
                 >
                   {plan.key === usage.plan.key ? "Configurado" : "Fazer Upgrade"}
                 </Button>
