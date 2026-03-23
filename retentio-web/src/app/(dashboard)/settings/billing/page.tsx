@@ -1,3 +1,26 @@
+import { 
+  CreditCard, 
+  Zap, 
+  CheckCircle2, 
+  ExternalLink, 
+  History, 
+  Receipt,
+  AlertCircle,
+  Loader2
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent,
+  CardFooter
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useBillingCurrentPlan, useBillingPortal } from "@/hooks/use-billing";
 import { billingApi, Invoice } from "@/lib/api/billing.api";
