@@ -8,7 +8,7 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// ─── Request interceptor: inject Bearer token ───
+// ─── Request interceptor: inject Bearer token + handle FormData ───
 api.interceptors.request.use((config) => {
   if (typeof window === "undefined") return config;
 
@@ -16,6 +16,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // When sending FormData, delete Content-Type so Axios auto-sets multipart/form-data with boundary
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
+
   return config;
 });
 

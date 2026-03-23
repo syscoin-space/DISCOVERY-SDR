@@ -52,9 +52,7 @@ export function useUploadBrandImage() {
     mutationFn: async ({ field, file }: { field: "logo" | "favicon" | "icon_192" | "icon_512"; file: File }) => {
       const formData = new FormData();
       formData.append("file", file);
-      const { data } = await api.post<BrandConfig>(`/brand/upload/${field}`, formData, {
-        headers: { "Content-Type": undefined },
-      });
+      const { data } = await api.post<BrandConfig>(`/brand/upload/${field}`, formData);
       return data;
     },
     onSuccess: (data) => {
