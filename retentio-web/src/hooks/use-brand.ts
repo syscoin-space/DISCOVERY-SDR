@@ -53,7 +53,7 @@ export function useUploadBrandImage() {
       const formData = new FormData();
       formData.append("file", file);
       const { data } = await api.post<BrandConfig>(`/brand/upload/${field}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": undefined },
       });
       return data;
     },
