@@ -56,21 +56,30 @@ tenantRouter.patch(
     const tenantId = getTenantId(req);
     const { name, discovery_enabled } = req.body;
 
-    const updated = await prisma.tenant.update({
-      where: { id: tenantId },
-      data: {
-        name: name ?? undefined,
-        discovery_enabled: discovery_enabled ?? undefined,
-      },
-    });
+    console.log('[TenantPatch] Updating tenant:', { tenantId, name, discovery_enabled });
 
-    res.json({
-      success: true,
-      tenant: {
-        id: updated.id,
-        name: updated.name,
-        discovery_enabled: updated.discovery_enabled,
-      }
-    });
+    try {
+      const updated = await prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+          name: name ?? undefined,
+          discovery_enabled: discovery_enabled ?? undefined,
+        },
+      });
+
+      console.log('[TenantPatch] Success:', updated.id);
+
+      res.json({
+        success: true,
+        tenant: {
+          id: updated.id,
+          name: updated.name,
+          discovery_enabled: updated.discovery_enabled,
+        }
+      });
+    } catch (error: any) {
+      console.error('[TenantPatch] Failed to update tenant:', error.message);
+      throw error;
+    }
   })
 );
