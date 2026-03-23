@@ -41,7 +41,7 @@ export function LandingPage() {
             <Link href="/login" className="px-5 py-2 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all font-bold text-zinc-900 dark:text-white">
               Entrar
             </Link>
-            <Link href="/login" className="px-5 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 font-bold">
+            <Link href="/register" className="px-5 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/20 font-bold">
               Começar Agora
             </Link>
           </nav>
@@ -83,7 +83,7 @@ export function LandingPage() {
             transition={{ delay: 0.3 }}
             className="flex flex-col md:flex-row items-center justify-center gap-4 pt-4"
           >
-            <Link href="/login">
+            <Link href="/register">
               <Button size="lg" className="h-14 px-8 text-lg font-bold bg-blue-600 hover:bg-blue-500 rounded-2xl shadow-xl shadow-blue-600/30">
                 Iniciar Teste Grátis <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -168,7 +168,7 @@ export function LandingPage() {
                       <span className="text-4xl font-black tracking-tighter">R$ {plan.price_monthly}</span>
                       <span className="text-zinc-400 font-medium">/mês</span>
                     </div>
-                    <Link href="/login" className="block">
+                    <Link href="/register" className="block">
                       <Button className={`w-full h-12 rounded-2xl text-base font-bold transition-all ${
                         plan.key === 'standard' 
                           ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30" 
