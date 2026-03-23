@@ -87,6 +87,8 @@ brandRouter.patch(
       app_name: branding.app_name || updated.name,
       logo_url: branding.logo_url || null,
       favicon_url: branding.favicon_url || null,
+      icon_192_url: branding.icon_192_url || null,
+      icon_512_url: branding.icon_512_url || null,
       color_accent: branding.color_accent,
       color_navy: branding.color_navy,
       color_green: branding.color_green,
@@ -134,11 +136,16 @@ brandRouter.post(
     });
 
     const branding = (updated.branding as any) || {};
+
+    console.log('[BrandUpload] Success:', { field, tenantId });
+
     res.json({
       id: updated.id,
       app_name: branding.app_name || updated.name,
       logo_url: branding.logo_url || null,
       favicon_url: branding.favicon_url || null,
+      icon_192_url: branding.icon_192_url || null,
+      icon_512_url: branding.icon_512_url || null,
       color_accent: branding.color_accent,
       color_navy: branding.color_navy,
       color_green: branding.color_green,
