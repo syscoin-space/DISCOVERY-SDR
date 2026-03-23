@@ -142,8 +142,8 @@ export default function TeamPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="SDR">SDR</SelectItem>
-                    <SelectItem value="MANAGER">Manager</SelectItem>
-                    <SelectItem value="OWNER">Owner</SelectItem>
+                    <SelectItem value="MANAGER">Gerente Comercial</SelectItem>
+                    <SelectItem value="OWNER">Dono</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -206,8 +206,8 @@ export default function TeamPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="SDR">SDR</SelectItem>
-                            <SelectItem value="MANAGER">Manager</SelectItem>
-                            <SelectItem value="OWNER">Owner</SelectItem>
+                            <SelectItem value="MANAGER">Gerente Comercial</SelectItem>
+                            <SelectItem value="OWNER">Dono</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
