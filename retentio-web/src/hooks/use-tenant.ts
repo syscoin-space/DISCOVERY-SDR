@@ -30,8 +30,13 @@ export function useUpdateTenantSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: Partial<Pick<TenantSettings, "name" | "discovery_enabled">>) => {
-      const { data } = await api.patch<{ success: boolean; tenant: Partial<TenantSettings> }>("/tenant", payload);
-      return data;
+      try {
+        const { data } = await api.patch<{ success: boolean; tenant: Partial<TenantSettings> }>("/tenant", payload);
+        return data;
+      } catch (error: any) {
+        console.error("[useUpdateTenantSettings] API Error:", error.response?.status, error.response?.data);
+        throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [TENANT_KEY] });
