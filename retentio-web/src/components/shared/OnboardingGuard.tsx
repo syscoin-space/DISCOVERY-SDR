@@ -21,7 +21,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Redundância para garantir que o status seja lido mesmo se a store estiver hidratando
-    const storedUser = typeof window !== "undefined" ? localStorage.getItem("retentio_user") : null;
+    const storedUser = typeof window !== "undefined" ? localStorage.getItem("discovery_sdr_user") : null;
     const parsedUser = storedUser ? JSON.parse(storedUser) : null;
     
     const onboardingStatus = user?.tenant?.onboarding_status || parsedUser?.tenant?.onboarding_status;
@@ -39,7 +39,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, pathname, router, isAllowedRoute]);
 
-  const storedUser = typeof window !== "undefined" ? localStorage.getItem("retentio_user") : null;
+  const storedUser = typeof window !== "undefined" ? localStorage.getItem("discovery_sdr_user") : null;
   const parsedUser = storedUser ? JSON.parse(storedUser) : null;
   const currentStatus = user?.tenant?.onboarding_status || parsedUser?.tenant?.onboarding_status;
   const isPending = currentStatus !== "COMPLETED";
