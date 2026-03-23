@@ -32,13 +32,21 @@ export default function BillingPage() {
     billingApi.getInvoices().then(setInvoices);
   }, []);
 
-  if (isLoading || !sub) {
+  if (isLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
       </div>
     );
   }
+
+  // Graceful fallback for empty subscription
+  const safeSub = sub || {
+    status: 'INACTIVE',
+    plan: null,
+    usage: { leads_monthly: 0, sdr: 0, closer: 0 },
+    current_period_end: null
+  };
 
   const formatCurrency = (val: number | null) => {
     if (!val) return "R$ 0,00";
@@ -48,8 +56,8 @@ export default function BillingPage() {
     }).format(val);
   };
 
-  const nextBilling = sub.current_period_end 
-    ? format(new Date(sub.current_period_end), "dd 'de' MMMM, yyyy", { locale: ptBR })
+  const nextBilling = safeSub.current_period_end 
+    ? format(new Date(safeSub.current_period_end), "dd 'de' MMMM, yyyy", { locale: ptBR })
     : "Não programado";
 
   return (
@@ -61,11 +69,11 @@ export default function BillingPage() {
         </div>
         <Badge variant="outline" className={cn(
           "py-1 px-3 border", 
-          sub.status === "ACTIVE" || sub.status === "TRIAL"
+          safeSub.status === "ACTIVE" || safeSub.status === "TRIAL"
             ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
             : "bg-red-500/10 text-red-500 border-red-500/20"
         )}>
-          {sub.status === "TRIAL" ? "Período de Teste" : sub.status === "ACTIVE" ? "Assinatura Ativa" : "Assinatura Inativa"}
+          {safeSub.status === "TRIAL" ? "Período de Teste" : safeSub.status === "ACTIVE" ? "Assinatura Ativa" : "Assinatura Inativa"}
         </Badge>
       </div>
 
@@ -73,7 +81,7 @@ export default function BillingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Plano Atual */}
           <SettingsSection
-            title={`Plano Atual: ${sub.plan?.name || "Nenhum"}`}
+            title={`Plano Atual: ${safeSub.plan?.name || "Nenhum"}`}
             description={`Sua próxima cobrança será em ${nextBilling}.`}
             icon={Zap}
             className="lg:col-span-2"
@@ -87,7 +95,7 @@ export default function BillingPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <span className="text-3xl font-bold text-foreground">
-                    {formatCurrency(sub.plan?.price_monthly)}/mês
+                    {formatCurrency(safeSub.plan?.price_monthly)}/mês
                   </span>
                   <p className="text-xs text-muted-foreground">Faturamento mensal</p>
                 </div>
@@ -104,7 +112,7 @@ export default function BillingPage() {
               <div className="md:col-span-2 space-y-4">
                 <h4 className="text-sm font-semibold text-foreground italic underline decoration-accent/30">O que seu plano inclui:</h4>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                  {(sub.plan?.features as string[] || [
+                  {(safeSub.plan?.features as string[] || [
                     "Até 5.000 Leads/mês",
                     "IA Ilimitada (BYOK)",
                     "Dashboard de Gestão",
@@ -159,27 +167,27 @@ export default function BillingPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <Label className="text-xs">Leads Mensais</Label>
-                <span className="text-xs font-bold">{sub.usage.leads_monthly} / {sub.plan?.limits?.leads_monthly || 5000}</span>
+                <span className="text-xs font-bold">{safeSub.usage.leads_monthly} / {safeSub.plan?.limits?.leads_monthly || 5000}</span>
               </div>
-              <Progress value={(sub.usage.leads_monthly / (sub.plan?.limits?.leads_monthly || 5000)) * 100} className="h-2 bg-surface-raised" />
+              <Progress value={(safeSub.usage.leads_monthly / (safeSub.plan?.limits?.leads_monthly || 5000)) * 100} className="h-2 bg-surface-raised" />
               <p className="text-[10px] text-muted-foreground italic">Consumo de leads no mês atual</p>
             </div>
 
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <Label className="text-xs">SDRs Ativos</Label>
-                <span className="text-xs font-bold">{sub.usage.sdr} / {sub.plan?.limits?.sdr || 3}</span>
+                <span className="text-xs font-bold">{safeSub.usage.sdr} / {safeSub.plan?.limits?.sdr || 3}</span>
               </div>
-              <Progress value={(sub.usage.sdr / (sub.plan?.limits?.sdr || 3)) * 100} className="h-2 bg-surface-raised" />
+              <Progress value={(safeSub.usage.sdr / (safeSub.plan?.limits?.sdr || 3)) * 100} className="h-2 bg-surface-raised" />
               <p className="text-[10px] text-muted-foreground italic">Assentos de SDR ocupados</p>
             </div>
 
             <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <Label className="text-xs">Closers Ativos</Label>
-                <span className="text-xs font-bold">{sub.usage.closer} / {sub.plan?.limits?.closer || 1}</span>
+                <span className="text-xs font-bold">{safeSub.usage.closer} / {safeSub.plan?.limits?.closer || 1}</span>
               </div>
-              <Progress value={(sub.usage.closer / (sub.plan?.limits?.closer || 1)) * 100} className="h-2 bg-surface-raised" />
+              <Progress value={(safeSub.usage.closer / (safeSub.plan?.limits?.closer || 1)) * 100} className="h-2 bg-surface-raised" />
               <p className="text-[10px] text-muted-foreground italic">Assentos de Closer ocupados</p>
             </div>
           </div>

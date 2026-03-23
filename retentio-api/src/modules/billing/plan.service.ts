@@ -23,16 +23,15 @@ export class PlanService {
       }
     });
 
-    if (!tenant || !(tenant as any).plan) {
-      throw new AppError(404, "Tenant ou plano não encontrado", "PLAN_NOT_FOUND");
+    if (!tenant || !tenant.plan) {
+      return null;
     }
 
-    const t = tenant as any;
     return {
-      plan: t.plan,
-      subscription: t.subscription,
-      limits: t.plan.limits as unknown as PlanLimits,
-      features: t.plan.features as any
+      plan: tenant.plan,
+      subscription: tenant.subscription,
+      limits: tenant.plan.limits as unknown as PlanLimits,
+      features: tenant.plan.features as any
     };
   }
 
@@ -88,7 +87,7 @@ export class PlanService {
    * Retorna um resumo de uso para o Dashboard/Configurações
    */
   async getUsageSummary(tenantId: string) {
-    const { limits, plan } = await this.getTenantPlan(tenantId);
+    const planInfo = await this.getTenantPlan(tenantId);
     
     const usage = {
       sdr: await this.getResourceUsage(tenantId, 'sdr'),
@@ -96,10 +95,19 @@ export class PlanService {
       leads_monthly: await this.getResourceUsage(tenantId, 'leads_monthly'),
     };
 
+    if (!planInfo) {
+      return {
+        plan_name: 'Nenhum',
+        plan_key: 'none',
+        limits: { sdr: 0, closer: 0, leads_monthly: 0 },
+        usage
+      };
+    }
+
     return {
-      plan_name: plan.name,
-      plan_key: plan.key,
-      limits,
+      plan_name: planInfo.plan.name,
+      plan_key: planInfo.plan.key,
+      limits: planInfo.limits,
       usage
     };
   }
