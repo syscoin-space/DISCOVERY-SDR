@@ -12,6 +12,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { useAuthStore } from "@/lib/stores/auth.store";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
 const navigation = [
   { name: "Geral", href: "/settings/account", icon: UserCircle },
   { name: "Marca", href: "/settings/brand", icon: Palette },
@@ -26,13 +30,31 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { role, isAuthenticated, hydrate } = useAuthStore();
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  useEffect(() => {
+    if (isAuthenticated && role) {
+      if (role === "SDR" || role === "CLOSER") {
+        router.push("/dashboard");
+      }
+    }
+  }, [role, isAuthenticated, router]);
+
+  if (!isAuthenticated || (role === "SDR" || role === "CLOSER")) {
+    return null; // Or a loading skeleton
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-border bg-surface px-6 py-4">
         <Settings className="h-5 w-5 text-muted-foreground" />
-        <h1 className="text-xl font-bold text-foreground">Configurações da Conta</h1>
+        <h1 className="text-xl font-bold text-foreground">Configurações</h1>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
