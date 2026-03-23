@@ -1,16 +1,9 @@
-"use client";
-
 import { useState, useMemo } from "react";
 import { Search, BookOpen, Cpu, Target, MessageSquare } from "lucide-react";
+import { GlossaryItemData } from "@/components/glossary/GlossaryItemCard";
+import { GlossaryCategoryList } from "@/components/glossary/GlossaryCategoryList";
 
 // ─── Data ───────────────────────────────────────────────────────────
-
-interface GlossaryItem {
-  title: string;
-  body: string;
-  tag?: string;
-  highlight?: boolean;
-}
 
 const CATEGORIES = [
   { id: "metodologia", label: "Metodologia", icon: BookOpen, description: "Termos Aaron Ross" },
@@ -21,7 +14,7 @@ const CATEGORIES = [
 
 type CategoryId = (typeof CATEGORIES)[number]["id"];
 
-const GLOSSARY: Record<CategoryId, GlossaryItem[]> = {
+const GLOSSARY: Record<CategoryId, GlossaryItemData[]> = {
   metodologia: [
     {
       title: "Receita Previsível (Predictable Revenue)",
@@ -196,14 +189,6 @@ const GLOSSARY: Record<CategoryId, GlossaryItem[]> = {
   ],
 };
 
-const TAG_COLORS: Record<string, string> = {
-  "Aaron Ross": "text-blue-600 bg-blue-500/10 border-blue-500/20",
-  Sistema: "text-green-600 bg-green-500/10 border-green-500/20",
-  "Prática": "text-orange-600 bg-orange-500/10 border-orange-500/20",
-  Discovery: "text-purple-600 bg-purple-500/10 border-purple-500/20",
-  Pergunta: "text-indigo-600 bg-indigo-500/10 border-indigo-500/20",
-};
-
 // ─── Component ──────────────────────────────────────────────────────
 
 export default function GlossarioPage() {
@@ -323,42 +308,7 @@ export default function GlossarioPage() {
             </div>
 
             {/* Items */}
-            {items.length === 0 ? (
-              <p className="text-center py-12 text-sm text-muted-foreground italic">
-                Nenhum resultado para &ldquo;{search}&rdquo;
-              </p>
-            ) : (
-              <div className="space-y-3 lg:space-y-4">
-                {items.map((item, i) => (
-                  <div
-                    key={i}
-                    className={`rounded-xl border bg-surface p-3.5 lg:p-5 transition-all ${
-                      item.highlight
-                        ? "border-l-[3px] border-l-accent border-accent/20"
-                        : "border-border"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2 lg:gap-3 mb-2">
-                      <h3 className="text-xs lg:text-sm font-bold text-foreground leading-snug">
-                        {item.title}
-                      </h3>
-                      {item.tag && (
-                        <span
-                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
-                            TAG_COLORS[item.tag] ?? "text-gray-500 bg-gray-500/10 border-gray-500/20"
-                          }`}
-                        >
-                          {item.tag}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                      {item.body}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <GlossaryCategoryList items={items} search={search} />
           </div>
         </div>
       </div>

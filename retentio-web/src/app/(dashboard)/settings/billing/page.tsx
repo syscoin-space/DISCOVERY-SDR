@@ -1,3 +1,5 @@
+"use client";
+
 import { 
   CreditCard, 
   Zap, 
@@ -6,17 +8,10 @@ import {
   History, 
   Receipt,
   AlertCircle,
-  Loader2
+  Loader2,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
-  CardContent,
-  CardFooter
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
@@ -26,6 +21,7 @@ import { useBillingCurrentPlan, useBillingPortal } from "@/hooks/use-billing";
 import { billingApi, Invoice } from "@/lib/api/billing.api";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { SettingsSection } from "@/components/settings/SettingsSection";
 
 export default function BillingPage() {
   const { data: sub, isLoading } = useBillingCurrentPlan();
@@ -74,71 +70,64 @@ export default function BillingPage() {
       </div>
 
       <div className="grid gap-6">
-        {/* Plano Atual */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2 border border-border bg-surface shadow-sm overflow-hidden flex flex-col">
-            <CardHeader className="border-b border-border bg-surface/50">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Zap className="h-4 w-4 text-accent" />
-                Plano Atual: {sub.plan?.name || "Nenhum"}
-              </CardTitle>
-              <CardDescription>Sua próxima cobrança será em {nextBilling}.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6 flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <span className="text-3xl font-bold text-foreground">
-                      {formatCurrency(sub.plan?.price_monthly)}/mês
-                    </span>
-                    <p className="text-xs text-muted-foreground">Faturamento mensal</p>
-                  </div>
-                  <Button 
-                    onClick={() => portal.mutate()} 
-                    disabled={portal.isPending}
-                    className="w-full gap-2"
-                  >
-                    {portal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Alterar Plano"}
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <div className="md:col-span-2 space-y-4">
-                  <h4 className="text-sm font-semibold text-foreground italic underline decoration-accent/30">O que seu plano inclui:</h4>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                    {(sub.plan?.features as string[] || [
-                      "Até 5.000 Leads/mês",
-                      "IA Ilimitada (BYOK)",
-                      "Dashboard de Gestão",
-                      "Suporte Prioritário",
-                      "White-label Branding",
-                      "API Gateway Acesso"
-                    ]).map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="border-t border-border bg-surface-raised/30 px-6 py-3">
+          {/* Plano Atual */}
+          <SettingsSection
+            title={`Plano Atual: ${sub.plan?.name || "Nenhum"}`}
+            description={`Sua próxima cobrança será em ${nextBilling}.`}
+            icon={Zap}
+            className="lg:col-span-2"
+            footer={
               <p className="text-[10px] text-muted-foreground">
                 Pagamento processado via <strong>Stripe/Asaas</strong>. Segurança de ponta a ponta.
               </p>
-            </CardFooter>
-          </Card>
+            }
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="text-3xl font-bold text-foreground">
+                    {formatCurrency(sub.plan?.price_monthly)}/mês
+                  </span>
+                  <p className="text-xs text-muted-foreground">Faturamento mensal</p>
+                </div>
+                <Button 
+                  onClick={() => portal.mutate()} 
+                  disabled={portal.isPending}
+                  className="w-full gap-2"
+                >
+                  {portal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Alterar Plano"}
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="md:col-span-2 space-y-4">
+                <h4 className="text-sm font-semibold text-foreground italic underline decoration-accent/30">O que seu plano inclui:</h4>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                  {(sub.plan?.features as string[] || [
+                    "Até 5.000 Leads/mês",
+                    "IA Ilimitada (BYOK)",
+                    "Dashboard de Gestão",
+                    "Suporte Prioritário",
+                    "White-label Branding",
+                    "API Gateway Acesso"
+                  ]).map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </SettingsSection>
 
           {/* Método de Pagamento */}
-          <Card className="border border-border bg-surface shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-border bg-surface/50">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-accent" />
-                Pagamento
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
+          <SettingsSection
+            title="Pagamento"
+            icon={CreditCard}
+          >
+            <div className="space-y-6">
               <div className="flex items-center gap-4 rounded-xl border border-border p-4 bg-surface-raised/50">
                 <div className="h-10 w-12 bg-neutral-800 rounded-md flex items-center justify-center border border-border">
                   <CreditCard className="h-5 w-5 text-neutral-400" />
@@ -156,133 +145,104 @@ export default function BillingPage() {
               >
                 {portal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Atualizar Cartão"}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </SettingsSection>
         </div>
 
         {/* Uso de Recursos */}
-        <Card className="border border-border bg-surface shadow-sm overflow-hidden">
-          <CardHeader className="border-b border-border bg-surface/50">
-            <CardTitle className="text-base flex items-center gap-2">
-              <History className="h-4 w-4 text-accent" />
-              Uso do Ciclo Atual
-            </CardTitle>
-            <CardDescription>Consumo de recursos até o momento.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <Label className="text-xs">Leads Mensais</Label>
-                  <span className="text-xs font-bold">{sub.usage.leads_monthly} / {sub.plan?.limits?.leads_monthly || 5000}</span>
-                </div>
-                <Progress value={(sub.usage.leads_monthly / (sub.plan?.limits?.leads_monthly || 5000)) * 100} className="h-2 bg-surface-raised" />
-                <p className="text-[10px] text-muted-foreground italic">Consumo de leads no mês atual</p>
+        <SettingsSection
+          title="Uso do Ciclo Atual"
+          description="Consumo de recursos até o momento."
+          icon={History}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <div className="space-y-3">
+              <div className="flex justify-between items-end">
+                <Label className="text-xs">Leads Mensais</Label>
+                <span className="text-xs font-bold">{sub.usage.leads_monthly} / {sub.plan?.limits?.leads_monthly || 5000}</span>
               </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <Label className="text-xs">SDRs Ativos</Label>
-                  <span className="text-xs font-bold">{sub.usage.sdr} / {sub.plan?.limits?.sdr || 3}</span>
-                </div>
-                <Progress value={(sub.usage.sdr / (sub.plan?.limits?.sdr || 3)) * 100} className="h-2 bg-surface-raised" />
-                <p className="text-[10px] text-muted-foreground italic">Assentos de SDR ocupados</p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <Label className="text-xs">Closers Ativos</Label>
-                  <span className="text-xs font-bold">{sub.usage.closer} / {sub.plan?.limits?.closer || 1}</span>
-                </div>
-                <Progress value={(sub.usage.closer / (sub.plan?.limits?.closer || 1)) * 100} className="h-2 bg-surface-raised" />
-                <p className="text-[10px] text-muted-foreground italic">Assentos de Closer ocupados</p>
-              </div>
+              <Progress value={(sub.usage.leads_monthly / (sub.plan?.limits?.leads_monthly || 5000)) * 100} className="h-2 bg-surface-raised" />
+              <p className="text-[10px] text-muted-foreground italic">Consumo de leads no mês atual</p>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-end">
+                <Label className="text-xs">SDRs Ativos</Label>
+                <span className="text-xs font-bold">{sub.usage.sdr} / {sub.plan?.limits?.sdr || 3}</span>
+              </div>
+              <Progress value={(sub.usage.sdr / (sub.plan?.limits?.sdr || 3)) * 100} className="h-2 bg-surface-raised" />
+              <p className="text-[10px] text-muted-foreground italic">Assentos de SDR ocupados</p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-end">
+                <Label className="text-xs">Closers Ativos</Label>
+                <span className="text-xs font-bold">{sub.usage.closer} / {sub.plan?.limits?.closer || 1}</span>
+              </div>
+              <Progress value={(sub.usage.closer / (sub.plan?.limits?.closer || 1)) * 100} className="h-2 bg-surface-raised" />
+              <p className="text-[10px] text-muted-foreground italic">Assentos de Closer ocupados</p>
+            </div>
+          </div>
+        </SettingsSection>
 
         {/* Histórico de Faturas */}
-        <Card className="border border-border bg-surface shadow-sm overflow-hidden">
-          <CardHeader className="border-b border-border bg-surface/50">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Receipt className="h-4 w-4 text-accent" />
-              Últimas Faturas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {invoices.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs uppercase bg-surface-raised/50 text-muted-foreground border-b border-border">
-                    <tr>
-                      <th className="px-6 py-3 font-semibold">Data</th>
-                      <th className="px-6 py-3 font-semibold">Valor</th>
-                      <th className="px-6 py-3 font-semibold">Status</th>
-                      <th className="px-6 py-3 font-semibold text-right">Invoice</th>
+        <SettingsSection
+          title="Últimas Faturas"
+          icon={Receipt}
+          contentClassName="p-0"
+        >
+          {invoices.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs uppercase bg-surface-raised/50 text-muted-foreground border-b border-border">
+                  <tr>
+                    <th className="px-6 py-3 font-semibold">Data</th>
+                    <th className="px-6 py-3 font-semibold">Valor</th>
+                    <th className="px-6 py-3 font-semibold">Status</th>
+                    <th className="px-6 py-3 font-semibold text-right">Invoice</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {invoices.map((invoice) => (
+                    <tr key={invoice.id} className="hover:bg-surface-raised/30 transition-colors">
+                      <td className="px-6 py-4">{invoice.date}</td>
+                      <td className="px-6 py-4 font-semibold">{invoice.amount}</td>
+                      <td className="px-6 py-4">
+                        <div className={cn(
+                          "flex items-center gap-1.5",
+                          invoice.status === "Pago" ? "text-emerald-500" : "text-amber-500"
+                        )}>
+                          <CheckCircle2 className="h-3 w-3" />
+                          {invoice.status}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => window.open(invoice.pdf_url || '#', '_blank')}
+                          className="h-8 gap-2 opacity-60 hover:opacity-100"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          PDF
+                        </Button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/50">
-                    {invoices.map((invoice) => (
-                      <tr key={invoice.id} className="hover:bg-surface-raised/30 transition-colors">
-                        <td className="px-6 py-4">{invoice.date}</td>
-                        <td className="px-6 py-4 font-semibold">{invoice.amount}</td>
-                        <td className="px-6 py-4">
-                          <div className={cn(
-                            "flex items-center gap-1.5",
-                            invoice.status === "Pago" ? "text-emerald-500" : "text-amber-500"
-                          )}>
-                            <CheckCircle2 className="h-3 w-3" />
-                            {invoice.status}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => window.open(invoice.pdf_url || '#', '_blank')}
-                            className="h-8 gap-2 opacity-60 hover:opacity-100"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            PDF
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-12 text-center">
+              <div className="h-12 w-12 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
+                <AlertCircle className="h-6 w-6 text-zinc-400" />
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-12 text-center">
-                <div className="h-12 w-12 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
-                  <AlertCircle className="h-6 w-6 text-zinc-400" />
-                </div>
-                <h3 className="text-sm font-bold">Nenhuma fatura encontrada</h3>
-                <p className="text-xs text-muted-foreground mt-1">Quando houver cobranças, elas aparecerão aqui.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              <h3 className="text-sm font-bold">Nenhuma fatura encontrada</h3>
+              <p className="text-xs text-muted-foreground mt-1">Quando houver cobranças, elas aparecerão aqui.</p>
+            </div>
+          )}
+        </SettingsSection>
       </div>
     </div>
   );
 }
-
-function ChevronRight(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-

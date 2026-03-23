@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { aiApi, TenantAIProvider, TenantAISettings, AIProviderType } from "@/lib/api/ai.api";
 import { 
@@ -11,8 +9,7 @@ import {
   Cpu, 
   Settings2, 
   History,
-  Info,
-  ChevronRight
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +19,6 @@ import {
   Card, 
   CardHeader, 
   CardTitle, 
-  CardDescription, 
   CardContent 
 } from "@/components/ui/card";
 import { 
@@ -34,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/shared/Toast";
 import { cn } from "@/lib/utils";
+import { SettingsSection } from "@/components/settings/SettingsSection";
 
 export default function AISettingsPage() {
   const [settings, setSettings] = useState<TenantAISettings | null>(null);
@@ -246,118 +243,113 @@ export default function AISettingsPage() {
 
         {/* Governança */}
         {settings && (
-          <Card className="border border-border bg-surface shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-border bg-surface/50">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="h-4 w-4 text-accent" />
-                Roteamento e Governança
-              </CardTitle>
-              <CardDescription>Políticas de fallback e segurança de IA.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                {/* Fallback */}
-                <div className="space-y-6">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Settings2 className="h-3 w-3" />
-                    Estratégia de Redundância
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Provider Principal</Label>
-                      <Select 
-                        value={settings.default_provider || ""}
-                        onValueChange={(val) => updateGovernance("default_provider", val || null)}
-                      >
-                        <SelectTrigger className="h-9 bg-surface-raised/50">
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="OPENROUTER">OpenRouter</SelectItem>
-                          <SelectItem value="OPENAI">OpenAI</SelectItem>
-                          <SelectItem value="CLAUDE">Claude</SelectItem>
-                          <SelectItem value="GEMINI">Gemini</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Provider de Fallback</Label>
-                      <Select 
-                        value={settings.fallback_provider || ""}
-                        onValueChange={(val) => updateGovernance("fallback_provider", val || null)}
-                      >
-                        <SelectTrigger className="h-9 bg-surface-raised/50">
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="OPENROUTER">OpenRouter</SelectItem>
-                          <SelectItem value="OPENAI">OpenAI</SelectItem>
-                          <SelectItem value="CLAUDE">Claude</SelectItem>
-                          <SelectItem value="GEMINI">Gemini</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-raised/30 mt-2">
-                      <div className="space-y-0.5">
-                        <span className="text-sm font-medium">Permitir Graceful Fallback</span>
-                        <p className="text-[10px] text-muted-foreground italic">Redireciona se o principal falhar.</p>
-                      </div>
-                      <Switch
-                        checked={settings.allow_fallback}
-                        onCheckedChange={(val) => updateGovernance("allow_fallback", val)}
-                      />
-                    </div>
+          <SettingsSection
+            title="Roteamento e Governança"
+            description="Políticas de fallback e segurança de IA."
+            icon={Shield}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              {/* Fallback */}
+              <div className="space-y-6">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Settings2 className="h-3 w-3" />
+                  Estratégia de Redundância
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Provider Principal</Label>
+                    <Select 
+                      value={settings.default_provider || ""}
+                      onValueChange={(val) => updateGovernance("default_provider", val || null)}
+                    >
+                      <SelectTrigger className="h-9 bg-surface-raised/50">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OPENROUTER">OpenRouter</SelectItem>
+                        <SelectItem value="OPENAI">OpenAI</SelectItem>
+                        <SelectItem value="CLAUDE">Claude</SelectItem>
+                        <SelectItem value="GEMINI">Gemini</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </div>
 
-                {/* Security */}
-                <div className="space-y-6">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <History className="h-3 w-3" />
-                    Human-in-the-Loop
-                  </h3>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Provider de Fallback</Label>
+                    <Select 
+                      value={settings.fallback_provider || ""}
+                      onValueChange={(val) => updateGovernance("fallback_provider", val || null)}
+                    >
+                      <SelectTrigger className="h-9 bg-surface-raised/50">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OPENROUTER">OpenRouter</SelectItem>
+                        <SelectItem value="OPENAI">OpenAI</SelectItem>
+                        <SelectItem value="CLAUDE">Claude</SelectItem>
+                        <SelectItem value="GEMINI">Gemini</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-surface-raised/30">
-                      <div className="space-y-1">
-                        <span className="text-sm font-semibold block">Revisão Humana Obrigatória</span>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          O SDR deve validar e aceitar o output da IA manualmente antes da gravação.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={settings.human_review_required}
-                        onCheckedChange={(val) => updateGovernance("human_review_required", val)}
-                      />
+                  <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-raised/30 mt-2">
+                    <div className="space-y-0.5">
+                      <span className="text-sm font-medium">Permitir Graceful Fallback</span>
+                      <p className="text-[10px] text-muted-foreground italic">Redireciona se o principal falhar.</p>
                     </div>
-
-                    <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-surface-raised/30">
-                      <div className="space-y-1">
-                        <span className="text-sm font-semibold block">Transient AI Storage</span>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Salva em metadados temporários antes de persistir no lead.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={settings.persist_ai_metadata_by_default}
-                        onCheckedChange={(val) => updateGovernance("persist_ai_metadata_by_default", val)}
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2 p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
-                       <Info className="h-3.5 w-3.5 text-accent" />
-                       <p className="text-[10px] text-muted-foreground leading-snug">
-                         Configurações de IA são isoladas para este tenant e não afetam outros clientes da plataforma.
-                       </p>
-                    </div>
+                    <Switch
+                      checked={settings.allow_fallback}
+                      onCheckedChange={(val) => updateGovernance("allow_fallback", val)}
+                    />
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Security */}
+              <div className="space-y-6">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <History className="h-3 w-3" />
+                  Human-in-the-Loop
+                </h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-surface-raised/30">
+                    <div className="space-y-1">
+                      <span className="text-sm font-semibold block">Revisão Humana Obrigatória</span>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        O SDR deve validar e aceitar o output da IA manualmente antes da gravação.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.human_review_required}
+                      onCheckedChange={(val) => updateGovernance("human_review_required", val)}
+                    />
+                  </div>
+
+                  <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-surface-raised/30">
+                    <div className="space-y-1">
+                      <span className="text-sm font-semibold block">Transient AI Storage</span>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Salva em metadados temporários antes de persistir no lead.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.persist_ai_metadata_by_default}
+                      onCheckedChange={(val) => updateGovernance("persist_ai_metadata_by_default", val)}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                     <Info className="h-3.5 w-3.5 text-accent" />
+                     <p className="text-[10px] text-muted-foreground leading-snug">
+                       Configurações de IA são isoladas para este tenant e não afetam outros clientes da plataforma.
+                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </SettingsSection>
         )}
       </div>
     </div>

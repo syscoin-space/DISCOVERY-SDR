@@ -15,24 +15,16 @@ import {
   UserPlus, 
   Mail, 
   Trash2, 
-  MoreHorizontal, 
   ShieldCheck, 
   Shield, 
   User,
   Loader2,
-  X,
-  Plus
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
-  CardContent 
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { 
   Select, 
   SelectContent, 
@@ -42,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/shared/Toast";
 import { Badge } from "@/components/ui/badge";
+import { SettingsSection } from "@/components/settings/SettingsSection";
 
 export default function TeamPage() {
   const { data: members, isLoading: loadingMembers } = useTeamMembers();
@@ -164,13 +157,11 @@ export default function TeamPage() {
 
       <div className="grid gap-6">
         {/* Members List */}
-        <Card className="border border-border bg-surface shadow-sm overflow-hidden">
-          <CardHeader className="border-b border-border bg-surface/50">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-accent" />
-              Membros Ativos
-            </CardTitle>
-          </CardHeader>
+        <SettingsSection
+          title="Membros Ativos"
+          icon={Users}
+          contentClassName="p-0"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="text-xs uppercase bg-surface-raised/50 text-muted-foreground border-b border-border">
@@ -237,17 +228,15 @@ export default function TeamPage() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </SettingsSection>
 
         {/* Invitations List */}
         {invitations && invitations.length > 0 && (
-          <Card className="border border-border bg-surface shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-border bg-surface/50">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Mail className="h-4 w-4 text-accent" />
-                Convites Pendentes
-              </CardTitle>
-            </CardHeader>
+          <SettingsSection
+            title="Convites Pendentes"
+            icon={Mail}
+            contentClassName="p-0"
+          >
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs uppercase bg-surface-raised/50 text-muted-foreground border-b border-border">
@@ -279,7 +268,7 @@ export default function TeamPage() {
                 </tbody>
               </table>
             </div>
-          </Card>
+          </SettingsSection>
         )}
       </div>
     </div>
