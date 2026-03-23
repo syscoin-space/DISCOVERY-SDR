@@ -44,3 +44,33 @@ invitationRouter.post(
     res.json({ success: true, tenant });
   })
 );
+
+/**
+ * GET /api/invitations
+ * Lista convites pendentes (Apenas OWNER/MANAGER)
+ */
+invitationRouter.get(
+  "/",
+  authGuard,
+  roleGuard(Role.OWNER, Role.MANAGER),
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+    const invitations = await invitationService.listInvitations(tenantId);
+    res.json(invitations);
+  })
+);
+
+/**
+ * DELETE /api/invitations/:id
+ * Cancela um convite (Apenas OWNER/MANAGER)
+ */
+invitationRouter.delete(
+  "/:id",
+  authGuard,
+  roleGuard(Role.OWNER, Role.MANAGER),
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+    await invitationService.cancelInvitation(tenantId, req.params.id as string);
+    res.status(204).send();
+  })
+);

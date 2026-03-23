@@ -60,11 +60,8 @@ const sdrNav: NavItem[] = [
 ];
 
 const gestorNav: NavItem[] = [
-  { href: "/gestor", label: "Painel", icon: LayoutDashboard },
-  { href: "/gestor/sdrs", label: "SDRs", icon: Users },
-  { href: "/gestor/metas", label: "Metas", icon: Target },
-  { href: "/gestor/marca", label: "Marca", icon: Palette },
-  { href: "/configuracoes/faturamento", label: "Faturamento", icon: CreditCard },
+  { href: "/gestor/dashboard", label: "Dashboard Gestão", icon: LayoutDashboard },
+  { href: "/settings/account", label: "Configurações do Tenant", icon: Settings },
   { href: "/settings/ai", label: "AI & Providers", icon: Settings },
 ];
 

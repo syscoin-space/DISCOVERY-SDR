@@ -1,17 +1,47 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { aiApi, TenantAIProvider, TenantAISettings, AIProviderType } from '@/lib/api/ai.api';
-import { Eye, EyeOff, Save, CheckCircle, AlertTriangle, KeyIcon, Settings } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { aiApi, TenantAIProvider, TenantAISettings, AIProviderType } from "@/lib/api/ai.api";
+import { 
+  Zap, 
+  Shield, 
+  Key, 
+  Save, 
+  Loader2, 
+  Cpu, 
+  Settings2, 
+  History,
+  Info,
+  ChevronRight
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent 
+} from "@/components/ui/card";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { useToast } from "@/components/shared/Toast";
+import { cn } from "@/lib/utils";
 
 export default function AISettingsPage() {
   const [settings, setSettings] = useState<TenantAISettings | null>(null);
   const [providers, setProviders] = useState<TenantAIProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const { toast } = useToast();
 
-  // For managing local input states before saving
   const [localKeys, setLocalKeys] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -27,20 +57,15 @@ export default function AISettingsPage() {
       const keyMap: Record<string, string> = {};
       data.providers.forEach(p => {
         if (p.api_key_encrypted) {
-          keyMap[p.provider] = p.api_key_encrypted; // 'sk-****...' masked
+          keyMap[p.provider] = p.api_key_encrypted;
         }
       });
       setLocalKeys(keyMap);
     } catch (e) {
-      showToast('Erro ao carregar configurações de IA', 'error');
+      toast("Erro ao carregar configurações de IA", "error");
     } finally {
       setLoading(false);
     }
-  };
-
-  const showToast = (msg: string, type: 'success' | 'error') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
   };
 
   const handleProviderSave = async (providerType: AIProviderType) => {
@@ -51,8 +76,6 @@ export default function AISettingsPage() {
       const default_model = existing ? existing.default_model : '';
       
       const apiKeyVal = localKeys[providerType] || '';
-      
-      // We only send api_key if it does NOT contain the mask pattern
       const isNewKey = apiKeyVal.length > 0 && !apiKeyVal.includes('...****...');
 
       const payload: any = { is_enabled, default_model };
@@ -70,15 +93,14 @@ export default function AISettingsPage() {
         return [...prev, res.provider];
       });
 
-      // Update local key map with the fresh MASKED key received
       setLocalKeys(prev => ({
         ...prev,
         [providerType]: res.provider.api_key_encrypted || ''
       }));
 
-      showToast(`Provider ${providerType} atualizado!`, 'success');
+      toast(`Provider ${providerType} atualizado!`, "success");
     } catch (e) {
-      showToast('Erro ao salvar provider', 'error');
+      toast("Erro ao salvar provider", "error");
     } finally {
       setSaving(false);
     }
@@ -87,252 +109,256 @@ export default function AISettingsPage() {
   const handleToggleProvider = async (providerType: AIProviderType, currentVal: boolean) => {
     const existing = providers.find(p => p.provider === providerType);
     if (!existing) {
-      showToast('Salve a credencial antes de ativar', 'error');
+      toast("Salve a credencial antes de ativar", "error");
       return;
     }
     
-    // Optimistic UI
     const newVal = !currentVal;
     setProviders(prev => prev.map(p => p.provider === providerType ? { ...p, is_enabled: newVal } : p));
     
     try {
       await aiApi.updateProvider(providerType, { is_enabled: newVal });
-      showToast(newVal ? 'Ativado' : 'Desativado', 'success');
+      toast(newVal ? "Provider ativado" : "Provider desativado", "success");
     } catch (e) {
-      // Revert UI on fail
       setProviders(prev => prev.map(p => p.provider === providerType ? { ...p, is_enabled: currentVal } : p));
-      showToast('Erro ao alternar status', 'error');
+      toast("Erro ao alternar status", "error");
     }
   };
 
   const updateGovernance = async (field: keyof TenantAISettings, value: any) => {
     if (!settings) return;
+    const oldSettings = { ...settings };
     const newSettings = { ...settings, [field]: value };
-    setSettings(newSettings); // optimistic
+    setSettings(newSettings);
     
     try {
       await aiApi.updateGovernance({ [field]: value });
-      showToast('Ajuste salvo', 'success');
+      toast("Ajuste de governança salvo", "success");
     } catch {
-      setSettings(settings); // revert
-      showToast('Erro ao salvar governança', 'error');
+      setSettings(oldSettings);
+      toast("Erro ao salvar governança", "error");
     }
   };
 
-  if (loading) return <div className="p-8 text-neutral-400">Carregando configurações...</div>;
+  if (loading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto text-white">
-      
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg border z-50 flex items-center gap-2 
-          ${toast.type === 'success' ? 'bg-green-900/50 border-green-500 text-green-100' : 'bg-red-900/50 border-red-500 text-red-100'}`}>
-          {toast.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
-          <span>{toast.msg}</span>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">IA & Providers</h2>
+          <p className="text-muted-foreground">Configure as LLMs e políticas de fallback da sua conta.</p>
         </div>
-      )}
-
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <Settings className="w-6 h-6 text-brand-500" /> API Settings & AI Providers
-        </h1>
-        <p className="text-neutral-400 mt-2">
-          Configure as credenciais isoladas por provedor e as políticas de fallback do seu hub Multi-Tenant de IA.
-        </p>
+        {settings && (
+          <div className="flex items-center gap-3 bg-accent/5 px-4 py-2 rounded-lg border border-accent/20">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] uppercase font-bold text-accent tracking-wider">Módulo Global</span>
+              <span className="text-xs font-semibold text-foreground">{settings.ai_enabled ? "Ativado" : "Desativado"}</span>
+            </div>
+            <Switch
+              checked={settings.ai_enabled}
+              onCheckedChange={(val) => updateGovernance("ai_enabled", val)}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="space-y-8">
-        {/* --- Providers Section --- */}
-        <div>
-          <h2 className="text-lg font-medium text-neutral-200 mb-4 border-b border-neutral-800 pb-2">Providers Ativados</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {['OPENROUTER', 'OPENAI', 'CLAUDE', 'GEMINI'].map((provType) => {
-              const pType = provType as AIProviderType;
-              const pData = providers.find(p => p.provider === pType) || { is_enabled: false, default_model: '' };
-              const keyVal = localKeys[pType] || '';
+      <div className="grid gap-6">
+        {/* Provedores Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {["OPENROUTER", "OPENAI", "CLAUDE", "GEMINI"].map((provType) => {
+            const pType = provType as AIProviderType;
+            const pData = providers.find(p => p.provider === pType) || { is_enabled: false, default_model: "" };
+            const keyVal = localKeys[pType] || "";
 
-              return (
-                <div key={pType} className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-sm">
-                  
-                  {/* Header: Title and Toggle */}
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-semibold text-lg flex items-center gap-2 text-neutral-100">
-                      <div className={`w-2 h-2 rounded-full ${pData.is_enabled ? 'bg-green-500' : 'bg-neutral-600'}`}></div>
-                      {pType}
-                    </h3>
-                    
-                    <button 
-                      onClick={() => handleToggleProvider(pType, pData.is_enabled!)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none 
-                        ${pData.is_enabled ? 'bg-brand-600' : 'bg-neutral-700'}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${pData.is_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
+            return (
+              <Card key={pType} className="border border-border bg-surface shadow-sm overflow-hidden flex flex-col">
+                <CardHeader className="border-b border-border bg-surface/50 py-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                       <Cpu className={cn("h-4 w-4", pData.is_enabled ? "text-accent" : "text-muted-foreground")} />
+                       {pType}
+                    </CardTitle>
+                    <Switch
+                      checked={pData.is_enabled}
+                      onCheckedChange={() => handleToggleProvider(pType, pData.is_enabled!)}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4 flex-1">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">API Key</Label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        type="password"
+                        value={keyVal}
+                        onChange={(e) => setLocalKeys({ ...localKeys, [pType]: e.target.value })}
+                        placeholder={`Sua chave ${pType}`}
+                        className="pl-9 text-xs h-9 bg-surface-raised/50"
+                      />
+                    </div>
+                    {keyVal.includes("...****...") && (
+                      <p className="text-[10px] text-accent/70 italic px-1">✓ Chave encriptada salva</p>
+                    )}
                   </div>
 
-                  {/* Form */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Modelo Padrão</Label>
+                    <Input
+                      type="text"
+                      value={pData.default_model || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProviders(prev => {
+                          const found = prev.find(p => p.provider === pType);
+                          if (found) return prev.map(p => p.provider === pType ? { ...p, default_model: val } : p);
+                          return [...prev, { id: "", provider: pType, is_enabled: false, default_model: val, api_key_encrypted: "", priority_order: 0 }];
+                        });
+                      }}
+                      placeholder="Ex: gpt-4o-mini"
+                      className="text-xs h-9 bg-surface-raised/50"
+                    />
+                  </div>
+                </CardContent>
+                <div className="px-4 py-3 bg-surface-raised/30 border-t border-border/50 flex justify-end">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => handleProviderSave(pType)}
+                    disabled={saving}
+                    className="h-8 text-xs gap-2 hover:bg-accent/10 hover:text-accent"
+                  >
+                    <Save className="h-3 w-3" />
+                    Salvar {pType}
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Governança */}
+        {settings && (
+          <Card className="border border-border bg-surface shadow-sm overflow-hidden">
+            <CardHeader className="border-b border-border bg-surface/50">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="h-4 w-4 text-accent" />
+                Roteamento e Governança
+              </CardTitle>
+              <CardDescription>Políticas de fallback e segurança de IA.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                {/* Fallback */}
+                <div className="space-y-6">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <Settings2 className="h-3 w-3" />
+                    Estratégia de Redundância
+                  </h3>
+                  
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-400 mb-1">API Key</label>
-                      <div className="relative">
-                        <KeyIcon className="absolute left-3 top-2.5 w-4 h-4 text-neutral-500" />
-                        <input 
-                          type="text" 
-                          value={keyVal}
-                          onChange={(e) => setLocalKeys({ ...localKeys, [pType]: e.target.value })}
-                          placeholder={`Coloque a API Key do ${pType}`}
-                          className="w-full pl-9 pr-4 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-sm text-neutral-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                        />
-                      </div>
-                      {keyVal.includes('...****...') && (
-                        <p className="text-xs text-neutral-500 mt-1">Chave salva. Digite uma nova para substituir.</p>
-                      )}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Provider Principal</Label>
+                      <Select 
+                        value={settings.default_provider || ""}
+                        onValueChange={(val) => updateGovernance("default_provider", val || null)}
+                      >
+                        <SelectTrigger className="h-9 bg-surface-raised/50">
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="OPENROUTER">OpenRouter</SelectItem>
+                          <SelectItem value="OPENAI">OpenAI</SelectItem>
+                          <SelectItem value="CLAUDE">Claude</SelectItem>
+                          <SelectItem value="GEMINI">Gemini</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-neutral-400 mb-1">Default Model</label>
-                      <input 
-                        type="text" 
-                        value={pData.default_model || ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setProviders(prev => {
-                            const found = prev.find(p => p.provider === pType);
-                            if (found) {
-                              return prev.map(p => p.provider === pType ? { ...p, default_model: val } : p);
-                            } else {
-                              // Pseudo-add to state to edit before save
-                              return [...prev, { id: '', provider: pType, is_enabled: false, default_model: val, api_key_encrypted: '', priority_order: 0 }];
-                            }
-                          });
-                        }}
-                        placeholder="Ex: openai/gpt-4o-mini"
-                        className="w-full px-4 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-sm text-neutral-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Provider de Fallback</Label>
+                      <Select 
+                        value={settings.fallback_provider || ""}
+                        onValueChange={(val) => updateGovernance("fallback_provider", val || null)}
+                      >
+                        <SelectTrigger className="h-9 bg-surface-raised/50">
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="OPENROUTER">OpenRouter</SelectItem>
+                          <SelectItem value="OPENAI">OpenAI</SelectItem>
+                          <SelectItem value="CLAUDE">Claude</SelectItem>
+                          <SelectItem value="GEMINI">Gemini</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface-raised/30 mt-2">
+                      <div className="space-y-0.5">
+                        <span className="text-sm font-medium">Permitir Graceful Fallback</span>
+                        <p className="text-[10px] text-muted-foreground italic">Redireciona se o principal falhar.</p>
+                      </div>
+                      <Switch
+                        checked={settings.allow_fallback}
+                        onCheckedChange={(val) => updateGovernance("allow_fallback", val)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security */}
+                <div className="space-y-6">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <History className="h-3 w-3" />
+                    Human-in-the-Loop
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-surface-raised/30">
+                      <div className="space-y-1">
+                        <span className="text-sm font-semibold block">Revisão Humana Obrigatória</span>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          O SDR deve validar e aceitar o output da IA manualmente antes da gravação.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings.human_review_required}
+                        onCheckedChange={(val) => updateGovernance("human_review_required", val)}
                       />
                     </div>
 
-                    <div className="pt-2 flex justify-end">
-                      <button 
-                        onClick={() => handleProviderSave(pType)}
-                        disabled={saving}
-                        className="flex items-center gap-2 bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <Save className="w-4 h-4" />
-                        Salvar {pType}
-                      </button>
+                    <div className="flex items-start justify-between p-4 rounded-xl border border-border bg-surface-raised/30">
+                      <div className="space-y-1">
+                        <span className="text-sm font-semibold block">Transient AI Storage</span>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Salva em metadados temporários antes de persistir no lead.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings.persist_ai_metadata_by_default}
+                        onCheckedChange={(val) => updateGovernance("persist_ai_metadata_by_default", val)}
+                      />
                     </div>
 
+                    <div className="flex items-center gap-2 p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                       <Info className="h-3.5 w-3.5 text-accent" />
+                       <p className="text-[10px] text-muted-foreground leading-snug">
+                         Configurações de IA são isoladas para este tenant e não afetam outros clientes da plataforma.
+                       </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* --- Governance Section --- */}
-        {settings && (
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden mt-8">
-            <div className="px-6 py-4 border-b border-neutral-800 bg-neutral-900/50">
-              <h2 className="text-lg font-medium text-neutral-200">Roteamento e Governança</h2>
-            </div>
-            
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-              
-              {/* Routing */}
-              <div className="space-y-6">
-                <h3 className="text-sm uppercase tracking-wider text-neutral-500 font-semibold mb-2">Roteamento Híbrido</h3>
-                
-                <div>
-                  <label className="block text-sm font-medium text-neutral-400 mb-2">Provider Global (Default)</label>
-                  <select 
-                    value={settings.default_provider || ''}
-                    onChange={(e) => updateGovernance('default_provider', e.target.value || null)}
-                    className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-sm text-neutral-200 outline-none"
-                  >
-                    <option value="">(Nenhum)</option>
-                    <option value="OPENROUTER">OpenRouter</option>
-                    <option value="OPENAI">OpenAI</option>
-                    <option value="CLAUDE">Claude</option>
-                    <option value="GEMINI">Gemini</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-400 mb-2">Provider para Fallback</label>
-                  <select 
-                    value={settings.fallback_provider || ''}
-                    onChange={(e) => updateGovernance('fallback_provider', e.target.value || null)}
-                    className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-sm text-neutral-200 outline-none"
-                  >
-                    <option value="">(Nenhum)</option>
-                    <option value="OPENROUTER">OpenRouter</option>
-                    <option value="OPENAI">OpenAI</option>
-                    <option value="CLAUDE">Claude</option>
-                    <option value="GEMINI">Gemini</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-sm font-medium text-neutral-300">Permitir Graceful Fallback</span>
-                  <button 
-                    onClick={() => updateGovernance('allow_fallback', !settings.allow_fallback)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${settings.allow_fallback ? 'bg-brand-600' : 'bg-neutral-700'}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${settings.allow_fallback ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
                 </div>
               </div>
-
-              {/* Security & Validation */}
-              <div className="space-y-6">
-                <h3 className="text-sm uppercase tracking-wider text-neutral-500 font-semibold mb-2">Segurança (Human-in-the-Loop)</h3>
-
-                <div className="flex items-center justify-between bg-neutral-950 p-4 rounded-lg border border-neutral-800">
-                  <div>
-                    <span className="block text-sm font-medium text-neutral-300">Revisão Humana Obrigatória</span>
-                    <span className="block text-xs text-neutral-500 mt-1">SDR deve clicar em "Aceitar" para salvar JSON</span>
-                  </div>
-                  <button 
-                    onClick={() => updateGovernance('human_review_required', !settings.human_review_required)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${settings.human_review_required ? 'bg-brand-600' : 'bg-neutral-700'}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${settings.human_review_required ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between bg-neutral-950 p-4 rounded-lg border border-neutral-800">
-                  <div>
-                    <span className="block text-sm font-medium text-neutral-300">Transient AI Status</span>
-                    <span className="block text-xs text-neutral-500 mt-1">Salvar em ai_metadata primeiro</span>
-                  </div>
-                  <button 
-                    onClick={() => updateGovernance('persist_ai_metadata_by_default', !settings.persist_ai_metadata_by_default)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${settings.persist_ai_metadata_by_default ? 'bg-brand-600' : 'bg-neutral-700'}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${settings.persist_ai_metadata_by_default ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                </div>
-                
-                <div className="flex items-center justify-between bg-green-900/10 p-4 rounded-lg border border-green-900/30">
-                  <div>
-                    <span className="block text-sm font-medium text-green-400">Hub de IA Ativado</span>
-                    <span className="block text-xs text-green-500/70 mt-1">Ligar/Desligar todo o módulo (Tenant global)</span>
-                  </div>
-                  <button 
-                    onClick={() => updateGovernance('ai_enabled', !settings.ai_enabled)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${settings.ai_enabled ? 'bg-green-600' : 'bg-neutral-700'}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${settings.ai_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                  </button>
-                </div>
-
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
-
       </div>
     </div>
   );

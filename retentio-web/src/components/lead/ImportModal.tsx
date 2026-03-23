@@ -211,7 +211,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
             </div>
             
             <p className="text-[10px] text-center text-gray-400 italic">
-              O PRR dos novos leads está sendo calculado em segundo plano.
+              O Score de Potencial dos novos leads está sendo calculado em segundo plano.
             </p>
           </div>
         )}

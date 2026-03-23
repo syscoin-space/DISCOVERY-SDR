@@ -75,7 +75,7 @@ export function LeadCard({ lead, onSelect }: LeadCardProps) {
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{lead.niche}</p>
       )}
 
-      {/* LINHA 2: PRR + ICP */}
+      {/* LINHA 2: SCORE + ICP */}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <PotentialScoreBadge tier={lead.fit_tier} score={lead.operational_score} />
         <ICPBadge score={lead.icp_score} />

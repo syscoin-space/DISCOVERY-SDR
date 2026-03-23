@@ -64,6 +64,32 @@ export class InvitationService {
 
     return invitation.tenant;
   }
+
+  /**
+   * Lista convites pendentes de um tenant
+   */
+  async listInvitations(tenantId: string) {
+    return prisma.membershipInvitation.findMany({
+      where: { tenant_id: tenantId, status: 'PENDING' },
+      orderBy: { created_at: 'desc' }
+    });
+  }
+
+  /**
+   * Cancela um convite
+   */
+  async cancelInvitation(tenantId: string, invitationId: string) {
+    const invitation = await prisma.membershipInvitation.findFirst({
+      where: { id: invitationId, tenant_id: tenantId }
+    });
+
+    if (!invitation) throw new AppError(404, "Convite não encontrado");
+
+    return prisma.membershipInvitation.update({
+      where: { id: invitationId },
+      data: { status: 'CANCELLED' }
+    });
+  }
 }
 
 export const invitationService = new InvitationService();

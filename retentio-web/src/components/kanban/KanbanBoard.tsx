@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   DndContext,
   closestCorners,
@@ -167,12 +167,16 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
 
   const mobileLeads = filterLeads(columns[mobileColumn] ?? []);
 
+  useEffect(() => {
+    console.log("Discovery SDR V2 UI Loaded - Score de Potencial Active");
+  }, []);
+
   return (
     <div className="flex h-full flex-col">
       {/* Filter Bar — desktop only */}
       <div className="hidden lg:flex flex-wrap items-center gap-4 border-b border-border bg-surface px-6 py-2">
         <div className="flex items-center gap-2">
-          <label className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">Score</label>
+          <label className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">Score de Potencial</label>
           <select value={filterTier} onChange={(e) => setFilterTier(e.target.value)} className="h-8 rounded-md border border-border bg-surface text-foreground px-2 py-1 text-xs focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors">
             <option value="ALL">Todos</option>
             <option value="A">Tier A</option>

@@ -49,6 +49,8 @@ app.get('/health', (_req, res) => {
 
 import { aiSettingsRouter } from './modules/ai/ai-settings.routes';
 import { dashboardV2Router } from './modules/dashboard/dashboard.v2.routes';
+import { tenantRouter } from './modules/tenant/tenant.routes';
+import { membershipRouter } from './modules/tenant/membership.routes';
 
 // ── V2 Routes ──
 app.use('/api/brand', brandRouter); // Público
@@ -67,6 +69,8 @@ app.use('/api/cadences', authGuard, cadenceRouter);
 app.use('/api/discovery', authGuard, discoveryRouter);
 app.use('/api/ai-settings', authGuard, aiSettingsRouter);
 app.use('/api/onboarding', authGuard, roleGuard(Role.ADMIN, Role.OWNER), onboardingRouter);
+app.use('/api/tenant', authGuard, tenantRouter);
+app.use('/api/memberships', authGuard, membershipRouter);
 app.use('/api/templates', authGuard, templateRouter);
 app.use('/api/billing', billingRouter);
 app.use('/api/webhooks', billingWebhookRouter); // Rota pública para gateways

@@ -16,39 +16,52 @@ const sizes = {
 
 export function BrandLogo({ size = "md", showName = true }: BrandLogoProps) {
   const { data: brand } = useBrand();
-  const { user } = useAuthStore(); // Usar store para pegar nome real do tenant
+  const { user } = useAuthStore();
 
   const tenantName = user?.tenant?.name;
-  const appName = tenantName || brand?.app_name || "Discovery SDR";
+  const productName = "Discovery SDR";
   const logoUrl = brand?.logo_url;
   const sizeClass = sizes[size];
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {logoUrl ? (
-        <img
-          src={logoUrl}
-          alt={appName}
-          className="object-contain"
-          style={{ width: 200, height: 70, borderRadius: 8 }}
-        />
+        <div className="flex flex-col">
+          <img
+            src={logoUrl}
+            alt={productName}
+            className="h-8 w-auto object-contain"
+          />
+          {showName && tenantName && (
+            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60 mt-1 pl-1">
+              {tenantName}
+            </span>
+          )}
+        </div>
       ) : (
         <>
           <div
-            className={`${sizeClass} flex items-center justify-center rounded-lg text-sm font-bold text-white`}
+            className={`${sizeClass} flex items-center justify-center rounded-lg text-sm font-bold text-white shadow-sm`}
             style={{
               background: `linear-gradient(135deg, ${brand?.color_accent ?? "#2E86AB"}, ${brand?.color_green ?? "#1A7A5E"})`,
             }}
           >
-            {appName.charAt(0).toUpperCase()}
+            {productName.charAt(0)}
           </div>
           {showName && (
-            <span
-              className="text-base font-semibold dark:text-gray-100"
-              style={{ color: brand?.color_navy ?? "#1E3A5F" }}
-            >
-              {appName}
-            </span>
+            <div className="flex flex-col leading-tight">
+              <span
+                className="text-sm font-bold tracking-tight text-foreground"
+                style={{ color: brand?.color_navy ?? "#1E3A5F" }}
+              >
+                {productName}
+              </span>
+              {tenantName && (
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  {tenantName}
+                </span>
+              )}
+            </div>
           )}
         </>
       )}

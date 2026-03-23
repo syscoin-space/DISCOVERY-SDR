@@ -33,6 +33,7 @@ model Tenant {
   templates         Template[]
   ai_providers      TenantAIProvider[]
   ai_settings       TenantAISettings?
+  invitations       MembershipInvitation[]
   plan              Plan?              @relation(fields: [plan_id], references: [id])
 
   @@map("tenants")
@@ -563,6 +564,31 @@ model OnboardingState {
   tenant          Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
   @@map("onboarding_states")
+}
+
+model MembershipInvitation {
+  id         String           @id @default(uuid())
+  tenant_id  String
+  email      String
+  role       Role
+  team_id    String?
+  token      String           @unique
+  status     InvitationStatus @default(PENDING)
+  expires_at DateTime
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+  tenant     Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, email])
+  @@map("membership_invitations")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
 }
 
 enum Role {
