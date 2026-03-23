@@ -9,7 +9,7 @@ import { GlossaryCategoryList } from "@/components/glossary/GlossaryCategoryList
 
 const CATEGORIES = [
   { id: "metodologia", label: "Metodologia", icon: BookOpen, description: "Termos Aaron Ross" },
-  { id: "siglas", label: "Siglas do Sistema", icon: Cpu, description: "PRR, ICP, RFV, 3WH" },
+  { id: "siglas", label: "Siglas do Sistema", icon: Cpu, description: "ICP, RFV, 3WH" },
   { id: "praticas", label: "Boas Práticas", icon: Target, description: "Quando usar cada canal" },
   { id: "discovery", label: "Roteiro de Discovery", icon: MessageSquare, description: "Perguntas e framework" },
 ] as const;
@@ -58,12 +58,6 @@ const GLOSSARY: Record<CategoryId, GlossaryItemData[]> = {
     },
   ],
   siglas: [
-    {
-      title: "PRR — Potencial de Receita Retentio",
-      body: "Score de 0 a 100 que indica o potencial de receita que a Retentio pode gerar para aquele e-commerce. Calculado por 5 dimensões: tamanho da base, ciclo de recompra, ticket médio, % base inativa e integrabilidade técnica.\n\nTier A (70+): prioridade máxima\nTier B (40-69): trabalhar normalmente\nTier C (<40): baixa prioridade, qualifique antes de investir tempo",
-      tag: "Sistema",
-      highlight: true,
-    },
     {
       title: "ICP — Ideal Customer Profile",
       body: "Perfil de Cliente Ideal. Os 14 critérios que definem se um e-commerce tem fit com a solução da Retentio. Score de 0-14.\n\n9+: Contrato Certo — priorize agora\n7-8: Quente — vale o esforço\n5-6: Parcial — qualifique mais antes de avançar\n<5: Fora do ICP — considere remover do funil",
@@ -136,12 +130,12 @@ const GLOSSARY: Record<CategoryId, GlossaryItemData[]> = {
     },
     {
       title: '3. "Vocês têm uma base de clientes cadastrada? Tem ideia de quantos clientes únicos estão na base?"',
-      body: "Objetivo: Dimensionar PRR dimensão A. Base > 3.000 é o mínimo para valer a pena. Quanto maior, melhor o ROI.",
+      body: "Objetivo: Entender o tamanho da oportunidade. Base > 3.000 é o mínimo para valer a pena. Quanto maior, melhor o ROI.",
       tag: "Pergunta",
     },
     {
       title: '4. "Com que frequência um cliente típico volta a comprar de vocês?"',
-      body: "Objetivo: PRR dimensão B — ciclo de recompra. Produtos com recompra natural (cosméticos, pet, alimentos) são ideais.",
+      body: "Objetivo: Entender o ciclo de recompra. Produtos com recompra natural (cosméticos, pet, alimentos) são ideais.",
       tag: "Pergunta",
     },
     {
