@@ -308,6 +308,14 @@ export default function OnboardingPage() {
                     </span>
                   )}
                 </Button>
+                {step === "AI" && (
+                  <button
+                    onClick={() => setStep("SUCCESS")}
+                    className="text-sm font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2"
+                  >
+                    Configurar depois →
+                  </button>
+                )}
               </div>
             </div>
           </div>
