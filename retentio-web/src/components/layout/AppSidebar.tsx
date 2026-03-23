@@ -16,6 +16,10 @@ import {
   BookOpen,
   CreditCard,
   Globe,
+  Settings,
+  LayoutDashboard,
+  Users,
+  Target,
   Palette,
   User as UserAvatarIcon,
 } from "lucide-react";
