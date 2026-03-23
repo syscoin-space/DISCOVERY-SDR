@@ -2,8 +2,8 @@
 
 import { use, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useLead, useInteractions, useCreateInteraction, useCalculatePrr, useUpdateLead, useLeadStack, useAddToStack, useRemoveFromStack } from "@/hooks/use-leads";
-import { PRRBadge } from "@/components/shared/PRRBadge";
+import { useLead, useInteractions, useCreateInteraction, useUpdateLead, useLeadStack, useAddToStack, useRemoveFromStack } from "@/hooks/use-leads";
+import { PotentialScoreBadge } from "@/components/shared/PotentialScoreBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
 import { Badge } from "@/components/ui/badge";
@@ -140,7 +140,6 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const { data: interactions } = useInteractions(id);
   const { data: stack } = useLeadStack(id);
   const createInteraction = useCreateInteraction();
-  const calculatePrr = useCalculatePrr();
   const addToStack = useAddToStack();
   const removeFromStack = useRemoveFromStack();
 
@@ -205,8 +204,8 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
             {/* Score Cards */}
             <div className="grid grid-cols-3 gap-4">
-              <ScoreCard label="PRR Score" value={lead.prr_score ?? "—"}>
-                <PRRBadge tier={lead.prr_tier} score={lead.prr_score} />
+              <ScoreCard label="Score Potencial" value={lead.operational_score != null ? Math.round(lead.operational_score) : "—"}>
+                <PotentialScoreBadge tier={lead.fit_tier} score={lead.operational_score} />
               </ScoreCard>
               <ScoreCard label="ICP Score" value={`${lead.icp_score ?? "—"}/14`}>
                 <ICPBadge score={lead.icp_score} />
@@ -413,13 +412,6 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                   <p className="text-[10px] text-muted-foreground">dias</p>
                 </div>
               </div>
-              <Button
-                className="w-full bg-accent hover:bg-accent-hover"
-                onClick={() => calculatePrr.mutate(id)}
-                disabled={calculatePrr.isPending}
-              >
-                {calculatePrr.isPending ? "Calculando..." : "Recalcular PRR"}
-              </Button>
             </div>
           </div>
 

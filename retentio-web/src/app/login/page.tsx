@@ -84,7 +84,7 @@ export default function LoginPage() {
                 className="mt-3 text-xl font-bold"
                 style={{ color: brand?.color_navy ?? "#1E3A5F" }}
               >
-                {brand?.app_name ?? "Retentio"}
+                {brand?.app_name ?? "Discovery SDR"}
               </h1>
             </>
           )}
@@ -146,7 +146,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-[10px] text-gray-400">
-          Retentio © {new Date().getFullYear()}
+          Discovery SDR © {new Date().getFullYear()}
         </p>
       </div>
     </div>

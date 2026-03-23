@@ -56,7 +56,7 @@ const INSIGHTS: Record<string, Insight> = {
   },
   tier_a_parado: {
     titulo: "Lead Tier A parado há muito tempo",
-    texto: "Esse lead tem alto potencial (PRR A). Cada dia sem contato é receita perdida. Priorize agora.",
+    texto: "Esse lead tem alto potencial (Score A). Cada dia sem contato é receita perdida. Priorize agora.",
     acao: "Adicionar à fila de hoje",
     cor: "red",
   },
@@ -110,17 +110,17 @@ export function getInsightForStatus(
 // ─── Get insight for stale Tier A lead ──────────────────────────────
 
 export function getTierAInsight(
-  prr_tier: string | null | undefined,
+  fit_tier: string | null | undefined,
   updated_at: string
 ): Insight | null {
-  if (prr_tier !== "A") return null;
+  if (fit_tier !== "A") return null;
   const daysSince = Math.floor(
     (Date.now() - new Date(updated_at).getTime()) / (1000 * 60 * 60 * 24)
   );
   if (daysSince < 3) return null;
   return {
     ...INSIGHTS.tier_a_parado,
-    texto: `Esse lead tem alto potencial (PRR A) e está parado há ${daysSince} dias. Cada dia sem contato é receita perdida. Priorize agora.`,
+    texto: `Esse lead tem alto potencial (Score A) e está parado há ${daysSince} dias. Cada dia sem contato é receita perdida. Priorize agora.`,
   };
 }
 

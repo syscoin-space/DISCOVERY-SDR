@@ -97,7 +97,7 @@ export default function RegisterPage() {
             <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
               <Rocket className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-black tracking-tighter">RETENTIO <span className="text-accent underline decoration-4 underline-offset-4">V2</span></span>
+            <span className="text-2xl font-black tracking-tighter text-white">DISCOVERY <span className="text-accent underline decoration-4 underline-offset-4">SDR</span></span>
           </Link>
         </div>
 
@@ -144,7 +144,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
         <div className="w-full max-w-md space-y-8">
           <div className="space-y-2 lg:hidden">
-             <span className="text-2xl font-black tracking-tighter text-navy dark:text-white">RETENTIO <span className="text-accent italic">V2</span></span>
+             <span className="text-2xl font-black tracking-tighter text-navy dark:text-white">DISCOVERY <span className="text-accent italic">SDR</span></span>
           </div>
           
           <div className="space-y-2">
@@ -215,7 +215,7 @@ export default function RegisterPage() {
                     <span className={`text-sm font-bold truncate ${slugAvailable === true ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400"}`}>
                       {slug || "empresa"}
                     </span>
-                    <span className="text-zinc-400 text-xs">.retentio.com.br</span>
+                    <span className="text-zinc-400 text-xs">.discoverysdr.com.br</span>
                   </div>
                 </div>
               </div>

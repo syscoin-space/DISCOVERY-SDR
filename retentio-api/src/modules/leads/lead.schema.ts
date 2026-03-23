@@ -25,6 +25,7 @@ export const createLeadSchema = z.object({
   direct_email: z.string().email().optional().nullable(),
   preferred_channel: z.enum(['EMAIL', 'WHATSAPP', 'PHONE', 'LINKEDIN']).optional().nullable(),
   discovery_notes: z.string().optional().nullable(),
+  sdr_id: z.string().uuid().optional().nullable(),
 });
 
 export const updateLeadSchema = createLeadSchema.partial().extend({

@@ -5,15 +5,17 @@ import { useAllLeads } from "@/hooks/use-leads";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { LeadSidebar } from "@/components/kanban/LeadSidebar";
 import { ImportModal } from "@/components/lead/ImportModal";
+import { CreateLeadModal } from "@/components/lead/CreateLeadModal";
 import { useKanbanStore } from "@/lib/stores/kanban.store";
 import type { Lead } from "@/lib/types";
-import { Upload } from "lucide-react";
+import { Upload, Plus } from "lucide-react";
 
 export default function PipelinePage() {
   const { data: leadsData, isLoading, error } = useAllLeads();
   const { columns, selectedLeadId, setSelectedLeadId, setLeadsByStatus } = useKanbanStore();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   useEffect(() => {
     if (leadsData) {
@@ -71,8 +73,12 @@ export default function PipelinePage() {
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Importar</span>
             </button>
-            <button className="rounded-lg bg-accent px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover focus:ring-2 focus:ring-accent/50 outline-none">
-              + <span className="hidden sm:inline">Novo </span>Lead
+            <button 
+              onClick={() => setCreateModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-accent px-3 lg:px-4 py-2 text-xs lg:text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-hover focus:ring-2 focus:ring-accent/50 outline-none"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Novo <span className="hidden sm:inline">Lead</span></span>
             </button>
           </div>
         </div>
@@ -93,6 +99,12 @@ export default function PipelinePage() {
       <ImportModal 
         open={importModalOpen}
         onOpenChange={setImportModalOpen}
+      />
+
+      {/* Modal de Criação Manual */}
+      <CreateLeadModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
       />
     </div>
   );

@@ -78,9 +78,9 @@ export default function BillingPage() {
     );
   }
 
-  const plan = usage.plan;
-  const status = usage.status;
-  const nextBilling = usage.next_billing_at || usage.current_period_end;
+  const plan = usage?.plan;
+  const status = usage?.status;
+  const nextBilling = usage?.next_billing_at || usage?.current_period_end;
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -132,25 +132,25 @@ export default function BillingPage() {
         <UsageCard 
           icon={Users} 
           label="SDRs" 
-          used={usage.usage.sdr} 
-          limit={usage.plan.limits.sdr} 
-          percentage={getPercentage(usage.usage.sdr, usage.plan.limits.sdr)}
+          used={usage?.usage?.sdr ?? 0} 
+          limit={usage?.plan?.limits?.sdr ?? 0} 
+          percentage={getPercentage(usage?.usage?.sdr ?? 0, usage?.plan?.limits?.sdr ?? 0)}
           color="blue"
         />
         <UsageCard 
           icon={ShieldCheck} 
           label="Closers" 
-          used={usage.usage.closer} 
-          limit={usage.plan.limits.closer} 
-          percentage={getPercentage(usage.usage.closer, usage.plan.limits.closer)}
+          used={usage?.usage?.closer ?? 0} 
+          limit={usage?.plan?.limits?.closer ?? 0} 
+          percentage={getPercentage(usage?.usage?.closer ?? 0, usage?.plan?.limits?.closer ?? 0)}
           color="indigo"
         />
         <UsageCard 
           icon={BarChart3} 
           label="Leads (Mês)" 
-          used={usage.usage.leads_monthly}
-          limit={usage.plan.limits.leads_monthly} 
-          percentage={getPercentage(usage.usage.leads_monthly, usage.plan.limits.leads_monthly)}
+          used={usage?.usage?.leads_monthly ?? 0}
+          limit={usage?.plan?.limits?.leads_monthly ?? 0} 
+          percentage={getPercentage(usage?.usage?.leads_monthly ?? 0, usage?.plan?.limits?.leads_monthly ?? 0)}
           color="violet"
         />
       </div>
@@ -167,12 +167,12 @@ export default function BillingPage() {
             <div 
               key={plan.id}
               className={`relative p-8 rounded-3xl border transition-all ${
-                plan.key === usage.plan.key 
+                plan.key === usage?.plan?.key 
                   ? "border-blue-500 bg-blue-500/[0.02] shadow-xl shadow-blue-500/5 ring-1 ring-blue-500" 
                   : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
               }`}
             >
-              {plan.key === usage.plan.key && (
+              {plan.key === usage?.plan?.key && (
                 <div className="absolute top-0 right-12 translate-y-[-50%] bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
                   Plano Atual
                 </div>

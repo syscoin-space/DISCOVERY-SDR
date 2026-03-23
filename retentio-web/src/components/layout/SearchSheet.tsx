@@ -6,7 +6,7 @@ import { Search, X, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAllLeads } from "@/hooks/use-leads";
 import { useKanbanStore } from "@/lib/stores/kanban.store";
-import { PRRBadge } from "@/components/shared/PRRBadge";
+import { PotentialScoreBadge } from "@/components/shared/PotentialScoreBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 
 interface SearchSheetProps {
@@ -110,7 +110,7 @@ export function SearchSheet({ open, onOpenChange }: SearchSheetProps) {
                           {lead.company_name}
                         </span>
                         <div className="flex items-center gap-1 shrink-0">
-                          <PRRBadge tier={lead.prr_tier} score={lead.prr_score} />
+                          <PotentialScoreBadge tier={lead.fit_tier} score={lead.operational_score} />
                           <ICPBadge score={lead.icp_score} />
                         </div>
                       </div>

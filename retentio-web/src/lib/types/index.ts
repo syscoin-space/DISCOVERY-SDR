@@ -24,7 +24,7 @@ export type LeadStatus =
   | "REUNIAO_MARCADA"
   | "PERDIDO";
 
-export type PrrTier = "A" | "B" | "C";
+export type FitTier = "A" | "B" | "C";
 
 export type IcpTier = "FORA" | "PARCIAL" | "QUENTE" | "CONTRATO_CERTO";
 
@@ -68,6 +68,7 @@ export interface User {
     slug: string;
     onboarding_status?: "PENDING" | "IN_PROGRESS" | "COMPLETED";
     onboarding_step?: number;
+    discovery_enabled: boolean;
   };
   active: boolean;
   created_at: string;
@@ -97,8 +98,8 @@ export interface Lead {
   notes_import: string | null;
   source: string | null;
   imported_at: string | null;
-  prr_score: number | null;
-  prr_tier: PrrTier | null;
+  operational_score: number | null;
+  fit_tier: string | null;
   icp_score: number | null;
   icp_tier: IcpTier | null;
   bloqueio_status: BloqueioStatus;
@@ -110,7 +111,7 @@ export interface Lead {
   updated_at: string;
   // Relations (populated when included)
   sdr?: User;
-  prr_inputs?: PrrInputs;
+  prr_inputs?: any;
   icp_answers?: IcpAnswer[];
   discovered_stack?: DiscoveredStack[];
   lead_cadences?: CadenceEnrollment[];
@@ -119,17 +120,6 @@ export interface Lead {
   tasks?: Task[];
 }
 
-export interface PrrInputs {
-  id: string;
-  lead_id: string;
-  base_size_estimated: number | null;
-  recompra_cycle_days: number | null;
-  avg_ticket_estimated: number | null;
-  inactive_base_pct: number | null;
-  integrability_score: number | null;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface IcpAnswer {
   id: string;
@@ -284,7 +274,7 @@ export interface Task {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
-  lead?: Pick<Lead, "id" | "company_name" | "icp_score" | "whatsapp" | "email" | "phone" | "state" | "city" | "status" | "contact_name" | "niche" | "prr_score" | "prr_tier">;
+  lead?: Pick<Lead, "id" | "company_name" | "icp_score" | "whatsapp" | "email" | "phone" | "state" | "city" | "status" | "contact_name" | "niche" | "operational_score" | "fit_tier">;
 }
 
 export interface TodaySummary {
@@ -325,7 +315,7 @@ export interface DashboardPipeline {
 
 export interface SdrMetrics {
   total_leads: number;
-  leads_by_tier: Record<PrrTier, number>;
+  leads_by_tier: Record<FitTier, number>;
   handoffs_this_month: number;
   cadences_active: number;
   interactions_this_week: number;

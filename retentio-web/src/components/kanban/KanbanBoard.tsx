@@ -11,13 +11,14 @@ import {
   type DragStartEvent,
   DragOverlay,
 } from "@dnd-kit/core";
-import type { Lead, LeadStatus, PrrTier } from "@/lib/types";
+import type { Lead, LeadStatus } from "@/lib/types";
 import { FUNNEL_COLUMNS } from "@/lib/types";
 import { useKanbanStore } from "@/lib/stores/kanban.store";
 import { useUpdateLeadStatus } from "@/hooks/use-leads";
 import { KanbanColumn } from "./KanbanColumn";
 import { LeadCard } from "./LeadCard";
-import { PRRBadge } from "@/components/shared/PRRBadge";
+import { PotentialScoreBadge } from "@/components/shared/PotentialScoreBadge";
+import { useAuthStore } from "@/lib/stores/auth.store";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { MapPin, Search } from "lucide-react";
 
@@ -40,7 +41,11 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
   const [mobileColumn, setMobileColumn] = useState<LeadStatus>("BANCO" as LeadStatus);
 
   // Filters
-  const [filterPrr, setFilterPrr] = useState<PrrTier | "ALL">("ALL");
+  const { user } = useAuthStore();
+  const discoveryEnabled = user?.tenant?.discovery_enabled ?? false;
+
+  // Filters
+  const [filterTier, setFilterTier] = useState<string | "ALL">("ALL");
   const [filterIcpMin, setFilterIcpMin] = useState<number>(0);
   const [filterPlatform, setFilterPlatform] = useState<string>("ALL");
   const [search, setSearch] = useState("");
@@ -122,8 +127,8 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
     (statusLeads: Lead[]): Lead[] => {
       let filtered = statusLeads;
 
-      if (filterPrr !== "ALL") {
-        filtered = filtered.filter((l) => l.prr_tier === filterPrr);
+      if (filterTier !== "ALL") {
+        filtered = filtered.filter((l) => l.fit_tier === filterTier);
       }
       if (filterIcpMin > 0) {
         filtered = filtered.filter(
@@ -147,7 +152,7 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
 
       return filtered;
     },
-    [filterPrr, filterIcpMin, filterPlatform, search]
+    [filterTier, filterIcpMin, filterPlatform, search]
   );
 
   // Get unique platforms
@@ -167,8 +172,8 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
       {/* Filter Bar — desktop only */}
       <div className="hidden lg:flex flex-wrap items-center gap-4 border-b border-border bg-surface px-6 py-2">
         <div className="flex items-center gap-2">
-          <label className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">PRR</label>
-          <select value={filterPrr} onChange={(e) => setFilterPrr(e.target.value as PrrTier | "ALL")} className="h-8 rounded-md border border-border bg-surface text-foreground px-2 py-1 text-xs focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors">
+          <label className="text-[11px] uppercase tracking-wide font-semibold text-muted-foreground">Score</label>
+          <select value={filterTier} onChange={(e) => setFilterTier(e.target.value)} className="h-8 rounded-md border border-border bg-surface text-foreground px-2 py-1 text-xs focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors">
             <option value="ALL">Todos</option>
             <option value="A">Tier A</option>
             <option value="B">Tier B</option>
@@ -203,8 +208,8 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
       </div>
 
       {/* Mobile: column tabs */}
-      <div className="lg:hidden flex items-center gap-1 overflow-x-auto scrollbar-hide border-b border-border bg-surface px-3 py-1.5">
-        {FUNNEL_COLUMNS.map((col) => {
+       <div className="lg:hidden flex items-center gap-1 overflow-x-auto scrollbar-hide border-b border-border bg-surface px-3 py-1.5">
+        {FUNNEL_COLUMNS.filter(col => col.status !== 'DISCOVERY' || discoveryEnabled).map((col) => {
           const count = filterLeads(columns[col.status] ?? []).length;
           const isActive = mobileColumn === col.status;
           return (
@@ -243,7 +248,7 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-semibold text-foreground truncate">{lead.company_name}</span>
                   <div className="flex items-center gap-1 shrink-0">
-                    <PRRBadge tier={lead.prr_tier} score={lead.prr_score} />
+                    <PotentialScoreBadge tier={lead.fit_tier} score={lead.operational_score} />
                     <ICPBadge score={lead.icp_score} />
                   </div>
                 </div>
@@ -273,7 +278,7 @@ export function KanbanBoard({ onSelectLead }: KanbanBoardProps) {
           onDragEnd={handleDragEnd}
         >
           <div className="flex flex-1 gap-3 overflow-x-auto p-4">
-            {FUNNEL_COLUMNS.map((col) => (
+            {FUNNEL_COLUMNS.filter(col => col.status !== 'DISCOVERY' || discoveryEnabled).map((col) => (
               <KanbanColumn
                 key={col.status}
                 status={col.status}

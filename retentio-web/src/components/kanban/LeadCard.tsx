@@ -5,7 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { MapPin, CalendarPlus, Check } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { Lead } from "@/lib/types";
-import { PRRBadge } from "@/components/shared/PRRBadge";
+import { PotentialScoreBadge } from "@/components/shared/PotentialScoreBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
 import { ChannelIcons } from "@/components/shared/ChannelIcons";
@@ -77,7 +77,7 @@ export function LeadCard({ lead, onSelect }: LeadCardProps) {
 
       {/* LINHA 2: PRR + ICP */}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <PRRBadge tier={lead.prr_tier} score={lead.prr_score} />
+        <PotentialScoreBadge tier={lead.fit_tier} score={lead.operational_score} />
         <ICPBadge score={lead.icp_score} />
       </div>
 

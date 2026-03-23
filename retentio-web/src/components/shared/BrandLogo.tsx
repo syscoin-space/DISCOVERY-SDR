@@ -1,6 +1,7 @@
 "use client";
 
 import { useBrand } from "@/hooks/use-brand";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
 interface BrandLogoProps {
   size?: "sm" | "md" | "lg";
@@ -15,8 +16,10 @@ const sizes = {
 
 export function BrandLogo({ size = "md", showName = true }: BrandLogoProps) {
   const { data: brand } = useBrand();
+  const { user } = useAuthStore(); // Usar store para pegar nome real do tenant
 
-  const appName = brand?.app_name ?? "Retentio";
+  const tenantName = user?.tenant?.name;
+  const appName = tenantName || brand?.app_name || "Discovery SDR";
   const logoUrl = brand?.logo_url;
   const sizeClass = sizes[size];
 

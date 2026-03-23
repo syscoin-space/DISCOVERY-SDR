@@ -2,10 +2,9 @@
 
 import { useLead, useInteractions, useCreateInteraction, useUpdateLead, useDeleteLead } from "@/hooks/use-leads";
 import { useAuthStore } from "@/lib/stores/auth.store";
-import { useCalculatePrr } from "@/hooks/use-prr";
 import { useCreateTouchpoint } from "@/hooks/use-touchpoints";
 import TouchpointTimeline from "@/components/lead/TouchpointTimeline";
-import { PRRBadge } from "@/components/shared/PRRBadge";
+import { PotentialScoreBadge } from "@/components/shared/PotentialScoreBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
 import { ChannelIcons } from "@/components/shared/ChannelIcons";
@@ -145,7 +144,6 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
   const { data: lead, isLoading } = useLead(leadId ?? undefined);
   const { data: interactions } = useInteractions(leadId ?? undefined);
   const createInteraction = useCreateInteraction();
-  const calculatePrr = useCalculatePrr();
   const { data: calendarEvents } = useCalendarEvents(leadId ?? undefined);
   const cancelEvent = useCancelCalendarEvent();
   const deleteLead = useDeleteLead();
@@ -268,7 +266,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
             {/* Tier A stale insight + channel suggestion */}
             {(() => {
-              const tierInsight = getTierAInsight(lead.prr_tier, lead.updated_at);
+              const tierInsight = getTierAInsight(lead.fit_tier, lead.updated_at);
               const channelSuggestion = interactions ? getNextChannelSuggestion(interactions) : null;
               if (!tierInsight && !channelSuggestion) return null;
               return (
@@ -298,9 +296,9 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 {/* Score Badges */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex flex-col items-center p-3 rounded-lg bg-surface-raised border border-border">
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase mb-1">PRR Score</span>
-                    <span className="text-xl font-bold text-foreground">{lead.prr_score ?? "—"}</span>
-                    <PRRBadge tier={lead.prr_tier} score={lead.prr_score} />
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Score Potencial</span>
+                    <span className="text-xl font-bold text-foreground">{lead.operational_score != null ? Math.round(lead.operational_score) : "—"}</span>
+                    <PotentialScoreBadge tier={lead.fit_tier} score={lead.operational_score} />
                   </div>
                   <div className="flex flex-col items-center p-3 rounded-lg bg-surface-raised border border-border">
                     <span className="text-[10px] text-muted-foreground font-bold uppercase mb-1">ICP Score</span>
@@ -369,13 +367,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                       <p className="font-bold text-foreground">{lead.prr_inputs?.recompra_cycle_days ? `${lead.prr_inputs.recompra_cycle_days} dias` : "Não informado"}</p>
                     </div>
                   </div>
-                  <Button
-                    className="w-full bg-accent hover:bg-accent-hover"
-                    onClick={() => calculatePrr.mutate({ leadId: lead.id, inputs: {} })}
-                    disabled={calculatePrr.isPending}
-                  >
-                    {calculatePrr.isPending ? "Calculando..." : "Calcular PRR"}
-                  </Button>
+                  {/* PRR calculation button removed */}
                 </div>
               </TabsContent>
 

@@ -61,11 +61,11 @@ export const useKanbanStore = create<KanbanState>((set) => ({
         col.push(lead);
       }
     }
-    // Sort each column by prr_score descending
+    // Sort each column by operational_score descending
     for (const key of Object.keys(grouped) as LeadStatus[]) {
       const col = grouped[key];
       if (col) {
-        col.sort((a, b) => (b.prr_score ?? 0) - (a.prr_score ?? 0));
+        col.sort((a, b) => (b.operational_score ?? 0) - (a.operational_score ?? 0));
       }
     }
     set({ columns: grouped });
@@ -82,7 +82,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
       const lead = { ...fromCol[leadIndex], status: toStatus };
       const newFrom = fromCol.filter((_, i) => i !== leadIndex);
       const newTo = [...toCol, lead].sort(
-        (a, b) => (b.prr_score ?? 0) - (a.prr_score ?? 0)
+        (a, b) => (b.operational_score ?? 0) - (a.operational_score ?? 0)
       );
 
       return {
@@ -110,7 +110,7 @@ export const useKanbanStore = create<KanbanState>((set) => ({
       const lead = { ...targetCol[leadIndex], status: originalStatus };
       const newTarget = targetCol.filter((_, i) => i !== leadIndex);
       const newOriginal = [...originalCol, lead].sort(
-        (a, b) => (b.prr_score ?? 0) - (a.prr_score ?? 0)
+        (a, b) => (b.operational_score ?? 0) - (a.operational_score ?? 0)
       );
 
       return {

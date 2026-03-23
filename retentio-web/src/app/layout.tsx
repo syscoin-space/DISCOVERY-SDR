@@ -11,7 +11,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Discovery SDR — CRM de Prospecção",
   description:
-    "CRM de prospecção para SDRs de retenção e-commerce. Kanban, PRR, ICP, Cadências.",
+    "CRM de prospecção para SDRs de retenção e-commerce. Kanban, Score de Potencial, ICP, Cadências.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Discovery SDR — CRM de Prospecção",
     description:
-      "CRM de prospecção para SDRs de retenção e-commerce. Kanban, PRR, ICP, Cadências.",
+      "CRM de prospecção para SDRs de retenção e-commerce. Kanban, Score de Potencial, ICP, Cadências.",
     type: "website",
     images: [{ url: "/icon-512.png", width: 512, height: 512 }],
   },

@@ -12,7 +12,7 @@ const CHANNELS: { value: StepChannel; label: string; icon: typeof Mail }[] = [
   { value: "WHATSAPP", label: "WhatsApp", icon: MessageCircle },
 ];
 
-const VARIABLES = ["empresa", "contato", "nome_cliente", "nicho", "cidade", "plataforma", "sdr_nome", "prr_tier"];
+const VARIABLES = ["empresa", "contato", "nome_cliente", "nicho", "cidade", "plataforma", "sdr_nome", "fit_tier"];
 
 const SAMPLE_CONTEXT: Record<string, string> = {
   empresa: "Loja Exemplo",
@@ -22,7 +22,7 @@ const SAMPLE_CONTEXT: Record<string, string> = {
   cidade: "São Paulo",
   plataforma: "Shopify",
   sdr_nome: "João SDR",
-  prr_tier: "A",
+  fit_tier: "A",
 };
 
 function renderPreview(template: string, context: Record<string, string>): string {

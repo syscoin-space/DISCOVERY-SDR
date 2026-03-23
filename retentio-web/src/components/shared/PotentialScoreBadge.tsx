@@ -1,9 +1,9 @@
 "use client";
 
-import type { PrrTier } from "@/lib/types";
+import type { FitTier } from "@/lib/types";
 
-interface PRRBadgeProps {
-  tier: PrrTier | null;
+interface PotentialScoreBadgeProps {
+  tier: string | null;
   score: number | null;
   size?: "sm" | "md";
 }
@@ -29,16 +29,16 @@ const tierConfig: Record<string, { bg: string; text: string; border: string; dot
   },
 };
 
-export function PRRBadge({ tier, score, size = "sm" }: PRRBadgeProps) {
+export function PotentialScoreBadge({ tier, score, size = "sm" }: PotentialScoreBadgeProps) {
   if (!tier) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-raised px-2 py-0.5 text-xs text-muted-foreground">
-        PRR —
+        Score —
       </span>
     );
   }
 
-  const config = tierConfig[tier] ?? tierConfig.C;
+  const config = tierConfig[tier as string] ?? tierConfig.C;
   const sizeClasses = size === "md" ? "px-2.5 py-1 text-sm" : "px-2 py-0.5 text-xs";
 
   return (

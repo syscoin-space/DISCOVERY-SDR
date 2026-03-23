@@ -12,7 +12,7 @@ import { Drawer } from "vaul";
 import { LeadSidebar } from "@/components/kanban/LeadSidebar";
 import Tooltip from "@/components/ui/Tooltip";
 import { useKanbanStore } from "@/lib/stores/kanban.store";
-import { PRRBadge } from "@/components/shared/PRRBadge";
+import { PotentialScoreBadge } from "@/components/shared/PotentialScoreBadge";
 import { InsightToast } from "@/components/shared/InsightToast";
 import { DateTimePicker } from "@/components/shared/DateTimePicker";
 import { SendEmailModal } from "@/components/hoje/SendEmailModal";
@@ -682,7 +682,7 @@ export default function HojePage() {
                           </button>
                         </td>
                         {/* PRR */}
-                        <td className="px-3 py-2.5"><PRRBadge tier={task.lead?.prr_tier ?? null} score={task.lead?.prr_score ?? null} /></td>
+                        <td className="px-3 py-2.5"><PotentialScoreBadge tier={task.lead?.fit_tier ?? null} score={task.lead?.operational_score ?? null} /></td>
                         {/* ICP */}
                         <td className="px-3 py-2.5"><span className="text-xs text-muted-foreground">{task.lead?.icp_score != null ? `${task.lead.icp_score}/14` : "—"}</span></td>
                         {/* Contato (new) */}
@@ -777,7 +777,7 @@ export default function HojePage() {
                     {/* Line 1: PRR + Company + Status */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <PRRBadge tier={task.lead?.prr_tier ?? null} score={task.lead?.prr_score ?? null} />
+                        <PotentialScoreBadge tier={task.lead?.fit_tier ?? null} score={task.lead?.operational_score ?? null} />
                         <span className="text-sm font-semibold text-foreground truncate">
                           {task.lead?.company_name}
                         </span>

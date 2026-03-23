@@ -23,12 +23,11 @@ type Step = "COMPANY" | "TEAM" | "AI" | "SUCCESS";
 export default function OnboardingPage() {
   const { user, hydrate } = useAuthStore();
   const router = useRouter();
-  const pathname = usePathname();
   const [step, setStep] = useState<Step>("COMPANY");
   const [loading, setLoading] = useState(false);
   
   // Form States
-  const [companyName, setCompanyName] = useState(user?.tenant?.name || "");
+  const [companyName, setCompanyName] = useState("");
   const [teamSize, setTeamSize] = useState("1-3");
   const [aiProvider, setAiProvider] = useState("openrouter");
   const [aiKey, setAiKey] = useState("");
@@ -46,6 +45,13 @@ export default function OnboardingPage() {
     }
   }, [user?.tenant?.name, companyName]);
 
+  // Sycn company name from user store when hydrated
+  useEffect(() => {
+    if (user?.tenant?.name && !companyName) {
+      setCompanyName(user.tenant.name);
+    }
+  }, [user?.tenant?.name]);
+
   const handleNext = async () => {
     setLoading(true);
     try {
@@ -61,20 +67,23 @@ export default function OnboardingPage() {
         });
         setStep("SUCCESS");
       } else if (step === "SUCCESS") {
-        const response = await api.post("/onboarding/complete");
+        await api.post("/onboarding/complete");
         
-        // Atualização manual e bruta para garantir persistência imediata
-        const storedUser = localStorage.getItem("retentio_user");
+        // Brute force local update
+        const storedUser = localStorage.getItem("discovery_sdr_user");
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
           if (parsed.tenant) {
             parsed.tenant.onboarding_status = "COMPLETED";
-            localStorage.setItem("retentio_user", JSON.stringify(parsed));
+            parsed.tenant.name = companyName; 
+            // Mock do estado completo para evitar que a sidebar mostre tasks vazias imediatamente
+            parsed.onboarding_state = { tasks_completed: { company_setup: true, team_added: true, ai_setup: true } };
+            localStorage.setItem("discovery_sdr_user", JSON.stringify(parsed));
           }
         }
 
-        await hydrate(); // Re-hidrata a store
-        window.location.href = "/pipeline"; // Redirecionamento forçado
+        await hydrate(); 
+        window.location.href = "/pipeline"; 
       }
     } catch (error) {
       console.error("Onboarding error:", error);
@@ -89,18 +98,18 @@ export default function OnboardingPage() {
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold tracking-tight">Confirmar sua Empresa</h2>
-              <p className="text-sm text-muted-foreground">Vamos começar personalizando sua conta Retentio.</p>
+              <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Confirmar sua Empresa</h2>
+              <p className="text-sm text-zinc-500">Sua conta foi criada como: <strong className="text-accent">{user?.tenant?.name}</strong></p>
             </div>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="companyName">Nome da Empresa</Label>
+                <Label htmlFor="companyName">Nome da Exibição</Label>
                 <Input 
                   id="companyName" 
                   value={companyName} 
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="Ex: Minha Empresa Ltda"
-                  className="h-12 text-lg rounded-xl border-zinc-200 dark:border-zinc-800"
+                  className="h-12 text-lg rounded-xl border-zinc-200"
                 />
               </div>
             </div>
@@ -138,12 +147,12 @@ export default function OnboardingPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="space-y-2">
               <h2 className="text-2xl font-bold tracking-tight">Ativar a Inteligência</h2>
-              <p className="text-sm text-muted-foreground">Configuração do motor de descoberta e IA assistiva.</p>
+              <p className="text-sm text-muted-foreground">Configuração do motor de descoberta.</p>
             </div>
             <div className="space-y-3">
               {[
-                { id: "openrouter", name: "OpenRouter (Recomendado)", desc: "Acesso a Claude, GPT-4 e Llama em um lugar." },
-                { id: "openai", name: "OpenAI Direct", desc: "Uso direto via API Key da OpenAI." }
+                { id: "openrouter", name: "OpenRouter", desc: "Recomendado para multi-modelo." },
+                { id: "openai", name: "OpenAI Direct", desc: "Uso direto via API Key." }
               ].map((p) => (
                 <button
                   key={p.id}
@@ -186,7 +195,7 @@ export default function OnboardingPage() {
             </div>
             <div className="space-y-2">
               <h2 className="text-3xl font-extrabold tracking-tight">Tudo Pronto!</h2>
-              <p className="text-zinc-500 font-medium">Sua conta foi ativada com sucesso.</p>
+              <p className="text-zinc-500 font-medium text-lg">Bem-vindo ao Discovery SDR V2.</p>
             </div>
           </div>
         );
@@ -194,7 +203,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-xl space-y-8">
         <Card className="border-none shadow-2xl bg-white dark:bg-zinc-900 rounded-[32px] overflow-hidden">
           <CardContent className="p-8 sm:p-12">
@@ -206,7 +215,7 @@ export default function OnboardingPage() {
                 disabled={loading}
                 className="h-14 w-full rounded-2xl bg-accent text-white text-lg font-bold"
               >
-                {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (step === "SUCCESS" ? "Entrar na Plataforma" : "Continuar")}
+                {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (step === "SUCCESS" ? "Fazer Go-Live 🚀" : "Continuar")}
               </Button>
             </div>
           </CardContent>

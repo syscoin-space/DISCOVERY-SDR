@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window !== "undefined") {
       localStorage.setItem("accessToken", token);
       localStorage.setItem("refreshToken", refreshToken);
-      localStorage.setItem("retentio_user", JSON.stringify(user));
+      localStorage.setItem("discovery_sdr_user", JSON.stringify(user));
       if (user.tenant_id) localStorage.setItem("tenantId", user.tenant_id);
       if (user.membership_id) localStorage.setItem("membershipId", user.membership_id);
     }
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
-      localStorage.removeItem("retentio_user");
+      localStorage.removeItem("discovery_sdr_user");
       localStorage.removeItem("tenantId");
       localStorage.removeItem("membershipId");
     }
@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (typeof window === "undefined") return;
 
     const token = localStorage.getItem("accessToken");
-    const userStr = localStorage.getItem("retentio_user");
+    const userStr = localStorage.getItem("discovery_sdr_user");
 
     if (token && userStr) {
       try {
@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
-          localStorage.removeItem("retentio_user");
+          localStorage.removeItem("discovery_sdr_user");
           localStorage.removeItem("tenantId");
           localStorage.removeItem("membershipId");
         }

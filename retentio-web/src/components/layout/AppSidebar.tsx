@@ -82,7 +82,7 @@ export function AppSidebar() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("retentio_user");
+      const raw = localStorage.getItem("discovery_sdr_user");
       if (raw) setUser(JSON.parse(raw));
     } catch {}
   }, []);
@@ -94,7 +94,7 @@ export function AppSidebar() {
   function handleLogout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    localStorage.removeItem("retentio_user");
+    localStorage.removeItem("discovery_sdr_user");
     router.push("/login");
   }
 

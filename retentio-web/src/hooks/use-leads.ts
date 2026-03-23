@@ -8,7 +8,7 @@ const LEADS_KEY = "leads";
 
 interface LeadsFilters {
   status?: LeadStatus;
-  prr_tier?: string;
+  score_tier?: string;
   icp_tier?: string;
   search?: string;
   cursor?: string;
@@ -21,7 +21,7 @@ export function useLeads(filters: LeadsFilters = {}) {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters.status) params.set("status", filters.status);
-      if (filters.prr_tier) params.set("prr_tier", filters.prr_tier);
+      if (filters.score_tier) params.set("score_tier", filters.score_tier);
       if (filters.icp_tier) params.set("icp_tier", filters.icp_tier);
       if (filters.search) params.set("search", filters.search);
       if (filters.cursor) params.set("cursor", filters.cursor);
@@ -195,20 +195,6 @@ export function useRemoveFromStack() {
   });
 }
 
-export function useCalculatePrr() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (leadId: string) => {
-      const { data } = await api.patch(`/leads/${leadId}/prr-inputs`, {});
-      return data;
-    },
-    onSuccess: (_, leadId) => {
-      queryClient.invalidateQueries({ queryKey: [LEADS_KEY, leadId] });
-      queryClient.invalidateQueries({ queryKey: [LEADS_KEY] });
-    },
-  });
-}
 export function useDeleteLead() {
   const queryClient = useQueryClient();
 

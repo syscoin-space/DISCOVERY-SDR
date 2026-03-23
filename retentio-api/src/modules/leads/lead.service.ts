@@ -204,6 +204,14 @@ export class LeadService {
       );
     }
 
+    // Rule: Discovery Disabled
+    if (newStatus === 'DISCOVERY') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+      if (tenant && !tenant.discovery_enabled) {
+        throw new AppError(403, 'A etapa Discovery está desativada para este tenant', 'DISCOVERY_DISABLED');
+      }
+    }
+
     const updatedLead = await prisma.lead.update({
       where: { id },
       data: { status: newStatus },
@@ -251,8 +259,16 @@ export class LeadService {
     for (const s of Object.values(LeadStatus)) {
       counts[s] = 0;
     }
+
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+    const discoveryEnabled = tenant?.discovery_enabled ?? false;
+
     for (const r of raw) {
-      counts[r.status] = r._count.id;
+      if (r.status === 'DISCOVERY' && !discoveryEnabled) {
+        counts[r.status] = 0;
+      } else {
+        counts[r.status] = r._count.id;
+      }
     }
     return counts;
   }
