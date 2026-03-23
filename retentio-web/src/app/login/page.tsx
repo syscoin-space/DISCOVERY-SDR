@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api/client";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import { useBrand } from "@/hooks/use-brand";
 import { useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tenantSlug = searchParams.get("tenant") || searchParams.get("s");
@@ -152,3 +152,19 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-navy via-accent to-green">
+        <div className="w-full max-w-sm rounded-2xl bg-white/95 p-8 shadow-2xl backdrop-blur-sm animate-pulse">
+          <div className="h-12 w-12 mx-auto rounded-xl bg-gray-200" />
+          <div className="h-6 w-32 mx-auto mt-3 rounded bg-gray-200" />
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
