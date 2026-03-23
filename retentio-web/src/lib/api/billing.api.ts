@@ -13,6 +13,14 @@ export interface PlanUsage {
   };
 }
 
+export interface Invoice {
+  id: string;
+  date: string;
+  amount: string;
+  status: "Pago" | "Pendente" | "Vencido";
+  pdf_url?: string;
+}
+
 export interface PlanDetails {
   id: string;
   name: string;
@@ -42,7 +50,12 @@ export const billingApi = {
   },
 
   async getPortalUrl() {
-    return api.get('/billing/portal');
+    return api.get<{ url: string }>('/billing/portal');
+  },
+
+  async getInvoices(): Promise<Invoice[]> {
+    const { data } = await api.get<Invoice[]>('/billing/invoices');
+    return data;
   }
 };
 

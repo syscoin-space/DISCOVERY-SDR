@@ -71,3 +71,8 @@ billingRouter.get('/portal', authGuard, asyncHandler(async (req, res) => {
   const result = await subscriptionService.getCustomerPortal(tenantId);
   res.json(result);
 }));
+
+billingRouter.get('/invoices', authGuard, asyncHandler(async (req, res) => {
+  // Por enquanto retorna vazio ou busca pagamentos reais no prisma
+  res.json([]);
+}));
