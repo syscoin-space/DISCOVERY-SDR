@@ -132,22 +132,20 @@ export default function BrandPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Logo Principal (Modo Claro)</label>
-                <ImageUploadZone
-                  currentUrl={brand?.logo_url || ""}
-                  onUpload={(file) => handleUpload("logo", file)}
-                  isUploading={uploadImage.isPending && uploadImage.variables?.field === "logo"}
-                  aspectRatio="video"
-                  description="Recomendado: 200x50px (SVG ou PNG transparente)"
-                />
-              </div>
-              <div className="space-y-3 opacity-50 cursor-not-allowed">
-                <label className="text-sm font-medium">Logo Principal (Modo Escuro)</label>
-                <div className="relative rounded-lg border border-dashed border-border bg-surface-raised p-4 flex items-center justify-center text-xs text-muted-foreground">
-                  Funcionalidade em desenvolvimento
-                </div>
-              </div>
+              <ImageUploadZone
+                label="Logo Principal"
+                hint="SVG ou PNG (fundo transparente)"
+                currentUrl={brand?.logo_url || ""}
+                onUpload={(file) => handleUpload("logo", file)}
+                uploading={uploadImage.isPending && uploadImage.variables?.field === "logo"}
+              />
+              <ImageUploadZone
+                label="Favicon (Ícone do Navegador)"
+                hint="PNG 32x32"
+                currentUrl={brand?.favicon_url || ""}
+                onUpload={(file) => handleUpload("favicon", file)}
+                uploading={uploadImage.isPending && uploadImage.variables?.field === "favicon"}
+              />
             </div>
           </div>
         </SettingsSection>
@@ -158,37 +156,21 @@ export default function BrandPage() {
           description="Ícones exibidos na aba do navegador e ao instalar o app no celular."
           icon={Smartphone}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Favicon</label>
-              <ImageUploadZone
-                currentUrl={brand?.favicon_url || ""}
-                onUpload={(file) => handleUpload("favicon", file)}
-                isUploading={uploadImage.isPending && uploadImage.variables?.field === "favicon"}
-                aspectRatio="square"
-                description="32x32px"
-              />
-            </div>
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Ícone PWA (192x192)</label>
-              <ImageUploadZone
-                currentUrl={brand?.icon_192_url || ""}
-                onUpload={(file) => handleUpload("icon_192", file)}
-                isUploading={uploadImage.isPending && uploadImage.variables?.field === "icon_192"}
-                aspectRatio="square"
-                description="192x192px (PNG)"
-              />
-            </div>
-            <div className="space-y-3">
-              <label className="text-sm font-medium">Ícone PWA (512x512)</label>
-              <ImageUploadZone
-                currentUrl={brand?.icon_512_url || ""}
-                onUpload={(file) => handleUpload("icon_512", file)}
-                isUploading={uploadImage.isPending && uploadImage.variables?.field === "icon_512"}
-                aspectRatio="square"
-                description="512x512px (PNG)"
-              />
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <ImageUploadZone
+              label="Ícone PWA (192x192)"
+              hint="Design quadrado"
+              currentUrl={brand?.icon_192_url || ""}
+              onUpload={(file) => handleUpload("icon_192", file)}
+              uploading={uploadImage.isPending && uploadImage.variables?.field === "icon_192"}
+            />
+            <ImageUploadZone
+              label="Ícone PWA (512x512)"
+              hint="Alta resolução"
+              currentUrl={brand?.icon_512_url || ""}
+              onUpload={(file) => handleUpload("icon_512", file)}
+              uploading={uploadImage.isPending && uploadImage.variables?.field === "icon_512"}
+            />
           </div>
         </SettingsSection>
 
