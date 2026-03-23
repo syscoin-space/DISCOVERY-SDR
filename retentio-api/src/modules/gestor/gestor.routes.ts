@@ -106,6 +106,27 @@ gestorRouter.get(
   }),
 );
 
+// ─── GET /gestor/sdrs ───
+gestorRouter.get(
+  '/sdrs',
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+    const sdrs = await prisma.membership.findMany({
+      where: { tenant_id: tenantId, role: Role.SDR, active: true },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+    
+    // Map to flat GestorSdr shape as expected by the frontend
+    const flatSdrs = sdrs.map(membership => ({
+      id: membership.id,
+      name: membership.user.name,
+      email: membership.user.email,
+    }));
+
+    res.json(flatSdrs);
+  }),
+);
+
 // ─── GOALS (Formerly METAS) CRUD ───
 
 const createGoalSchema = z.object({
