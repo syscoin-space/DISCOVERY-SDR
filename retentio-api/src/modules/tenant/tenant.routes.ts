@@ -50,7 +50,7 @@ tenantRouter.get(
 tenantRouter.patch(
   '/',
   authGuard,
-  roleGuard(Role.OWNER),
+  roleGuard(Role.OWNER, Role.MANAGER),
   validate(updateTenantSchema),
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);

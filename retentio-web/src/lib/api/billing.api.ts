@@ -61,12 +61,12 @@ export const billingApi = {
 
 export const invitationApi = {
   async sendInvite(email: string, role: string, teamId?: string) {
-    const response = await api.post('/api/invitations', { email, role, teamId });
+    const response = await api.post('/invitations', { email, role, teamId });
     return response.data;
   },
 
   async acceptInvite(token: string) {
-    const response = await api.post('/api/invitations/accept', { token });
+    const response = await api.post('/invitations/accept', { token });
     return response.data;
   }
 };

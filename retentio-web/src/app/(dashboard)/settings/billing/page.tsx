@@ -95,7 +95,7 @@ export default function BillingPage() {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <span className="text-3xl font-bold text-foreground">
-                    {formatCurrency(safeSub.plan?.price_monthly)}/mês
+                    {formatCurrency(safeSub.plan?.price_monthly ?? null)}/mês
                   </span>
                   <p className="text-xs text-muted-foreground">Faturamento mensal</p>
                 </div>

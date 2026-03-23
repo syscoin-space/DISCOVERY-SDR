@@ -39,7 +39,10 @@ export class PlanService {
    * Verifica se um limite específico foi atingido
    */
   async checkLimit(tenantId: string, resource: keyof PlanLimits) {
-    const { limits } = await this.getTenantPlan(tenantId);
+    const planInfo = await this.getTenantPlan(tenantId);
+    if (!planInfo) return true; // Sem plano, sem limite bloqueante por enquanto
+
+    const { limits } = planInfo;
     const limit = limits[resource];
 
     if (limit === undefined) return true; // Sem limite definido
