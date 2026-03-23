@@ -63,7 +63,6 @@ const sdrNav: NavItem[] = [
 const gestorNav: NavItem[] = [
   { href: "/gestor", label: "Dashboard Gestão", icon: LayoutDashboard },
   { href: "/settings/account", label: "Configurações", icon: Settings },
-  { href: "/settings/ai", label: "AI & Providers", icon: Settings },
 ];
 
 const adminNav: NavItem[] = [
