@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { aiApi, TenantAIProvider, TenantAISettings, AIProviderType } from "@/lib/api/ai.api";
 import { 

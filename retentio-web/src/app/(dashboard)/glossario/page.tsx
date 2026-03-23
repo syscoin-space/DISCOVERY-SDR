@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from "react";
 import { Search, BookOpen, Cpu, Target, MessageSquare } from "lucide-react";
 import { GlossaryItemData } from "@/components/glossary/GlossaryItemCard";

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useTenantSettings, useUpdateTenantSettings } from "@/hooks/use-tenant";
 import { Input } from "@/components/ui/input";
