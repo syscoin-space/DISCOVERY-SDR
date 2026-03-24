@@ -23,6 +23,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import api from "@/lib/api/client";
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -75,10 +77,18 @@ export default function ClienteDetailPage() {
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Modal de Trial states
+  const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
+  const [newEndDate, setNewEndDate] = useState<string>("");
+  const [isSavingTrial, setIsSavingTrial] = useState(false);
+
   const loadTenant = useCallback(async () => {
     try {
       const { data } = await api.get(`/admin/tenants/${id}`);
       setTenant(data);
+      if (data?.subscription?.current_period_end) {
+        setNewEndDate(data.subscription.current_period_end.split('T')[0]);
+      }
     } catch (err) {
       console.error("[AdminClienteDetail] Erro ao carregar detalhe:", err);
     } finally {
@@ -87,6 +97,30 @@ export default function ClienteDetailPage() {
   }, [id]);
 
   useEffect(() => { loadTenant(); }, [loadTenant]);
+
+  const handleSaveTrial = async () => {
+    if (!tenant) return;
+    try {
+      setIsSavingTrial(true);
+      await api.post('/admin/billing/trial/adjust', {
+        tenant_id: tenant.id,
+        new_end_date: `${newEndDate}T23:59:59.000Z`
+      });
+      setIsTrialModalOpen(false);
+      loadTenant();
+    } catch (err) {
+      console.error("Erro ao salvar trial:", err);
+      alert("Erro ao salvar data de trial");
+    } finally {
+      setIsSavingTrial(false);
+    }
+  };
+
+  const addDaysToTrial = (days: number) => {
+    const baseDate = newEndDate ? new Date(newEndDate) : new Date();
+    baseDate.setDate(baseDate.getDate() + days);
+    setNewEndDate(baseDate.toISOString().split('T')[0]);
+  };
 
   if (loading) {
     return (
@@ -151,11 +185,22 @@ export default function ClienteDetailPage() {
         <div className="lg:col-span-2 space-y-8">
           {/* Sessão: Plano & Assinatura */}
           <Card className="border-zinc-200 dark:border-zinc-800">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-blue-500" />
                 Plano & Assinatura
               </CardTitle>
+              {tenant.subscription?.status === 'TRIAL' && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsTrialModalOpen(true)}
+                  className="gap-2"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Configurar Trial
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <DetailItem label="Plano Atual" value={tenant.plan?.name || "Sem plano"} />
@@ -257,6 +302,50 @@ export default function ClienteDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Modal Trial Configurator */}
+      <Dialog open={isTrialModalOpen} onOpenChange={setIsTrialModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Configurar Período de Trial</DialogTitle>
+            <CardDescription>
+              Defina manualmente a data limite de testes para <strong>{tenant.name}</strong>.
+            </CardDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Data de Expiração</label>
+              <Input 
+                type="date" 
+                value={newEndDate}
+                onChange={(e) => setNewEndDate(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => addDaysToTrial(7)}>
+                +7 Dias
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => addDaysToTrial(15)}>
+                +15 Dias
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => setNewEndDate(new Date().toISOString().split('T')[0])}>
+                Expirar Hoje
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsTrialModalOpen(false)}>Cancelar</Button>
+            <Button 
+              onClick={handleSaveTrial} 
+              disabled={isSavingTrial}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {isSavingTrial ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Salvar Alteração
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
