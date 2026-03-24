@@ -67,7 +67,7 @@ const gestorNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { href: "/admin/dashboard", label: "SaaS Overview", icon: LayoutDashboard },
-  { href: "/admin/tenants", label: "Tenants/Clientes", icon: Globe },
+  { href: "/admin/clientes", label: "Clientes", icon: Globe },
   { href: "/admin/plans", label: "Gestão de Planos", icon: CreditCard },
   { href: "/admin/financeiro", label: "Financeiro", icon: BarChart3 },
 ];

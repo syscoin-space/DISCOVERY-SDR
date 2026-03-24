@@ -77,7 +77,9 @@ app.use('/api/webhooks', billingWebhookRouter); // Rota pública para gateways
 
 // ── Admin Routes (SaaS Owner Only) ──
 import { adminBillingRouter } from './modules/billing/admin-billing.routes';
+import { adminTenantRouter } from './modules/tenant/admin-tenant.routes';
 app.use('/api/admin/billing', authGuard, roleGuard(Role.ADMIN), adminBillingRouter);
+app.use('/api/admin/tenants', authGuard, roleGuard(Role.ADMIN), adminTenantRouter);
 
 // ── Error Handler (must be last) ──
 app.use(errorHandler);
