@@ -37,19 +37,19 @@ adminTenantRouter.get(
       ];
     }
 
-    if (plan) {
+    if (plan && plan !== 'all') {
       where.plan = { key: plan };
     }
 
-    if (status) {
+    if (status && status !== 'all') {
       where.active = status === 'active';
     }
 
-    if (subscriptionStatus) {
+    if (subscriptionStatus && subscriptionStatus !== 'all') {
       where.subscription = { status: subscriptionStatus };
     }
 
-    if (onboardingStatus) {
+    if (onboardingStatus && onboardingStatus !== 'all') {
       where.onboarding_status = onboardingStatus;
     }
 
