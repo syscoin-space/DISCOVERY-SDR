@@ -28,6 +28,7 @@ export interface PlanDetails {
   description: string | null;
   price_monthly: number | null;
   currency: string;
+  trial_days: number;
   limits: any;
   features: any;
   is_active: boolean;
