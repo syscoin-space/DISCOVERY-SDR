@@ -95,6 +95,7 @@ export default function FinanceiroPage() {
   const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
 
   const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       const [statusRes, metricsRes, subsRes] = await Promise.all([
         api.get("/admin/billing/status"),
