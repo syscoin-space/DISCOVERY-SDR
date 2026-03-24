@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Activity,
   AlertCircle,
-  ArrowUpRight,
   CheckCircle2,
   CreditCard,
   DollarSign,
+  ExternalLink,
   Loader2,
   RefreshCw,
   Server,
@@ -16,6 +16,8 @@ import {
   Wifi,
   WifiOff,
   Zap,
+  Link2,
+  Link2Off,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,18 +31,32 @@ interface AsaasStatus {
   environment: "sandbox" | "production";
   base_url: string;
   key_preview: string | null;
+  operational: boolean;
+  gateway_customers: number;
+  subscriptions_total: number;
+  subscriptions_linked_to_gateway: number;
+  subscriptions_without_gateway: number;
 }
 
 interface ConnectionTestResult {
   success: boolean;
+  auth_valid: boolean;
   message?: string;
   error?: string;
-  customers_found?: number;
+  hint?: string;
+  response_code?: number;
+  gateway_data?: {
+    customers: number;
+    subscriptions: number;
+  };
 }
 
 interface Metrics {
   mrr: number;
+  trial_potential: number;
+  currency: string;
   total_tenants: number;
+  tenants_with_subscription: number;
   active: number;
   trial: number;
   past_due: number;
@@ -58,10 +74,13 @@ interface SubscriptionRow {
   plan_price: number | null;
   status: string;
   price: number | null;
+  effective_price: number;
   currency: string;
   current_period_end: string | null;
+  has_gateway_link: boolean;
   gateway_customer_id: string | null;
   gateway_subscription_id: string | null;
+  last_webhook_at: string | null;
   created_at: string;
 }
 
@@ -84,7 +103,7 @@ export default function FinanceiroPage() {
       ]);
       setStatus(statusRes.data);
       setMetrics(metricsRes.data);
-      setSubscriptions(subsRes.data);
+      setSubscriptions(subsRes.data.subscriptions || subsRes.data);
     } catch (err) {
       console.error("[Financeiro] Erro ao carregar dados:", err);
     } finally {
@@ -101,14 +120,14 @@ export default function FinanceiroPage() {
       const { data } = await api.post("/admin/billing/test-connection");
       setTestResult(data);
     } catch (err: any) {
-      setTestResult({ success: false, error: err.message });
+      setTestResult({ success: false, auth_valid: false, error: err.message });
     } finally {
       setTesting(false);
     }
   };
 
-  const formatCurrency = (val: number | null) => {
-    if (!val) return "R$ 0,00";
+  const formatCurrency = (val: number | null | undefined) => {
+    if (!val && val !== 0) return "R$ 0,00";
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
   };
 
@@ -152,28 +171,35 @@ export default function FinanceiroPage() {
         </Button>
       </div>
 
-      {/* ─── 1. Status da Integração Asaas ─── */}
+      {/* ─── BLOCO 1 — Status da Integração Asaas ─── */}
       <Card className="border-zinc-200 dark:border-zinc-800">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Server className="h-5 w-5 text-blue-500" />
             Integração Asaas
+            {status?.operational && (
+              <Badge variant="outline" className="ml-2 text-emerald-600 border-emerald-500/20 bg-emerald-500/5 text-[10px]">
+                Operacional
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Status da chave */}
             <div className="flex items-center gap-3">
-              <div className={`h-3 w-3 rounded-full ${status?.configured ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`} />
+              <div className={`h-3 w-3 rounded-full shrink-0 ${status?.configured ? (status.operational ? "bg-emerald-500 animate-pulse" : "bg-amber-500") : "bg-red-500"}`} />
               <div>
-                <p className="text-sm font-medium">{status?.configured ? "Configurado" : "Não configurado"}</p>
+                <p className="text-sm font-medium">
+                  {status?.configured ? (status.operational ? "Conectado" : "Configurado (não testado)") : "Não configurado"}
+                </p>
                 <p className="text-[10px] text-muted-foreground">API Key</p>
               </div>
             </div>
 
             {/* Ambiente */}
             <div className="flex items-center gap-3">
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-sm font-medium capitalize">{status?.environment || "—"}</p>
                 <p className="text-[10px] text-muted-foreground">Ambiente</p>
@@ -182,21 +208,21 @@ export default function FinanceiroPage() {
 
             {/* Key Preview */}
             <div className="flex items-center gap-3">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-sm font-mono">{status?.key_preview || "—"}</p>
-                <p className="text-[10px] text-muted-foreground">Chave</p>
+                <p className="text-[10px] text-muted-foreground">Chave (preview)</p>
               </div>
             </div>
 
             {/* Teste de Conexão */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-2">
               <Button
                 size="sm"
                 variant={testResult?.success ? "outline" : "default"}
                 onClick={handleTestConnection}
                 disabled={testing || !status?.configured}
-                className="gap-2"
+                className="gap-2 w-fit"
               >
                 {testing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -208,17 +234,39 @@ export default function FinanceiroPage() {
                 {testing ? "Testando..." : testResult?.success ? "Conectado!" : "Testar Conexão"}
               </Button>
               {testResult && !testResult.success && (
-                <div className="flex items-center gap-1 text-xs text-red-500">
-                  <WifiOff className="h-3 w-3" />
-                  {testResult.error}
+                <div className="flex items-start gap-1.5 text-xs text-red-500">
+                  <WifiOff className="h-3 w-3 mt-0.5 shrink-0" />
+                  <div>
+                    <p>{testResult.error}</p>
+                    {testResult.hint && <p className="text-[10px] text-muted-foreground mt-0.5">{testResult.hint}</p>}
+                  </div>
                 </div>
+              )}
+              {testResult?.success && testResult.gateway_data && (
+                <p className="text-[10px] text-muted-foreground">
+                  Asaas: {testResult.gateway_data.customers} clientes, {testResult.gateway_data.subscriptions} assinaturas
+                </p>
               )}
             </div>
           </div>
+
+          {/* Vínculo interno */}
+          {status && status.subscriptions_total > 0 && (
+            <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-6 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Link2 className="h-3 w-3 text-emerald-500" />
+                <span>{status.subscriptions_linked_to_gateway} assinaturas vinculadas ao gateway</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Link2Off className="h-3 w-3 text-zinc-400" />
+                <span>{status.subscriptions_without_gateway} sem vínculo externo</span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* ─── 2. Métricas Globais ─── */}
+      {/* ─── BLOCO 3 — Métricas Globais ─── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <MetricCard
           label="MRR"
@@ -226,6 +274,15 @@ export default function FinanceiroPage() {
           icon={DollarSign}
           color="text-emerald-500"
           bgColor="bg-emerald-500/10"
+          subtitle="Receita recorrente mensal"
+        />
+        <MetricCard
+          label="Potencial Trial"
+          value={formatCurrency(metrics?.trial_potential ?? 0)}
+          icon={TrendingUp}
+          color="text-blue-500"
+          bgColor="bg-blue-500/10"
+          subtitle="Se todos os trials converterem"
         />
         <MetricCard
           label="Tenants Ativos"
@@ -235,7 +292,7 @@ export default function FinanceiroPage() {
           bgColor="bg-blue-500/10"
         />
         <MetricCard
-          label="Assinaturas Ativas"
+          label="Ativas"
           value={String(metrics?.active ?? 0)}
           icon={CheckCircle2}
           color="text-emerald-500"
@@ -245,8 +302,8 @@ export default function FinanceiroPage() {
           label="Trials"
           value={String(metrics?.trial ?? 0)}
           icon={Zap}
-          color="text-blue-500"
-          bgColor="bg-blue-500/10"
+          color="text-violet-500"
+          bgColor="bg-violet-500/10"
         />
         <MetricCard
           label="Inadimplentes"
@@ -255,40 +312,37 @@ export default function FinanceiroPage() {
           color="text-amber-500"
           bgColor="bg-amber-500/10"
         />
-        <MetricCard
-          label="Canceladas"
-          value={String(metrics?.canceled ?? 0)}
-          icon={TrendingUp}
-          color="text-red-500"
-          bgColor="bg-red-500/10"
-        />
       </div>
 
-      {/* ─── 3. Lista de Assinaturas ─── */}
+      {/* ─── BLOCO 4 — Lista de Assinaturas ─── */}
       <Card className="border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-blue-500" />
-            Assinaturas ({subscriptions.length})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-blue-500" />
+              Assinaturas ({subscriptions.length})
+            </CardTitle>
+            <p className="text-[10px] text-muted-foreground">Dados do banco interno (cross-tenant)</p>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-xs uppercase bg-zinc-50 dark:bg-zinc-900 text-muted-foreground border-b border-zinc-200 dark:border-zinc-800">
+              <thead className="text-[10px] uppercase bg-zinc-50 dark:bg-zinc-900 text-muted-foreground border-b border-zinc-200 dark:border-zinc-800">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">Tenant</th>
                   <th className="px-4 py-3 text-left font-semibold">Plano</th>
                   <th className="px-4 py-3 text-left font-semibold">Status</th>
                   <th className="px-4 py-3 text-right font-semibold">Valor/mês</th>
                   <th className="px-4 py-3 text-left font-semibold">Próx. Vencimento</th>
-                  <th className="px-4 py-3 text-left font-semibold">Gateway Ref</th>
+                  <th className="px-4 py-3 text-center font-semibold">Gateway</th>
+                  <th className="px-4 py-3 text-left font-semibold">Ref ID</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 {subscriptions.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
                       Nenhuma assinatura encontrada.
                     </td>
                   </tr>
@@ -310,12 +364,19 @@ export default function FinanceiroPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold font-mono">
-                        {formatCurrency(sub.price || sub.plan_price)}
+                        {formatCurrency(sub.effective_price)}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">
                         {sub.current_period_end
                           ? new Date(sub.current_period_end).toLocaleDateString("pt-BR")
                           : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {sub.has_gateway_link ? (
+                          <Link2 className="h-4 w-4 text-emerald-500 mx-auto" />
+                        ) : (
+                          <Link2Off className="h-4 w-4 text-zinc-300 mx-auto" />
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {sub.gateway_subscription_id ? (
@@ -323,7 +384,7 @@ export default function FinanceiroPage() {
                             {sub.gateway_subscription_id.slice(0, 16)}...
                           </span>
                         ) : (
-                          <span className="text-[10px] text-zinc-400">Sem gateway</span>
+                          <span className="text-[10px] text-zinc-400">—</span>
                         )}
                       </td>
                     </tr>
@@ -346,12 +407,14 @@ function MetricCard({
   icon: Icon,
   color,
   bgColor,
+  subtitle,
 }: {
   label: string;
   value: string;
   icon: any;
   color: string;
   bgColor: string;
+  subtitle?: string;
 }) {
   return (
     <Card className="border-zinc-200 dark:border-zinc-800">
@@ -362,6 +425,7 @@ function MetricCard({
         <div>
           <p className="text-xl font-bold text-zinc-900 dark:text-white">{value}</p>
           <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{label}</p>
+          {subtitle && <p className="text-[9px] text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
       </CardContent>
     </Card>
