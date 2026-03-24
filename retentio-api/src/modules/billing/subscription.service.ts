@@ -40,12 +40,20 @@ export class SubscriptionService {
     } else {
       // Busca plano padrão (ex: STANDARD)
       const plan = await prisma.plan.findUnique({ where: { key: 'STANDARD' } });
+      const trialDays = plan?.trial_days ?? 7;
+      
+      const now = new Date();
+      const trialEndsAt = new Date(now);
+      trialEndsAt.setDate(now.getDate() + trialDays);
+
       await prisma.subscription.create({
         data: {
           tenant_id: tenant.id,
           plan_id: plan!.id,
           gateway_customer_id: customer.externalId,
-          status: SubscriptionStatus.TRIAL
+          status: SubscriptionStatus.TRIAL,
+          current_period_start: now,
+          current_period_end: trialEndsAt
         }
       });
     }

@@ -98,6 +98,47 @@ adminBillingRouter.get(
 );
 
 // ═══════════════════════════════════════════════════════════════
+// BLOCO 1.5 — CONTROLE MANUAL DE TRIAL
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/admin/billing/trial/adjust
+ * 
+ * Permite ao admin do SaaS alterar a data limite do Trial (current_period_end)
+ * ou até estender o prazo de um cliente específico.
+ * 
+ * Payload: { tenant_id: string, new_end_date: string (ISO) }
+ */
+adminBillingRouter.post(
+  '/trial/adjust',
+  asyncHandler(async (req, res) => {
+    const { tenant_id, new_end_date } = req.body;
+
+    if (!tenant_id || !new_end_date) {
+      return res.status(400).json({ error: 'tenant_id e new_end_date são obrigatórios' });
+    }
+
+    const newDate = new Date(new_end_date);
+    if (isNaN(newDate.getTime())) {
+      return res.status(400).json({ error: 'new_end_date inválida' });
+    }
+
+    // Atualiza a assinatura vinculada a este tenant
+    const updatedSub = await prisma.subscription.update({
+      where: { tenant_id },
+      data: {
+        current_period_end: newDate
+      }
+    });
+
+    res.json({
+      message: 'Período de trial atualizado com sucesso.',
+      subscription: updatedSub
+    });
+  })
+);
+
+// ═══════════════════════════════════════════════════════════════
 // BLOCO 2 — TESTE DE CONEXÃO REAL
 // ═══════════════════════════════════════════════════════════════
 

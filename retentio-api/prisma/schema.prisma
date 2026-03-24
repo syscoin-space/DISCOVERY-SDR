@@ -522,6 +522,7 @@ model Plan {
   description   String?
   price_monthly Float?
   currency      String         @default("BRL")
+  trial_days    Int            @default(7)
   limits        Json
   features      Json
   is_active     Boolean        @default(true)
