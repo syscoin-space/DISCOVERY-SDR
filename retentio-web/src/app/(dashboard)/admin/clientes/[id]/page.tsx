@@ -10,6 +10,7 @@ import {
   Zap,
   Activity,
   Calendar,
+  Clock,
   Mail,
   Shield,
   Palette,

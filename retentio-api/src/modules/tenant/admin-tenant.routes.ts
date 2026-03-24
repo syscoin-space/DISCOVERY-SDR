@@ -118,7 +118,7 @@ adminTenantRouter.get(
 adminTenantRouter.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const tenant = await prisma.tenant.findUnique({
       where: { id },

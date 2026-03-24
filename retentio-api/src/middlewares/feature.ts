@@ -10,7 +10,8 @@ export const featureGuard = (featureKey: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const tenantId = getTenantId(req);
-      const { features } = await planService.getTenantPlan(tenantId);
+      const planData = await planService.getTenantPlan(tenantId);
+      const features = planData?.features as any;
 
       if (!features || !features[featureKey]) {
         throw new AppError(

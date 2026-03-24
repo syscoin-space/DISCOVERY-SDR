@@ -34,7 +34,7 @@ templateRouter.get(
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const template = await prisma.template.findFirst({
-      where: { id: req.params.id, tenant_id: tenantId },
+      where: { id: req.params.id as string, tenant_id: tenantId },
     });
     if (!template) throw new AppError(404, 'Template não encontrado');
     res.json(template);
@@ -64,7 +64,7 @@ templateRouter.patch(
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const template = await prisma.template.findFirst({
-      where: { id: req.params.id, tenant_id: tenantId },
+      where: { id: req.params.id as string, tenant_id: tenantId },
     });
     if (!template) throw new AppError(404, 'Template não encontrado');
 
@@ -82,7 +82,7 @@ templateRouter.delete(
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const template = await prisma.template.findFirst({
-      where: { id: req.params.id, tenant_id: tenantId },
+      where: { id: req.params.id as string, tenant_id: tenantId },
     });
     if (!template) throw new AppError(404, 'Template não encontrado');
 

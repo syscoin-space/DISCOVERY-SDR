@@ -15,6 +15,7 @@ import {
   ExternalLink,
   CreditCard,
   User,
+  Users,
   Activity,
   ArrowUpDown,
   Loader2,
@@ -151,7 +152,7 @@ export default function ClientesAdminPage() {
               />
             </div>
 
-            <Select value={filters.plan} onValueChange={(v) => updateFilter("plan", v)}>
+            <Select value={filters.plan} onValueChange={(v) => updateFilter("plan", v || "")}>
               <SelectTrigger className="bg-white dark:bg-zinc-950">
                 <SelectValue placeholder="Plano" />
               </SelectTrigger>
@@ -164,7 +165,7 @@ export default function ClientesAdminPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.subscriptionStatus} onValueChange={(v) => updateFilter("subscriptionStatus", v)}>
+            <Select value={filters.subscriptionStatus} onValueChange={(v) => updateFilter("subscriptionStatus", v || "")}>
               <SelectTrigger className="bg-white dark:bg-zinc-950">
                 <SelectValue placeholder="Assinatura" />
               </SelectTrigger>
@@ -177,7 +178,7 @@ export default function ClientesAdminPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.onboardingStatus} onValueChange={(v) => updateFilter("onboardingStatus", v)}>
+            <Select value={filters.onboardingStatus} onValueChange={(v) => updateFilter("onboardingStatus", v || "")}>
               <SelectTrigger className="bg-white dark:bg-zinc-950">
                 <SelectValue placeholder="Onboarding" />
               </SelectTrigger>
@@ -188,7 +189,7 @@ export default function ClientesAdminPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.discoveryEnabled} onValueChange={(v) => updateFilter("discoveryEnabled", v)}>
+            <Select value={filters.discoveryEnabled} onValueChange={(v) => updateFilter("discoveryEnabled", v || "")}>
               <SelectTrigger className="bg-white dark:bg-zinc-950">
                 <SelectValue placeholder="Discovery" />
               </SelectTrigger>

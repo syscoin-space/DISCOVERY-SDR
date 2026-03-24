@@ -13,7 +13,7 @@ onboardingRouter.use(roleGuard('OWNER' as any));
 const companySetupSchema = z.object({
   name: z.string().min(2),
   logo_url: z.string().optional(),
-  branding: z.record(z.any()).optional(),
+  branding: z.record(z.string(), z.any()).optional(),
 });
 
 const teamSetupSchema = z.object({
