@@ -74,6 +74,11 @@ export default function AdminPlansPage() {
               </div>
               <CardTitle className="mt-4 text-xl">{plan.name}</CardTitle>
               <CardDescription className="line-clamp-2">{plan.description}</CardDescription>
+              {plan.trial_days > 0 && (
+                <div className="mt-2 text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 w-max px-2 py-1 rounded-md">
+                  {plan.trial_days} dias de Trial Grátis
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-baseline gap-1">
