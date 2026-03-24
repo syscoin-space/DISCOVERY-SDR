@@ -86,6 +86,7 @@ async function main() {
   const passwordHash = await hash('123456', 10);
 
   const users = [
+    { email: 'admin@discovery.com', name: 'Admin SaaS', role: Role.ADMIN, capacity: null },
     { email: 'owner@discovery.com', name: 'Hugo (Owner)', role: Role.OWNER, capacity: null },
     { email: 'manager@discovery.com', name: 'Manager Demo', role: Role.MANAGER, capacity: null },
     { email: 'sdr@discovery.com', name: 'SDR Demo', role: Role.SDR, capacity: 80 },
