@@ -6,25 +6,20 @@ import { useAuthStore } from "@/lib/stores/auth.store";
 import { Loader2 } from "lucide-react";
 
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, isHydrated } = useAuthStore();
   const pathname = usePathname();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Se ainda não carregou o cache/token, esperamos
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    
-    // Se não tem token e não está em rota pública, o AuthGuard (que deve estar acima deste) cuida
-    if (!token && !pathname.startsWith("/login") && !pathname.startsWith("/register")) {
-      setLoading(false);
+    if (!isHydrated) {
+      setLoading(true);
       return;
     }
 
-    // Se tem token, mas o user ainda não foi carregado, esperamos a hidratação
-    if (token && !user) {
-      // Pequeno timeout ou esperar a store hidratar se necessário
-      setLoading(true);
+    // Se não está autenticado e não está em rota pública, libera pro AuthGuard redirecionar
+    if (!isAuthenticated && !pathname.startsWith("/login") && !pathname.startsWith("/register")) {
+      setLoading(false);
       return;
     }
 
@@ -48,7 +43,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     } else {
       setLoading(false);
     }
-  }, [user, pathname, router]);
+  }, [user, pathname, router, isHydrated, isAuthenticated]);
 
   if (loading) {
     return (

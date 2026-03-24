@@ -8,6 +8,7 @@ interface AuthState {
   tenantId: string | null;
   membershipId: string | null;
   role: Role | null;
+  isHydrated: boolean;
 
   setAuth: (params: {
     user: User;
@@ -25,6 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   tenantId: null,
   membershipId: null,
   role: null,
+  isHydrated: false,
 
   setAuth: ({ user, token, refreshToken }) => {
     if (typeof window !== "undefined") {
@@ -79,6 +81,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           tenantId: user.tenant_id || localStorage.getItem("tenantId"),
           membershipId: user.membership_id || localStorage.getItem("membershipId"),
           role: user.role || null,
+          isHydrated: true,
         });
       } catch {
         // Silently fail and clear invalid data
@@ -96,8 +99,11 @@ export const useAuthStore = create<AuthState>((set) => ({
           tenantId: null,
           membershipId: null,
           role: null,
+          isHydrated: true,
         });
       }
+    } else {
+      set({ isHydrated: true });
     }
   },
 }));
