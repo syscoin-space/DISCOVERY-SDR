@@ -5,7 +5,7 @@
   "scripts": {
     "build": "npx prisma generate && tsc --noEmit || true",
     "dev": "nodemon --exec tsx src/server.ts",
-    "start": "tsx src/server.ts",
+    "start": "npx prisma migrate deploy && tsx src/server.ts",
     "seed": "tsx prisma/seed.ts",
     "test": "jest"
   },
