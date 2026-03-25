@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
-import { useAuthStore } from "@/store/auth.store";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
 export default function InviteAcceptPage() {
   const searchParams = useSearchParams();
