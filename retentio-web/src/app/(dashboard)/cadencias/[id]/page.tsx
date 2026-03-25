@@ -234,10 +234,12 @@ export default function CadenciaDetailPage({ params }: { params: Promise<{ id: s
                               {step.instructions}
                             </p>
                           )}
-                          {step.template_id && (
+                          {step.template && (
                             <div className="mt-2 flex items-center gap-2 py-1 px-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10 w-fit">
                               <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                              <span className="text-[10px] text-emerald-600 font-bold uppercase">Template Vinculado</span>
+                              <span className="text-[10px] text-emerald-600 font-bold uppercase">
+                                Template: {step.template.name}
+                              </span>
                             </div>
                           )}
                         </div>

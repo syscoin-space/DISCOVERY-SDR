@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateCadence, type CreateCadencePayload } from "@/hooks/use-cadences";
-import { ArrowLeft, Plus, Trash2, Mail, MessageCircle, Phone, Linkedin, GripVertical, Search, Rocket, RotateCcw, BellRing } from "lucide-react";
+import { useTemplates } from "@/hooks/use-templates";
+import { ArrowLeft, Plus, Trash2, Mail, MessageCircle, Phone, Linkedin, GripVertical, Search, Rocket, RotateCcw, BellRing, FileText, ExternalLink } from "lucide-react";
 import type { StepChannel, CadencePurpose } from "@/lib/types";
+import Link from "next/link";
 
 const PURPOSES: { value: CadencePurpose; label: string; icon: any }[] = [
   { value: "DISCOVERY", label: "Discovery", icon: Search },
@@ -24,17 +26,19 @@ interface StepDraft {
   id: string;
   day_offset: number;
   channel: StepChannel;
+  template_id?: string;
   instructions: string;
 }
 
 let nextId = 1;
 function makeStep(dayOffset: number): StepDraft {
-  return { id: `draft-${nextId++}`, day_offset: dayOffset, channel: "EMAIL", instructions: "" };
+  return { id: `draft-${nextId++}`, day_offset: dayOffset, channel: "EMAIL", instructions: "", template_id: "" };
 }
 
 export default function NovaCadenciaPage() {
   const router = useRouter();
   const createCadence = useCreateCadence();
+  const { data: templates } = useTemplates();
 
   const [name, setName] = useState("");
   const [purpose, setPurpose] = useState<CadencePurpose>("PROSPECCAO");
@@ -67,6 +71,7 @@ export default function NovaCadenciaPage() {
         step_order: i + 1,
         day_offset: s.day_offset,
         channel: s.channel,
+        template_id: s.template_id || undefined,
         instructions: s.instructions.trim() || undefined,
       })),
     };
@@ -226,14 +231,45 @@ export default function NovaCadenciaPage() {
                         <label className="block text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
                           Instruções (opcional)
                         </label>
-                        <textarea
-                          value={step.instructions}
-                          onChange={(e) => updateStep(step.id, "instructions", e.target.value)}
-                          placeholder={`O que fazer no dia ${step.day_offset} via ${channelConf?.label ?? step.channel}...`}
-                          rows={2}
-                          className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none resize-none"
-                        />
-                      </div>
+                          <textarea
+                            value={step.instructions}
+                            onChange={(e) => updateStep(step.id, "instructions", e.target.value)}
+                            placeholder={`O que fazer no dia ${step.day_offset} via ${channelConf?.label ?? step.channel}...`}
+                            rows={2}
+                            className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none resize-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                            <span>Template Vinculado (opcional)</span>
+                            <Link href="/templates/novo" target="_blank" className="flex items-center gap-0.5 text-accent hover:underline">
+                              Criar novo <ExternalLink className="h-2 w-2" />
+                            </Link>
+                          </label>
+                          <div className="relative">
+                            <select
+                              value={step.template_id}
+                              onChange={(e) => updateStep(step.id, "template_id", e.target.value)}
+                              className="w-full appearance-none rounded-md border border-border bg-surface pl-8 pr-3 py-1.5 text-xs text-foreground focus:border-accent focus:outline-none transition-all"
+                            >
+                              <option value="">Sem template (apenas instruções)</option>
+                              {templates
+                                ?.filter((t) => t.channel === step.channel)
+                                .map((t) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.name}
+                                  </option>
+                                ))}
+                            </select>
+                            <FileText className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                          </div>
+                          {templates?.filter((t) => t.channel === step.channel).length === 0 && (
+                            <p className="mt-1 text-[9px] text-amber-500 italic">
+                              Nenhum template de {channelConf?.label} encontrado.
+                            </p>
+                          )}
+                        </div>
                     </div>
 
                     {/* Remove */}
