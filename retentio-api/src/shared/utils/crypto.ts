@@ -3,7 +3,7 @@ import { env } from '../../config/env';
 
 const ALGORITHM = 'aes-256-cbc';
 const KEY = Buffer.from(env.ENCRYPTION_KEY || 'default-32-char-key-for-development-only', 'utf-8');
-const IV = Buffer.from(env.ENCRYPTION_IV || 'default-16-char-iv', 'utf-8');
+const IV = Buffer.from(env.ENCRYPTION_IV || '1234567890123456', 'utf-8');
 
 export function encrypt(text: string): string {
   const cipher = crypto.createCipheriv(ALGORITHM, KEY, IV);
