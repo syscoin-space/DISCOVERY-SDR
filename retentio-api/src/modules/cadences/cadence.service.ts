@@ -76,6 +76,64 @@ export class CadenceService {
   }
 
   /**
+   * Update an existing cadence and its steps
+   */
+  async updateCadence(id: string, tenantId: string, data: any) {
+    const { name, purpose, description, steps } = data;
+
+    // Verify ownership
+    const existing = await prisma.cadence.findFirst({
+      where: { id, tenant_id: tenantId }
+    });
+    if (!existing) throw new AppError(404, 'Cadência não encontrada');
+
+    return prisma.$transaction(async (tx) => {
+      // 1. Update basic info
+      const cadence = await tx.cadence.update({
+        where: { id },
+        data: { name, purpose, description }
+      });
+
+      // 2. Upsert steps (Match by cadence_id + step_order)
+      for (const step of steps) {
+        await tx.cadenceStep.upsert({
+          where: {
+            cadence_id_step_order: {
+              cadence_id: id,
+              step_order: step.step_order,
+            }
+          },
+          create: {
+            cadence_id: id,
+            step_order: step.step_order,
+            day_offset: step.day_offset,
+            channel: step.channel,
+            template_id: step.template_id,
+            instructions: step.instructions,
+          },
+          update: {
+            day_offset: step.day_offset,
+            channel: step.channel,
+            template_id: step.template_id,
+            instructions: step.instructions,
+          }
+        });
+      }
+
+      // 3. Delete steps that were removed
+      const currentOrders = steps.map((s: any) => s.step_order);
+      await tx.cadenceStep.deleteMany({
+        where: {
+          cadence_id: id,
+          step_order: { notIn: currentOrders }
+        }
+      });
+
+      return cadence;
+    });
+  }
+
+  /**
    * Enroll a lead into a cadence
    */
   async enrollLead(tenantId: string, membershipId: string, leadId: string, cadenceId: string) {

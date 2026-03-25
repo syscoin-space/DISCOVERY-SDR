@@ -60,6 +60,18 @@ cadenceRouter.post(
   }),
 );
 
+// PATCH /cadences/:id
+cadenceRouter.patch(
+  '/:id',
+  validate(createCadenceSchema.partial()),
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+    const id = req.params.id as string;
+    const cadence = await cadenceService.updateCadence(id, tenantId, req.body);
+    res.json(cadence);
+  }),
+);
+
 // POST /cadences/:id/enroll
 cadenceRouter.post(
   '/:id/enroll',
