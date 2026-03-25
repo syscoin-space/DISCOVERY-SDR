@@ -25,6 +25,7 @@ import {
 } from "@/hooks/use-notifications";
 import type { AppNotification } from "@/hooks/use-notifications";
 import { UserAvatar } from "@/components/shared/UserAvatar";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { ProfileSheet } from "./ProfileSheet";
 
 interface StoredUser {
@@ -82,7 +83,7 @@ export function MobileHeader() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("retentio_user");
+      const raw = localStorage.getItem("discovery_sdr_user");
       if (raw) setUser(JSON.parse(raw));
     } catch {}
   }, []);
@@ -106,28 +107,7 @@ export function MobileHeader() {
         <div className="flex h-14 items-center justify-between border-b border-border bg-surface/80 px-4 backdrop-blur-md">
           {/* Logo / Brand */}
           <div className="flex items-center gap-2 min-w-0">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={appName}
-                className="object-contain"
-                style={{ height: 28, width: "auto", maxWidth: 140, borderRadius: 4 }}
-              />
-            ) : (
-              <>
-                <div
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
-                  style={{
-                    background: `linear-gradient(135deg, ${brand?.color_accent ?? "#2E86AB"}, ${brand?.color_green ?? "#1A7A5E"})`,
-                  }}
-                >
-                  {appName.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm font-semibold text-foreground truncate">
-                  {appName}
-                </span>
-              </>
-            )}
+            <BrandLogo size="sm" />
           </div>
 
           {/* Right actions */}

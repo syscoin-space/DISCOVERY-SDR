@@ -31,7 +31,7 @@ export function BrandLogo({
   const { user } = useAuthStore();
 
   const tenantName = user?.tenant?.name;
-  const productName = "Discovery SDR";
+  const productName = brand?.app_name || "Discovery SDR";
   const logoUrl = overrideLogo ?? brand?.logo_url;
   const sizeClass = sizes[size];
   const accent = overrideAccent ?? brand?.color_accent ?? "#2E86AB";
@@ -40,46 +40,40 @@ export function BrandLogo({
 
   return (
     <div className="flex items-center gap-3">
-      {logoUrl ? (
-        <div className="flex flex-col">
+      <div className="flex items-center gap-3 min-w-0">
+        {logoUrl ? (
           <img
             src={logoUrl}
             alt={productName}
-            className="h-8 w-auto object-contain"
+            className={`${size === "sm" ? "h-6" : size === "lg" ? "h-10" : "h-8"} w-auto object-contain shrink-0`}
           />
-          {showName && tenantName && (
-            <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60 mt-1 pl-1">
-              {tenantName}
-            </span>
-          )}
-        </div>
-      ) : (
-        <>
+        ) : (
           <div
-            className={`${sizeClass} flex items-center justify-center rounded-lg text-sm font-bold text-white shadow-sm`}
+            className={`${sizeClass} flex items-center justify-center rounded-lg text-sm font-bold text-white shadow-sm shrink-0`}
             style={{
               background: `linear-gradient(135deg, ${accent}, ${green})`,
             }}
           >
-            {productName.charAt(0)}
+            {productName.charAt(0).toUpperCase()}
           </div>
-          {showName && (
-            <div className="flex flex-col leading-tight">
-              <span
-                className="text-sm font-bold tracking-tight text-foreground"
-                style={{ color: navy }}
-              >
-                {productName}
+        )}
+        
+        {showName && (
+          <div className="flex flex-col leading-tight min-w-0">
+            <span
+              className={`font-bold tracking-tight text-foreground truncate ${size === "sm" ? "text-xs" : "text-sm"}`}
+              style={{ color: navy }}
+            >
+              {productName}
+            </span>
+            {tenantName && (
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider truncate opacity-70">
+                {tenantName}
               </span>
-              {tenantName && (
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  {tenantName}
-                </span>
-              )}
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
