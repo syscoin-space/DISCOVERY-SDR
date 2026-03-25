@@ -41,7 +41,7 @@ export function useUpdateBrand() {
     onSuccess: (data) => {
       qc.setQueryData([BRAND_KEY], data);
       qc.setQueryData([BRAND_KEY, undefined], data);
-      qc.invalidateQueries({ queryKey: [BRAND_KEY] });
+      qc.invalidateQueries({ queryKey: [BRAND_KEY], exact: false });
     },
   });
 }
@@ -58,7 +58,7 @@ export function useUploadBrandImage() {
     onSuccess: (data) => {
       qc.setQueryData([BRAND_KEY], data);
       qc.setQueryData([BRAND_KEY, undefined], data);
-      qc.invalidateQueries({ queryKey: [BRAND_KEY] });
+      qc.invalidateQueries({ queryKey: [BRAND_KEY], exact: false });
     },
   });
 }

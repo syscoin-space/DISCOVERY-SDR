@@ -60,16 +60,16 @@ export function BrandLogo({
         )}
         
         {showName && (
-          <div className="flex flex-col leading-[1.1] min-w-0">
+          <div className="flex flex-col leading-tight min-w-0">
             <span
-              className={`font-black tracking-tight uppercase truncate ${size === "sm" ? "text-[10px]" : "text-xs"} opacity-40`}
+              className={`font-black tracking-widest uppercase truncate ${size === "sm" ? "text-[8px]" : "text-[9px]"} opacity-30`}
               style={{ color: "var(--foreground)" }}
             >
               {productName}
             </span>
             {subText && (
               <span 
-                className={`font-bold truncate ${size === "sm" ? "text-xs" : "text-sm"}`}
+                className={`font-bold truncate ${size === "sm" ? "text-xs" : "text-sm"} -mt-0.5`}
                 style={{ color: accent }}
               >
                 {subText}

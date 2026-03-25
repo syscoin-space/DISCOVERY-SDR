@@ -24,17 +24,15 @@ brandRouter.get(
         try {
           const token = authHeader.split(' ')[1];
           const decoded = jwt.verify(token, env.JWT_SECRET) as any;
-          if (decoded.tenantId) {
-            tenant_id = decoded.tenantId;
-          }
+          // Standardized to snake_case from JWT
+          tenant_id = decoded.tenant_id || decoded.tenantId;
         } catch (e) {
-          // ignore invalid tokens on public routes
+          console.error('[BrandResolution] JWT Error:', e);
         }
       }
     }
 
     let tenant;
-
     if (tenant_id) {
       tenant = await prisma.tenant.findUnique({
         where: { id: tenant_id as string },
@@ -55,7 +53,6 @@ brandRouter.get(
     });
     const globalBranding = (globalConfig?.branding as any) || {};
 
-    // Standard product branding for absolute fallback
     const PRODUCT_BRANDING = {
       app_name: 'Discovery SDR',
       color_accent: '#2E86AB',
@@ -63,8 +60,9 @@ brandRouter.get(
       color_green: '#1A7A5E',
     };
 
+    // Consistent return structure
     res.json({
-      id: tenant?.id || 'default',
+      id: tenant?.id || 'GLOBAL',
       app_name: branding.app_name || tenant?.name || globalBranding.app_name || PRODUCT_BRANDING.app_name,
       logo_url: branding.logo_url || globalBranding.logo_url || null,
       favicon_url: branding.favicon_url || globalBranding.favicon_url || null,
@@ -78,10 +76,11 @@ brandRouter.get(
   })
 );
 
-/**
- * PATCH /api/brand
- * Atualiza configurações de branding (Apenas OWNER/MANAGER)
- */
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+});
+
 brandRouter.patch(
   '/',
   authGuard,
@@ -104,14 +103,14 @@ brandRouter.patch(
 
     const updated = await prisma.tenant.update({
       where: { id: tenantId },
-      data: { branding: newBranding },
-      select: { id: true, branding: true, name: true }
+      data: { branding: newBranding }
     });
 
+    // Mirroring GET logic for immediate consistent response
     const branding = (updated.branding as any) || {};
     res.json({
       id: updated.id,
-      app_name: branding.app_name || updated.name || 'Discovery SDR',
+      app_name: branding.app_name || updated.name,
       logo_url: branding.logo_url || null,
       favicon_url: branding.favicon_url || null,
       icon_192_url: branding.icon_192_url || null,
@@ -123,15 +122,6 @@ brandRouter.patch(
     });
   })
 );
-
-/**
- * POST /api/brand/upload/:field
- * Upload de imagens de marca
- */
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 2 * 1024 * 1024 },
-});
 
 brandRouter.post(
   '/upload/:field',
@@ -158,17 +148,14 @@ brandRouter.post(
 
     const updated = await prisma.tenant.update({
       where: { id: tenantId },
-      data: { branding: newBranding },
-      select: { id: true, branding: true, name: true }
+      data: { branding: newBranding }
     });
 
     const branding = (updated.branding as any) || {};
-
-    console.log('[BrandUpload] Success:', { field, tenantId });
-
+    
     res.json({
       id: updated.id,
-      app_name: branding.app_name || updated.name || 'Discovery SDR',
+      app_name: branding.app_name || updated.name,
       logo_url: branding.logo_url || null,
       favicon_url: branding.favicon_url || null,
       icon_192_url: branding.icon_192_url || null,
