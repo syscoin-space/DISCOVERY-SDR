@@ -22,10 +22,12 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
-import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, Calendar, Video, XCircle, Search, UserRound, Target, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, Calendar, Video, XCircle, Search, UserRound, Target, Trash2, ListChecks, PlayCircle, StopCircle } from "lucide-react";
 import { getTierAInsight, getNextChannelSuggestion } from "@/lib/insights";
 import { InsightBanner } from "@/components/shared/InsightToast";
 import { useCalendarEvents, useCancelCalendarEvent } from "@/hooks/use-google";
+import { useCadences, useEnrollLead, useUnenrollLead } from "@/hooks/use-cadences";
+import Handlebars from "handlebars";
 
 interface LeadSidebarProps {
   leadId: string | null;
@@ -156,6 +158,31 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
   const [tpNotes, setTpNotes] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
+  const { data: cadences } = useCadences();
+  const enrollLead = useEnrollLead();
+  const unenrollLead = useUnenrollLead();
+
+  const activeEnrollment = lead?.cadence_enrollments?.find(e => e.status === "ACTIVE");
+  const currentStep = activeEnrollment?.cadence?.steps?.find(s => s.step_order === activeEnrollment.current_step);
+
+  function renderScript(template: string) {
+    if (!lead) return template;
+    try {
+      return Handlebars.compile(template)({
+        empresa: lead.company_name,
+        contato: lead.contact_name || "Contato",
+        nome_cliente: lead.contact_name || "Contato",
+        nicho: lead.niche || "seu nicho",
+        cidade: lead.city || "sua cidade",
+        plataforma: lead.ecommerce_platform || "sua plataforma",
+        sdr_nome: user?.name || "SDR",
+        fit_tier: lead.fit_tier || "-",
+      });
+    } catch {
+      return template;
+    }
+  }
+
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
@@ -282,15 +309,155 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
               );
             })()}
 
-            <Tabs defaultValue="perfil" className="mt-4">
+            <Tabs key={lead?.id} defaultValue={activeEnrollment ? "script" : "perfil"} className="mt-4">
               <div className="px-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="perfil">Perfil</TabsTrigger>
+                  <TabsTrigger value="script">
+                    <div className="flex items-center gap-1.5">
+                      <ListChecks className="h-3 w-3" />
+                      Script
+                    </div>
+                  </TabsTrigger>
                   <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
                   <TabsTrigger value="historico">Histórico</TabsTrigger>
                   <TabsTrigger value="reunioes">Reuniões</TabsTrigger>
                 </TabsList>
               </div>
+
+              <TabsContent value="script" className="space-y-5 pt-4 px-6 pb-10">
+                {!activeEnrollment ? (
+                  <div className="space-y-4 py-4">
+                    <div className="rounded-lg border border-border bg-surface-raised p-4 text-center space-y-3">
+                      <Target className="h-8 w-8 text-muted-foreground mx-auto opacity-50" />
+                      <div>
+                        <h4 className="text-sm font-bold text-foreground">Sem cadência ativa</h4>
+                        <p className="text-xs text-muted-foreground mt-1">Este lead não está em nenhuma sequência de prospecção.</p>
+                      </div>
+                      
+                      <div className="pt-2 text-left">
+                        <label className="text-[10px] text-muted-foreground uppercase font-bold mb-1.5 block">Selecionar Cadência</label>
+                        <div className="flex gap-2">
+                          <select 
+                            className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent"
+                            onChange={(e) => {
+                              const cid = e.target.value;
+                              if (cid && leadId) {
+                                enrollLead.mutate({ cadenceId: cid, leadId });
+                              }
+                            }}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>Escolha uma cadência...</option>
+                            {cadences?.map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Active Step Info */}
+                    <div className="rounded-lg border border-accent/20 bg-accent/5 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-[10px] text-accent uppercase font-bold tracking-wider">Cadência Ativa</p>
+                          <h4 className="text-sm font-bold text-foreground">{activeEnrollment.cadence?.name}</h4>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                          onClick={() => unenrollLead.mutate({ cadenceId: activeEnrollment.cadence_id, leadId: lead.id })}
+                        >
+                          <StopCircle className="h-3 w-3 mr-1" /> Parar
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-[11px] text-muted-foreground mt-2 pt-2 border-t border-accent/10">
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold text-accent">Passo {activeEnrollment.current_step}</span>
+                          {currentStep && <span>• {currentStep.channel}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Script "Cola" */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <PlayCircle className="h-3.5 w-3.5 text-accent" /> Script de Prospecção
+                      </h4>
+                      
+                      {!currentStep?.template ? (
+                        <div className="rounded-xl border border-border p-8 text-center bg-surface-raised">
+                          <p className="text-sm text-muted-foreground italic">Nenhum template vinculado a este passo.</p>
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-border bg-surface overflow-hidden">
+                          <div className="bg-surface-raised px-4 py-2 border-b border-border flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">{currentStep.template.name}</span>
+                            <Badge variant="outline" className="text-[9px] uppercase">{currentStep.channel}</Badge>
+                          </div>
+                          
+                          <div className="p-4 bg-surface text-sm text-foreground space-y-4">
+                            {currentStep.channel === "LIGACAO" ? (
+                              (() => {
+                                try {
+                                  const json = JSON.parse(currentStep.template.body);
+                                  return (
+                                    <div className="space-y-4">
+                                      {json.abertura && (
+                                        <div className="space-y-1">
+                                          <p className="text-[10px] font-bold text-accent uppercase">1. Abertura</p>
+                                          <div className="p-3 bg-accent/5 rounded-lg border border-accent/10 whitespace-pre-wrap leading-relaxed">
+                                            {renderScript(json.abertura)}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {json.diagnostico && (
+                                        <div className="space-y-1">
+                                          <p className="text-[10px] font-bold text-blue-500 uppercase">2. Diagnóstico</p>
+                                          <div className="p-3 bg-blue-500/5 rounded-lg border border-blue-500/10 whitespace-pre-wrap leading-relaxed">
+                                            {renderScript(json.diagnostico)}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {json.implicacao && (
+                                        <div className="space-y-1">
+                                          <p className="text-[10px] font-bold text-purple-500 uppercase">3. Implicação</p>
+                                          <div className="p-3 bg-purple-500/5 rounded-lg border border-purple-500/10 whitespace-pre-wrap leading-relaxed">
+                                            {renderScript(json.implicacao)}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {json.convite && (
+                                        <div className="space-y-1">
+                                          <p className="text-[10px] font-bold text-emerald-500 uppercase">4. Convite</p>
+                                          <div className="p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/10 whitespace-pre-wrap leading-relaxed">
+                                            {renderScript(json.convite)}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                } catch {
+                                  return <div className="whitespace-pre-wrap leading-relaxed">{renderScript(currentStep.template.body)}</div>;
+                                }
+                              })()
+                            ) : (
+                              <div className="whitespace-pre-wrap leading-relaxed">
+                                {renderScript(currentStep.template.body)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
 
               <TabsContent value="perfil" className="space-y-5 pt-4 px-6 pb-10">
                 {/* Score Badges */}

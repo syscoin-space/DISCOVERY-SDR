@@ -114,7 +114,7 @@ export interface Lead {
   prr_inputs?: any;
   icp_answers?: IcpAnswer[];
   discovered_stack?: DiscoveredStack[];
-  lead_cadences?: CadenceEnrollment[];
+  cadence_enrollments?: CadenceEnrollment[];
   interactions?: Interaction[];
   handoffs?: HandoffBriefing[];
   tasks?: Task[];
@@ -172,6 +172,7 @@ export interface CadenceStep {
   instructions: string | null;
   created_at: string;
   updated_at: string;
+  template?: Template;
 }
 
 export interface CadenceEnrollment {
