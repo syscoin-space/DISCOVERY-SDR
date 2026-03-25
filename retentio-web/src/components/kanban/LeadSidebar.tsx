@@ -26,6 +26,7 @@ import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, C
 import { getTierAInsight, getNextChannelSuggestion } from "@/lib/insights";
 import { InsightBanner } from "@/components/shared/InsightToast";
 import { useCalendarEvents, useCancelCalendarEvent } from "@/hooks/use-google";
+import { useTodayTasks, useUpdateTask } from "@/hooks/use-today";
 import { useCadences, useEnrollLead, useUnenrollLead } from "@/hooks/use-cadences";
 import Handlebars from "handlebars";
 
@@ -157,6 +158,9 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
   const [tpOutcome, setTpOutcome] = useState("");
   const [tpNotes, setTpNotes] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [taskOutcome, setTaskOutcome] = useState("");
+  const updateTask = useUpdateTask();
 
   const { data: cadences } = useCadences();
   const enrollLead = useEnrollLead();
@@ -454,6 +458,31 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                           </div>
                         </div>
                       )}
+
+                      {/* Proximos passos da cadencia (Transparentes) */}
+                      {activeEnrollment?.cadence?.steps && (
+                        <div className="mt-8 space-y-3 px-6 pb-10">
+                          <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                            <Clock className="h-3 w-3" /> Próximos Passos
+                          </h4>
+                          <div className="space-y-4">
+                            {activeEnrollment.cadence.steps
+                              .filter((s: any) => s.step_order > activeEnrollment.current_step)
+                              .slice(0, 3)
+                              .map((step: any) => (
+                                <div key={step.id} className="opacity-40 group hover:opacity-100 transition-opacity">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] font-bold text-muted-foreground">Passo {step.step_order} &mdash; D+{step.day_offset}</span>
+                                    <Badge variant="outline" className="text-[8px] h-4 uppercase">{step.channel}</Badge>
+                                  </div>
+                                  <div className="p-3 bg-surface-raised border border-border rounded-lg text-xs text-muted-foreground italic">
+                                    {step.template?.name || "Sem template"} &bull; {step.instructions || "Sem instruções"}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -544,22 +573,84 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   {!lead.tasks || lead.tasks.length === 0 ? (
                     <p className="text-center py-8 text-sm text-muted-foreground italic">Nenhuma tarefa pendente</p>
                   ) : (
-                    lead.tasks.map((task) => (
-                      <div key={task.id} className="p-3 rounded-lg border border-border bg-surface-raised flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-bold text-foreground">{task.title}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="text-[9px] uppercase">{task.channel ?? 'Geral'}</Badge>
-                            {task.scheduled_at && (
-                              <span className="text-[10px] text-muted-foreground">
-                                Scheduled: {format(new Date(task.scheduled_at), "dd MMM, HH:mm", { locale: ptBR })}
-                              </span>
+                    <div className="space-y-3">
+                      {lead.tasks
+                        .filter(t => t.status === "PENDENTE" || t.status === "EM_ANDAMENTO")
+                        .map((task) => (
+                          <div key={task.id} className="p-4 rounded-xl border border-border bg-surface-raised shadow-sm transition-all hover:border-accent/40">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-foreground truncate">{task.title}</p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <Badge variant="outline" className="text-[9px] h-4 uppercase font-bold border-accent/20 text-accent bg-accent/5">
+                                    {task.channel ?? 'Geral'}
+                                  </Badge>
+                                  {task.scheduled_at && (
+                                    <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      Agendado: {format(new Date(task.scheduled_at), "dd MMM, HH:mm", { locale: ptBR })}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {completingTaskId !== task.id ? (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-8 text-[10px] font-bold uppercase border-emerald-500/30 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                                  onClick={() => setCompletingTaskId(task.id)}
+                                >
+                                  Concluir
+                                </Button>
+                              ) : (
+                                <Badge variant="secondary" className="text-[9px] animate-pulse">Preenchendo...</Badge>
+                              )}
+                            </div>
+
+                            {completingTaskId === task.id && (
+                              <div className="mt-4 pt-4 border-t border-border space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div>
+                                  <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">O que aconteceu?</label>
+                                  <textarea
+                                    className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none resize-none min-h-[60px]"
+                                    placeholder="Ex: Cliente atendeu e pediu retorno amanhã..."
+                                    value={taskOutcome}
+                                    onChange={(e) => setTaskOutcome(e.target.value)}
+                                    autoFocus
+                                  />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="h-8 text-[10px] font-bold text-muted-foreground"
+                                    onClick={() => { setCompletingTaskId(null); setTaskOutcome(""); }}
+                                  >
+                                    Cancelar
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    className="h-8 text-[10px] font-bold bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20 shadow-lg"
+                                    disabled={updateTask.isPending}
+                                    onClick={async () => {
+                                      await updateTask.mutateAsync({
+                                        id: task.id,
+                                        status: "CONCLUIDA" as any,
+                                        outcome: taskOutcome
+                                      });
+                                      setCompletingTaskId(null);
+                                      setTaskOutcome("");
+                                    }}
+                                  >
+                                    {updateTask.isPending ? "Salvando..." : "Salvar e Avançar"}
+                                  </Button>
+                                </div>
+                              </div>
                             )}
                           </div>
-                        </div>
-                        <Badge variant="secondary" className="text-[9px]">{task.status}</Badge>
-                      </div>
-                    ))
+                        ))}
+                    </div>
                   )}
                 </div>
               </TabsContent>
