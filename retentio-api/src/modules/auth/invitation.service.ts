@@ -181,7 +181,7 @@ export class InvitationService {
       throw new AppError(401, "Senha incorreta.", "AUTH_INVALID");
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
       // 1. Verifica se já tem membership (evitar duplicação)
       let membership = await tx.membership.findFirst({
         where: { user_id: user.id, tenant_id: invitation.tenant_id }
@@ -192,6 +192,17 @@ export class InvitationService {
           data: {
             user_id: user.id,
             tenant_id: invitation.tenant_id,
+            role: invitation.role,
+            team_id: invitation.team_id
+          }
+        });
+      } else {
+        // O usuário já tinha um vínculo. Precisamos garantir que ele seja reativado (caso tenha sido deletado)
+        // e que receba o novo cargo/equipe do convite caso sejam diferentes.
+        membership = await tx.membership.update({
+          where: { id: membership.id },
+          data: {
+            active: true,
             role: invitation.role,
             team_id: invitation.team_id
           }
