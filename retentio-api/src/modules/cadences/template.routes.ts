@@ -47,14 +47,25 @@ templateRouter.post(
   '/',
   validate(createTemplateSchema),
   asyncHandler(async (req, res) => {
-    const tenantId = getTenantId(req);
-    const template = await prisma.template.create({
-      data: {
-        ...req.body,
-        tenant_id: tenantId,
-      },
-    });
-    res.status(201).json(template);
+    try {
+      const tenantId = getTenantId(req);
+      const template = await prisma.template.create({
+        data: {
+          ...req.body,
+          tenant_id: tenantId,
+        },
+      });
+      res.status(201).json(template);
+    } catch (error: any) {
+      console.error('[POST /templates] Error:', error);
+      res.status(500).json({ 
+        error: 'Internal Server Error', 
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        meta: error.meta
+      });
+    }
   }),
 );
 
