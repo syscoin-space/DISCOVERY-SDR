@@ -51,7 +51,6 @@ const sdrNav: NavItem[] = [
   { href: "/hoje", label: "Hoje", icon: ClipboardList },
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/handoffs", label: "Handoffs", icon: ArrowRightLeft },
-  { href: "/dashboard", label: "Dashboard", icon: TrendingUp },
   { href: "/cadencias", label: "Cadências", icon: Zap },
   { href: "/templates", label: "Templates", icon: FileText },
   { href: "/emails", label: "Emails", icon: Mail },
@@ -61,7 +60,7 @@ const sdrNav: NavItem[] = [
 ];
 
 const gestorNav: NavItem[] = [
-  { href: "/gestor", label: "Dashboard Gestão", icon: LayoutDashboard },
+  { href: "/gestor", label: "Dashboard", icon: TrendingUp },
   { href: "/settings/account", label: "Configurações", icon: Settings },
 ];
 
