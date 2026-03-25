@@ -23,12 +23,12 @@ import { cn } from "@/lib/utils";
 
 const createLeadFormSchema = z.object({
   company_name: z.string().min(1, "Nome da empresa é obrigatório"),
-  contact_name: z.string().optional(),
-  email: z.string().email("E-mail inválido").optional().or(z.literal("")),
-  whatsapp: z.string().optional(),
-  notes: z.string().optional(),
-  icp_score: z.number().min(0).max(10).default(0),
-  sdr_id: z.string().uuid("Selecione um responsável").optional(),
+  contact_name: z.string().optional().nullable(),
+  email: z.string().email("E-mail inválido").optional().nullable().or(z.literal("")),
+  whatsapp: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  icp_score: z.preprocess((val) => Number(val), z.number().int().min(0).max(10)),
+  sdr_id: z.string().uuid("Selecione um responsável válido").optional().nullable().or(z.literal("")),
 });
 
 type CreateLeadFormValues = z.infer<typeof createLeadFormSchema>;
@@ -64,10 +64,15 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
 
   const onSubmit = async (values: CreateLeadFormValues) => {
     try {
-      await createLead.mutateAsync({
+      const payload = {
         ...values,
         source: "MANUAL",
-      });
+        icp_score: Number(values.icp_score),
+        sdr_id: values.sdr_id === "" ? undefined : values.sdr_id,
+        email: values.email === "" ? undefined : values.email,
+      };
+
+      await createLead.mutateAsync(payload as any);
       setSuccess(true);
       setTimeout(() => {
         handleClose();
@@ -143,8 +148,12 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
                   type="number"
                   min="0"
                   max="10"
-                  {...register("icp_score")}
+                  {...register("icp_score", { valueAsNumber: true })}
+                  className={cn(errors.icp_score && "border-red-500")}
                 />
+                {errors.icp_score && (
+                  <p className="text-[10px] text-red-500">{errors.icp_score.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -181,7 +190,10 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
                 <select
                   id="sdr_id"
                   {...register("sdr_id")}
-                  className="w-full h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors"
+                  className={cn(
+                    "w-full h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 transition-colors",
+                    errors.sdr_id && "border-red-500"
+                  )}
                 >
                   <option value="">Sem responsável</option>
                   {sdrs?.map((sdr) => (
@@ -190,6 +202,9 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
                     </option>
                   ))}
                 </select>
+                {errors.sdr_id && (
+                  <p className="text-[10px] text-red-500">{errors.sdr_id.message}</p>
+                )}
               </div>
 
               <div className="col-span-2 space-y-2">
