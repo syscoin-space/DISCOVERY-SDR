@@ -13,7 +13,7 @@ export default function InviteAcceptPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const router = useRouter();
-  const login = useAuthStore(state => state.login);
+  const setAuth = useAuthStore(state => state.setAuth);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,7 +76,11 @@ export default function InviteAcceptPage() {
 
       // Atualizar o Zustand Store com a sessão do usuário
       if (response.user && response.token) {
-        login(response.user, response.token);
+        setAuth({ 
+          user: response.user, 
+          token: response.token, 
+          refreshToken: response.refreshToken || response.token 
+        });
         router.push("/dashboard"); // Vai para a tela principal (já no tenant correto)
       } else {
         throw new Error("Erro ao estabelecer sessão.");
