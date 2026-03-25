@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import { Role } from "@prisma/client";
 import { emailService } from "../email/email.service";
 import { env } from "../../config/env";
+import { hash, compare } from "bcryptjs";
+import { signTokens } from "./auth.routes";
 
 export class InvitationService {
   /**
@@ -29,7 +31,7 @@ export class InvitationService {
     });
 
     // Enviar e-mail real via EmailService (Multi-Tenant)
-    const inviteLink = `${env.CORS_ORIGIN}/register?token=${token}&email=${encodeURIComponent(data.email)}`;
+    const inviteLink = `${env.CORS_ORIGIN}/invite/accept?token=${token}`;
     
     await emailService.send(tenantId, {
       to: data.email,
@@ -39,7 +41,7 @@ export class InvitationService {
           <h2 style="color: #1E3A5F;">Você foi convidado!</h2>
           <p>Olá,</p>
           <p>Você foi convidado para participar do time <strong>${companyName}</strong> no Discovery SDR com a função de <strong>${data.role}</strong>.</p>
-          <p>Para aceitar o convite e criar sua conta, clique no botão abaixo:</p>
+          <p>Para aceitar o convite e acessar sua conta, clique no botão abaixo:</p>
           <div style="margin: 30px 0;">
             <a href="${inviteLink}" style="background-color: #2E86AB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Aceitar Convite</a>
           </div>
@@ -54,40 +56,179 @@ export class InvitationService {
   }
 
   /**
-   * Responde ao convite (aceita ou recusa)
+   * Verifica o token de convite e retorna dados de contexto (Público)
    */
-  async acceptInvitation(token: string, userId: string) {
+  async verifyToken(token: string) {
+    const invitation = await prisma.membershipInvitation.findUnique({
+      where: { token },
+      include: { tenant: { select: { name: true, slug: true } } }
+    });
+
+    if (!invitation || invitation.status !== 'PENDING') {
+      throw new AppError(400, "Convite inválido ou já aceito.", "INVITATION_INVALID");
+    }
+
+    if (invitation.expires_at < new Date()) {
+      await prisma.membershipInvitation.update({ where: { id: invitation.id }, data: { status: 'EXPIRED' } });
+      throw new AppError(400, "Convite expirado.", "INVITATION_EXPIRED");
+    }
+
+    // Verificar se o email já existe na base
+    const userExists = await prisma.user.findUnique({
+      where: { email: invitation.email },
+      select: { id: true, name: true }
+    });
+
+    return {
+      email: invitation.email,
+      role: invitation.role,
+      tenantName: invitation.tenant.name,
+      tenantSlug: invitation.tenant.slug,
+      userExists: !!userExists,
+      userName: userExists?.name // Sugere o nome se existir
+    };
+  }
+
+  /**
+   * Registro e Aceite: Para convidados SEM conta prévia
+   */
+  async registerAndAccept(token: string, name: string, password: string) {
     const invitation = await prisma.membershipInvitation.findUnique({
       where: { token },
       include: { tenant: true }
     });
 
-    if (!invitation || invitation.status !== 'PENDING') {
-      throw new AppError(400, "Convite inválido ou já processado", "INVITATION_INVALID");
+    if (!invitation || invitation.status !== 'PENDING' || invitation.expires_at < new Date()) {
+      throw new AppError(400, "Convite inválido ou expirado.", "INVITATION_INVALID");
     }
 
-    if (invitation.expires_at < new Date()) {
-      await prisma.membershipInvitation.update({ where: { id: invitation.id }, data: { status: 'EXPIRED' } });
-      throw new AppError(400, "Convite expirado", "INVITATION_EXPIRED");
+    const existingUser = await prisma.user.findUnique({ where: { email: invitation.email } });
+    if (existingUser) {
+      throw new AppError(400, "Este e-mail já possui cadastro. Faça login em vez de registrar.", "USER_EXISTS");
     }
 
-    // Cria o membership
-    await prisma.membership.create({
-      data: {
-        user_id: userId,
-        tenant_id: invitation.tenant_id,
-        role: invitation.role,
-        team_id: invitation.team_id,
+    const passwordHash = await hash(password, 10);
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Cria usuário
+      const user = await tx.user.create({
+        data: { email: invitation.email, name, password_hash: passwordHash }
+      });
+
+      // 2. Cria membership no tenant
+      const membership = await tx.membership.create({
+        data: {
+          user_id: user.id,
+          tenant_id: invitation.tenant_id,
+          role: invitation.role,
+          team_id: invitation.team_id
+        }
+      });
+
+      // 3. Marca convite como aceito
+      await tx.membershipInvitation.update({
+        where: { id: invitation.id },
+        data: { status: 'ACCEPTED' }
+      });
+
+      return { user, membership, tenant: invitation.tenant };
+    });
+
+    const tokens = signTokens({
+      sub: result.user.id,
+      membership_id: result.membership.id,
+      tenant_id: result.tenant.id,
+      email: result.user.email,
+      name: result.user.name,
+      role: result.membership.role,
+    });
+
+    return {
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        role: result.membership.role,
+        membership_id: result.membership.id,
+        tenant_id: result.tenant.id,
+        tenant: result.tenant,
+      },
+      token: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+    };
+  }
+
+  /**
+   * Login e Aceite: Para convidados COM conta prévia
+   */
+  async loginAndAccept(token: string, password: string) {
+    const invitation = await prisma.membershipInvitation.findUnique({
+      where: { token },
+      include: { tenant: true }
+    });
+
+    if (!invitation || invitation.status !== 'PENDING' || invitation.expires_at < new Date()) {
+      throw new AppError(400, "Convite inválido ou expirado.", "INVITATION_INVALID");
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: invitation.email } });
+    if (!user || !user.active) {
+      throw new AppError(401, "Usuário não encontrado ou inativo.", "AUTH_INVALID");
+    }
+
+    const valid = await compare(password, user.password_hash);
+    if (!valid) {
+      throw new AppError(401, "Senha incorreta.", "AUTH_INVALID");
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Verifica se já tem membership (evitar duplicação)
+      let membership = await tx.membership.findFirst({
+        where: { user_id: user.id, tenant_id: invitation.tenant_id }
+      });
+
+      if (!membership) {
+        membership = await tx.membership.create({
+          data: {
+            user_id: user.id,
+            tenant_id: invitation.tenant_id,
+            role: invitation.role,
+            team_id: invitation.team_id
+          }
+        });
       }
+
+      // 2. Marca convite como aceito
+      await tx.membershipInvitation.update({
+        where: { id: invitation.id },
+        data: { status: 'ACCEPTED' }
+      });
+
+      return { user, membership, tenant: invitation.tenant };
     });
 
-    // Marca como aceito
-    await prisma.membershipInvitation.update({
-      where: { id: invitation.id },
-      data: { status: 'ACCEPTED' }
+    const tokens = signTokens({
+      sub: result.user.id,
+      membership_id: result.membership.id,
+      tenant_id: result.tenant.id,
+      email: result.user.email,
+      name: result.user.name,
+      role: result.membership.role,
     });
 
-    return invitation.tenant;
+    return {
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        role: result.membership.role,
+        membership_id: result.membership.id,
+        tenant_id: result.tenant.id,
+        tenant: result.tenant,
+      },
+      token: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+    };
   }
 
   /**

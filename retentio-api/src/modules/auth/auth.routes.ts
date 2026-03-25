@@ -27,7 +27,7 @@ const refreshSchema = z.object({
  * Se o user pertence a mais de um tenant, o login retorna o primeiro ativo.
  * (Futuramente pode ter seleção de tenant no frontend)
  */
-function signTokens(payload: Omit<JwtPayload, 'iat' | 'exp'>) {
+export function signTokens(payload: Omit<JwtPayload, 'iat' | 'exp'>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const access_token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN as any });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
