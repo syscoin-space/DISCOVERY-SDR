@@ -40,7 +40,7 @@ export function useCreateTemplate() {
   return useMutation({
     mutationFn: async (payload: CreateTemplatePayload) => {
       const { data } = await api.post<Template>("/templates", {
-        purpose: "PROSPECCAO",
+        purpose: "PRIMEIRO_CONTATO",
         ...payload,
       });
       return data;
