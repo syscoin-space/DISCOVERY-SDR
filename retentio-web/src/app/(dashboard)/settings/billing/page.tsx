@@ -9,7 +9,8 @@ import {
   Receipt,
   AlertCircle,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useBillingCurrentPlan, useBillingPortal } from "@/hooks/use-billing";
-import { billingApi, Invoice } from "@/lib/api/billing.api";
+import { billingApi, Invoice, PlanDetails } from "@/lib/api/billing.api";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { SettingsSection } from "@/components/settings/SettingsSection";
@@ -27,10 +28,20 @@ export default function BillingPage() {
   const { data: sub, isLoading } = useBillingCurrentPlan();
   const portal = useBillingPortal();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [plans, setPlans] = useState<PlanDetails[]>([]);
 
   useEffect(() => {
     billingApi.getInvoices().then(setInvoices);
+    billingApi.getPlans().then(setPlans);
   }, []);
+
+  const scrollToPlans = () => {
+    document.getElementById("plan-selection-grid")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleUpgrade = (planKey: string) => {
+    alert(`Iniciando upgrade para o plano ${planKey}. Você será redirecionado para o Checkout.`);
+  };
 
   if (isLoading) {
     return (
@@ -100,11 +111,10 @@ export default function BillingPage() {
                   <p className="text-xs text-muted-foreground">Faturamento mensal</p>
                 </div>
                 <Button 
-                  onClick={() => portal.mutate()} 
-                  disabled={portal.isPending}
+                  onClick={scrollToPlans} 
                   className="w-full gap-2"
                 >
-                  {portal.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Alterar Plano"}
+                  Alterar Plano
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -250,7 +260,82 @@ export default function BillingPage() {
             </div>
           )}
         </SettingsSection>
+
+        {/* Mudar de Plano Grid */}
+        <div id="plan-selection-grid" className="space-y-6 pt-10 border-t border-border mt-10">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold">Escolha o plano ideal para sua escala</h2>
+            <p className="text-zinc-500">Mude de plano a qualquer momento conforme seu time cresce.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
+            {plans.map((planInfo) => (
+              <div 
+                key={planInfo.id}
+                className={`relative p-8 rounded-3xl border transition-all ${
+                  planInfo.key === safeSub.plan?.key 
+                    ? "border-blue-500 bg-blue-500/[0.02] shadow-xl shadow-blue-500/5 ring-1 ring-blue-500" 
+                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-surface"
+                }`}
+              >
+                {planInfo.key === safeSub.plan?.key && (
+                  <div className="absolute top-0 right-12 translate-y-[-50%] bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                    Plano Atual
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold">{planInfo.name}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold">{formatCurrency(planInfo.price_monthly)}</span>
+                  </div>
+                  <p className="text-sm text-zinc-500 min-h-[40px]">{planInfo.description}</p>
+                  
+                  <Button 
+                    className={`w-full h-12 rounded-xl text-base font-bold transition-all ${
+                      planInfo.key === safeSub.plan?.key
+                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-default"
+                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                    }`}
+                    disabled={planInfo.key === safeSub.plan?.key}
+                    onClick={() => handleUpgrade(planInfo.key)}
+                  >
+                    {planInfo.key === safeSub.plan?.key ? "Configurado" : "Fazer Upgrade"}
+                  </Button>
+
+                  <div className="pt-6 space-y-3">
+                    <p className="text-xs font-bold uppercase text-zinc-400 dark:text-zinc-500">O que está incluído:</p>
+                    <ul className="space-y-2.5">
+                      <FeatureItem label={`${planInfo.limits?.sdr || 1} SDRs ativos`} />
+                      <FeatureItem label={`${planInfo.limits?.closer || 0} Closers ativos`} />
+                      <FeatureItem label={`${planInfo.limits?.leads_monthly || 100} Leads/mês`} />
+                      {(Object.entries(planInfo.features || {}) as [string, boolean][]).map(([key, enabled]) => (
+                        enabled && <FeatureItem key={key} label={formatFeatureName(key)} />
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );
+}
+
+function FeatureItem({ label }: { label: string }) {
+  return (
+    <li className="flex items-center gap-2.5 text-sm text-zinc-600 dark:text-zinc-400">
+      <Check className="w-4 h-4 text-green-500 shrink-0" />
+      {label}
+    </li>
+  );
+}
+
+function formatFeatureName(key: string) {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase());
 }
