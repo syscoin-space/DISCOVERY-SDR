@@ -13,6 +13,7 @@ const createTemplateSchema = z.object({
   subject: z.string().optional(),
   body: z.string().min(2),
   channel: z.string(),
+  purpose: z.enum(['DISCOVERY', 'PROSPECCAO', 'NUTRICAO', 'FOLLOW_UP']).default('PROSPECCAO'),
 });
 
 // GET /templates
