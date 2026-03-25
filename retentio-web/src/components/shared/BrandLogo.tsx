@@ -30,8 +30,8 @@ export function BrandLogo({
   const { data: brand } = useBrand();
   const { user } = useAuthStore();
 
-  const tenantName = user?.tenant?.name;
-  const productName = brand?.app_name || "Discovery SDR";
+  const productName = "Discovery SDR";
+  const subText = brand?.app_name || user?.tenant?.name;
   const logoUrl = overrideLogo ?? brand?.logo_url;
   const sizeClass = sizes[size];
   const accent = overrideAccent ?? brand?.color_accent ?? "#2E86AB";
@@ -66,9 +66,9 @@ export function BrandLogo({
             >
               {productName}
             </span>
-            {tenantName && (
+            {subText && (
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider truncate opacity-70">
-                {tenantName}
+                {subText}
               </span>
             )}
           </div>
