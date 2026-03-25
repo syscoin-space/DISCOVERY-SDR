@@ -157,7 +157,7 @@ export default function ClientesAdminPage() {
                 <SelectValue placeholder="Plano" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Planos</SelectItem>
+                <SelectItem value="all">Todos os Clientes</SelectItem>
                 <SelectItem value="TRIAL">Trial</SelectItem>
                 <SelectItem value="BASIC">Basic</SelectItem>
                 <SelectItem value="PRO">Pro</SelectItem>
@@ -195,7 +195,7 @@ export default function ClientesAdminPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Discovery (Qualquer)</SelectItem>
-                <SelectItem value="true">Discovery Ativo</SelectItem>
+                <SelectItem value="true">Clientes com Discovery Ativo</SelectItem>
                 <SelectItem value="false">Discovery Inativo</SelectItem>
               </SelectContent>
             </Select>
@@ -231,7 +231,7 @@ export default function ClientesAdminPage() {
                 ) : tenants.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                      Nenhum cliente encontrado com os filtros aplicados.
+                      Nenhum cliente encontrado com os filtros atuais.
                     </td>
                   </tr>
                 ) : (

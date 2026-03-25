@@ -286,7 +286,7 @@ export default function FinanceiroPage() {
           subtitle="Se todos os trials converterem"
         />
         <MetricCard
-          label="Tenants Ativos"
+          label="Clientes Ativos"
           value={String(metrics?.total_tenants ?? 0)}
           icon={Users}
           color="text-blue-500"
@@ -318,20 +318,18 @@ export default function FinanceiroPage() {
       {/* ─── BLOCO 4 — Lista de Assinaturas ─── */}
       <Card className="border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-blue-500" />
-              Assinaturas ({subscriptions.length})
-            </CardTitle>
-            <p className="text-[10px] text-muted-foreground">Dados do banco interno (cross-tenant)</p>
-          </div>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-blue-500" />
+            Assinaturas ({subscriptions.length})
+          </CardTitle>
+          <p className="text-[10px] text-muted-foreground">Dados do banco interno (cross-cliente)</p>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-[10px] uppercase bg-zinc-50 dark:bg-zinc-900 text-muted-foreground border-b border-zinc-200 dark:border-zinc-800">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Tenant</th>
+                  <th className="px-4 py-3 text-left font-semibold">Cliente</th>
                   <th className="px-4 py-3 text-left font-semibold">Plano</th>
                   <th className="px-4 py-3 text-left font-semibold">Status</th>
                   <th className="px-4 py-3 text-right font-semibold">Valor/mês</th>

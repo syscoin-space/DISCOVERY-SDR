@@ -22,7 +22,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Tenants" value="12" icon={Globe} trend="+2 este mês" />
+        <StatCard title="Total de Clientes" value="12" icon={Globe} trend="+2 este mês" />
         <StatCard title="Usuários Ativos" value="45" icon={Users} trend="+5 hoje" />
         <StatCard title="MRR Est." value="R$ 5.880" icon={DollarSign} trend="+12%" />
         <StatCard title="Saúde do Sistema" value="99.9%" icon={Activity} trend="Estável" />
@@ -31,7 +31,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="rounded-3xl border-zinc-200 dark:border-zinc-800">
           <CardHeader>
-            <CardTitle>Tenants Recentes</CardTitle>
+            <CardTitle>Clientes Recentes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
                       T{i}
                     </div>
                     <div>
-                      <p className="text-sm font-bold">Tenant {i} Enterprise</p>
+                      <p className="text-sm font-bold">Cliente {i} Enterprise</p>
                       <p className="text-[10px] text-zinc-500">Criado há {i} dias</p>
                     </div>
                   </div>
