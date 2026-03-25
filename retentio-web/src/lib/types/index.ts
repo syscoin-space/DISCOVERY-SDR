@@ -397,6 +397,7 @@ export interface EmailEvent {
   interaction_id: string | null;
   external_message_id: string | null;
   timestamp: string | null;
+  link?: string;
   payload: any;
   created_at: string;
 }

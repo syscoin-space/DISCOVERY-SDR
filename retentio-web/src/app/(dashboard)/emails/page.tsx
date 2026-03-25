@@ -225,15 +225,15 @@ function EmailRow({ email }: { email: EmailAuditItem }) {
                       <EvIcon className="h-3 w-3" />
                     </div>
                     <span className="text-xs text-foreground">{evInfo.label}</span>
-                    {(ev as any).link && (
+                    {ev.link && (
                       <a
-                        href={(ev as any).link}
+                        href={ev.link}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-[10px] text-accent hover:underline"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        {(ev as any).link.slice(0, 40)}...
+                        {ev.link.slice(0, 40)}...
                       </a>
                     )}
                     <span className="ml-auto text-[10px] text-muted-foreground">
