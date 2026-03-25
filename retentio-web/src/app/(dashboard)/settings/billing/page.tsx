@@ -122,19 +122,35 @@ export default function BillingPage() {
               <div className="md:col-span-2 space-y-4">
                 <h4 className="text-sm font-semibold text-foreground italic underline decoration-accent/30">O que seu plano inclui:</h4>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                  {(safeSub.plan?.features as string[] || [
-                    "Até 5.000 Leads/mês",
-                    "IA Ilimitada (BYOK)",
-                    "Dashboard de Gestão",
-                    "Suporte Prioritário",
-                    "White-label Branding",
-                    "API Gateway Acesso"
-                  ]).map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                      {feature}
-                    </li>
-                  ))}
+                  {(() => {
+                    const features = safeSub.plan?.features;
+                    if (features && typeof features === "object" && !Array.isArray(features)) {
+                      return Object.entries(features).map(([key, enabled]) => (
+                        enabled ? (
+                          <li key={key} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                            {formatFeatureName(key)}
+                          </li>
+                        ) : null
+                      ));
+                    }
+                    
+                    const fallbackFeatures = Array.isArray(features) ? features : [
+                      "Até 5.000 Leads/mês",
+                      "IA Ilimitada (BYOK)",
+                      "Dashboard de Gestão",
+                      "Suporte Prioritário",
+                      "White-label Branding",
+                      "API Gateway Acesso"
+                    ];
+                    
+                    return fallbackFeatures.map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                        {String(feature)}
+                      </li>
+                    ));
+                  })()}
                 </ul>
               </div>
             </div>

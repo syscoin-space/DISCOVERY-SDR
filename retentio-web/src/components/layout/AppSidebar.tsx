@@ -57,7 +57,7 @@ const sdrNav: NavItem[] = [
   { href: "/cadencias", label: "Cadências", icon: Zap },
   { href: "/templates", label: "Templates", icon: FileText },
   { href: "/emails", label: "Auditoria", icon: Mail },
-  { href: "/email-analytics", label: "Analytics Email", icon: BarChart3 },
+  { href: "/email-analytics", label: "Analytics Email", icon: BarChart3 }, // Force HMR
   { href: "/notificacoes", label: "Notificações", icon: Bell, hasBadge: true },
   { href: "/glossario", label: "Glossário", icon: BookOpen },
   { href: "/settings/account", label: "Meu Perfil", icon: UserAvatarIcon },

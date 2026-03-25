@@ -22,7 +22,7 @@ const navigation = [
   { name: "Marca", href: "/settings/brand", icon: Palette },
   { name: "Equipe", href: "/settings/team", icon: Users },
   { name: "IA & Providers", href: "/settings/ai", icon: Zap },
-  { name: "E-mail", href: "/settings/email", icon: Mail },
+  { name: "E-mail", href: "/settings/email", icon: Mail }, // Force HMR
   { name: "Faturamento", href: "/settings/billing", icon: CreditCard },
 ];
 
