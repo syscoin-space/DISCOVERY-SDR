@@ -3,11 +3,18 @@
 import { useEffect, Suspense } from "react";
 import { useBrand } from "@/hooks/use-brand";
 import { useSearchParams } from "next/navigation";
+import { useAuthStore } from "@/lib/stores/auth.store";
 
 function BrandManager() {
   const searchParams = useSearchParams();
+  const { tenantId, isHydrated } = useAuthStore();
+  
   const slug = searchParams.get("tenant") || searchParams.get("s");
-  const { data: brand } = useBrand(slug || undefined);
+  
+  const shouldFetch = !!slug || isHydrated;
+  const identifier = slug || tenantId || undefined;
+  
+  const { data: brand } = useBrand(identifier, shouldFetch);
 
   useEffect(() => {
     if (!brand) return;

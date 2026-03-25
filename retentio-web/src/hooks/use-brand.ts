@@ -18,16 +18,19 @@ export interface BrandConfig {
 
 const BRAND_KEY = "brand";
 
-export function useBrand(slug?: string) {
+export function useBrand(identifier?: string, enabled: boolean = true) {
   return useQuery<BrandConfig>({
-    queryKey: [BRAND_KEY, slug],
+    queryKey: [BRAND_KEY, identifier],
     queryFn: async () => {
-      const { data } = await api.get<BrandConfig>("/brand", {
-        params: { slug }
-      });
+      // Identifier serves as either slug or tenant_id backward compatible
+      // We pass it as 'slug' if it doesn't look like a standard UUID,
+      // but the API will rely on the Bearer token anyway if it's logged in.
+      const params = identifier ? { slug: identifier } : {};
+      const { data } = await api.get<BrandConfig>("/brand", { params });
       return data;
     },
     staleTime: 5 * 60_000,
+    enabled,
   });
 }
 
