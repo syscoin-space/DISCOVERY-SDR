@@ -114,27 +114,41 @@ adminBillingRouter.post(
   asyncHandler(async (req, res) => {
     const { tenant_id, new_end_date } = req.body;
 
+    console.log('[AdminBilling] Trial adjust request:', { tenant_id, new_end_date });
+
     if (!tenant_id || !new_end_date) {
       return res.status(400).json({ error: 'tenant_id e new_end_date são obrigatórios' });
     }
 
     const newDate = new Date(new_end_date);
     if (isNaN(newDate.getTime())) {
-      return res.status(400).json({ error: 'new_end_date inválida' });
+      console.error('[AdminBilling] Invalid date received:', new_end_date);
+      return res.status(400).json({ error: 'new_end_date inválida. Use o formato ISO.' });
     }
 
-    // Atualiza a assinatura vinculada a este tenant
-    const updatedSub = await prisma.subscription.update({
-      where: { tenant_id },
-      data: {
-        current_period_end: newDate
-      }
-    });
+    try {
+      // Atualiza a assinatura vinculada a este tenant
+      const updatedSub = await prisma.subscription.update({
+        where: { tenant_id },
+        data: {
+          current_period_end: newDate,
+          status: 'TRIAL' // Garante que volta para TRIAL se estender
+        }
+      });
 
-    res.json({
-      message: 'Período de trial atualizado com sucesso.',
-      subscription: updatedSub
-    });
+      res.json({
+        message: 'Período de trial atualizado com sucesso.',
+        subscription: updatedSub
+      });
+    } catch (error: any) {
+      console.error('[AdminBilling] Error updating subscription:', error.message);
+      
+      if (error.code === 'P2025') {
+        return res.status(404).json({ error: 'Assinatura não encontrada para este tenant.' });
+      }
+
+      throw error; // Deixa o errorHandler global lidar com outros erros
+    }
   })
 );
 
