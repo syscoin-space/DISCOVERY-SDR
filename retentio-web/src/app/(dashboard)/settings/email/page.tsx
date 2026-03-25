@@ -48,9 +48,9 @@ export default function EmailSettingsPage() {
     await upsert.mutateAsync({
       provider: "RESEND",
       is_enabled: isEnabled,
-      api_key: apiKey || undefined, // Só envia se preenchido
-      sender_name: senderName,
-      sender_email: senderEmail,
+      api_key: apiKey || undefined,
+      sender_name: senderName || undefined,
+      sender_email: senderEmail || undefined,
       reply_to: replyTo || null,
     });
     if (apiKey) setApiKey(""); // Limpa o campo local após salvar a chave encrypted

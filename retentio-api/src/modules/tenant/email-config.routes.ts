@@ -15,10 +15,10 @@ emailConfigRouter.use(authGuard, roleGuard(Role.OWNER, Role.MANAGER));
 const upsertEmailConfigSchema = z.object({
   provider: z.nativeEnum(EmailProviderType).default(EmailProviderType.RESEND),
   is_enabled: z.boolean().optional(),
-  api_key: z.string().min(1).optional(),
+  api_key: z.string().optional(),
   sender_name: z.string().optional(),
-  sender_email: z.string().email().optional(),
-  reply_to: z.string().email().optional().nullable(),
+  sender_email: z.string().email().or(z.literal('')).optional(),
+  reply_to: z.string().email().or(z.literal('')).optional().nullable(),
 });
 
 // GET /api/tenant/email-config
