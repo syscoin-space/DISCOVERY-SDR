@@ -45,6 +45,16 @@ export const billingApi = {
     return response.data;
   },
 
+  async createPlan(data: Partial<PlanDetails>) {
+    const response = await api.post('/admin/billing/plans', data);
+    return response.data;
+  },
+
+  async updatePlan(id: string, data: Partial<PlanDetails>) {
+    const response = await api.put(`/admin/billing/plans/${id}`, data);
+    return response.data;
+  },
+
   async createSubscription(planKey: string, paymentMethod: any) {
     const response = await api.post('/billing/subscribe', { planKey, paymentMethod });
     return response.data;

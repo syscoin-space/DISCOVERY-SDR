@@ -17,10 +17,22 @@ import { billingApi, type PlanDetails } from "@/lib/api/billing.api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Link from "next/link";
+import { useToast } from "@/components/shared/Toast";
 
 export default function AdminPlansPage() {
+  const { toast } = useToast();
   const [plans, setPlans] = useState<PlanDetails[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal State
+  const [openModal, setOpenModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState<Partial<PlanDetails>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadPlans();
@@ -32,8 +44,45 @@ export default function AdminPlansPage() {
       setPlans(data);
     } catch (error) {
       console.error("Failed to load plans", error);
+      toast("Erro ao carregar os planos", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setCurrentPlan({
+      name: "", price_monthly: 0, trial_days: 7, 
+      limits: { sdr: 1, leads_monthly: 100 },
+      is_active: true
+    });
+    setIsEditing(false);
+    setOpenModal(true);
+  };
+
+  const openEditModal = (plan: PlanDetails) => {
+    setCurrentPlan(JSON.parse(JSON.stringify(plan)));
+    setIsEditing(true);
+    setOpenModal(true);
+  };
+
+  const handleSavePlan = async () => {
+    try {
+      setSaving(true);
+      if (isEditing && currentPlan.id) {
+        await billingApi.updatePlan(currentPlan.id, currentPlan);
+        toast("Plano atualizado com sucesso", "success");
+      } else {
+        await billingApi.createPlan(currentPlan);
+        toast("Plano criado com sucesso", "success");
+      }
+      setOpenModal(false);
+      loadPlans();
+    } catch (error) {
+      toast("Erro ao salvar o plano", "error");
+      console.error(error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -54,7 +103,7 @@ export default function AdminPlansPage() {
             Configure os pacotes, limites e precificação do SaaS.
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-blue-600/20">
+        <Button onClick={openCreateModal} className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl h-11 px-6 font-bold shadow-lg shadow-blue-600/20">
           <Plus className="w-4 h-4 mr-2" />
           Criar Novo Plano
         </Button>
@@ -95,7 +144,7 @@ export default function AdminPlansPage() {
               </div>
 
               <div className="flex gap-2 pt-4">
-                <Button variant="outline" className="flex-1 rounded-lg h-10">
+                <Button variant="outline" className="flex-1 rounded-lg h-10" onClick={() => openEditModal(plan)}>
                   <Edit2 className="w-3.5 h-3.5 mr-2" />
                   Editar
                 </Button>
@@ -117,12 +166,105 @@ export default function AdminPlansPage() {
             </p>
           </div>
           <div className="flex gap-4">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-zinc-100 font-bold rounded-2xl h-14 px-8">
-              Documentação de Planos
-            </Button>
+            <Link href="https://docs.retentio.com.br" target="_blank">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-zinc-100 font-bold rounded-2xl h-14 px-8">
+                Documentação de Planos
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
+
+      {/* MODAL CRIAR/EDITAR PLANO */}
+      <Dialog open={openModal} onOpenChange={setOpenModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? "Editar Plano" : "Criar Novo Plano"}</DialogTitle>
+            <DialogDescription>
+              Configure os detalhes e os limites operacionais deste plano.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label>Nome do Plano</Label>
+              <Input 
+                value={currentPlan.name || ""} 
+                onChange={(e) => setCurrentPlan({...currentPlan, name: e.target.value})} 
+                placeholder="Ex: Start, Growth, Scale..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Preço Mensal (R$)</Label>
+                <Input 
+                  type="number"
+                  value={currentPlan.price_monthly || 0} 
+                  onChange={(e) => setCurrentPlan({...currentPlan, price_monthly: Number(e.target.value)})} 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Dias de Trial (Grátis)</Label>
+                <Input 
+                  type="number"
+                  value={currentPlan.trial_days || 0} 
+                  onChange={(e) => setCurrentPlan({...currentPlan, trial_days: Number(e.target.value)})} 
+                />
+              </div>
+            </div>
+            <div className="space-y-3 pt-2">
+              <Label className="uppercase text-[10px] tracking-wider font-bold text-muted-foreground">Configuração de Limites</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Máximo de SDRs</Label>
+                  <Input 
+                    type="number"
+                    value={currentPlan.limits?.sdr || 0} 
+                    onChange={(e) => setCurrentPlan({
+                      ...currentPlan, 
+                      limits: { ...currentPlan.limits, sdr: Number(e.target.value) }
+                    })} 
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Leads (Mensal)</Label>
+                  <Input 
+                    type="number"
+                    value={currentPlan.limits?.leads_monthly || 0} 
+                    onChange={(e) => setCurrentPlan({
+                      ...currentPlan, 
+                      limits: { ...currentPlan.limits, leads_monthly: Number(e.target.value) }
+                    })} 
+                  />
+                </div>
+              </div>
+            </div>
+            {isEditing && (
+              <div className="space-y-1.5 pt-2">
+                <Label>Status do Plano</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  value={currentPlan.is_active ? "ativo" : "inativo"}
+                  onChange={(e) => setCurrentPlan({...currentPlan, is_active: e.target.value === 'ativo'})}
+                >
+                  <option value="ativo">Ativo (Permitir novas assinaturas)</option>
+                  <option value="inativo">Inativo (Ocultar do portal)</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenModal(false)} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSavePlan} disabled={saving || !currentPlan.name}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {saving ? "Salvando..." : "Salvar Plano"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
