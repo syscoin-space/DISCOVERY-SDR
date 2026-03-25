@@ -13,6 +13,7 @@ export interface Member {
     email: string;
     avatar_url?: string;
   };
+  active: boolean;
   created_at: string;
 }
 

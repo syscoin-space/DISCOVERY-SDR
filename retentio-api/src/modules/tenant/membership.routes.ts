@@ -23,7 +23,10 @@ membershipRouter.get(
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const memberships = await prisma.membership.findMany({
-      where: { tenant_id: tenantId },
+      where: { 
+        tenant_id: tenantId,
+        active: true 
+      },
       include: {
         user: {
           select: {
