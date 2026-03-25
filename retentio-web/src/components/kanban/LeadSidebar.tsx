@@ -319,7 +319,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   <h4 className="text-xs font-bold text-accent uppercase tracking-wider flex items-center gap-1.5">
                     <UserRound className="h-3.5 w-3.5" /> Decisor / Contato Ideal
                   </h4>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <EditableField openOnMount label="Nome" value={lead.contact_name} field="contact_name" leadId={lead.id} placeholder="Quem é o decisor?" />
                     <EditableField label="Cargo" value={lead.contact_role} field="contact_role" leadId={lead.id} placeholder="Ex: Head de E-commerce" />
                     <EditableField label="Email" value={lead.email} field="email" leadId={lead.id} type="email" placeholder="email@empresa.com" />
@@ -332,7 +332,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 {/* Company Info */}
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Informações da Empresa</h4>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <EditableField label="CNPJ" value={lead.cnpj} field="cnpj" leadId={lead.id} placeholder="Não informado" />
                     <EditableField label="Website" value={lead.website_url} field="website_url" leadId={lead.id} placeholder="www.empresa.com" />
                     <EditableField label="Instagram" value={lead.instagram_handle} field="instagram_handle" leadId={lead.id} placeholder="@empresa" />
@@ -608,7 +608,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
   return (
     <Sheet open={!!leadId} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-[100vw] sm:w-[550px] sm:max-w-[550px] overflow-y-auto p-0 border-l border-border shadow-2xl">
+      <SheetContent className="w-[100vw] sm:w-[600px] sm:max-w-[600px] lg:sm:w-[700px] lg:sm:max-w-[700px] overflow-y-auto p-0 border-l border-border shadow-2xl transition-all duration-300">
         {sidebarContent}
       </SheetContent>
     </Sheet>
