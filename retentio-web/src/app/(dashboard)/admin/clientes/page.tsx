@@ -35,6 +35,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import api from "@/lib/api/client";
 import Link from "next/link";
 
@@ -157,7 +163,7 @@ export default function ClientesAdminPage() {
                 <SelectValue placeholder="Plano" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os Clientes</SelectItem>
+                <SelectItem value="todos">Todos os Clientes</SelectItem>
                 <SelectItem value="TRIAL">Trial</SelectItem>
                 <SelectItem value="BASIC">Basic</SelectItem>
                 <SelectItem value="PRO">Pro</SelectItem>
@@ -170,7 +176,7 @@ export default function ClientesAdminPage() {
                 <SelectValue placeholder="Assinatura" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas Assinaturas</SelectItem>
+                <SelectItem value="todos">Todas Assinaturas</SelectItem>
                 <SelectItem value="ACTIVE">Ativa</SelectItem>
                 <SelectItem value="TRIAL">Trial</SelectItem>
                 <SelectItem value="PAST_DUE">Inadimplente</SelectItem>
@@ -183,7 +189,7 @@ export default function ClientesAdminPage() {
                 <SelectValue placeholder="Onboarding" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Status Onboarding</SelectItem>
+                <SelectItem value="todos">Status Onboarding</SelectItem>
                 <SelectItem value="COMPLETED">Concluído</SelectItem>
                 <SelectItem value="PENDING">Pendente</SelectItem>
               </SelectContent>
@@ -194,7 +200,7 @@ export default function ClientesAdminPage() {
                 <SelectValue placeholder="Discovery" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Discovery (Qualquer)</SelectItem>
+                <SelectItem value="todos">Discovery (Qualquer)</SelectItem>
                 <SelectItem value="true">Clientes com Discovery Ativo</SelectItem>
                 <SelectItem value="false">Discovery Inativo</SelectItem>
               </SelectContent>
@@ -327,9 +333,27 @@ export default function ClientesAdminPage() {
                               <Activity className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 group-hover:visible visible lg:invisible">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 group-hover:visible visible lg:invisible">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <Link href={`/admin/clientes/${client.id}`}>
+                                <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
+                              </Link>
+                              {client.subscription_status === 'TRIAL' && (
+                                <Link href={`/admin/clientes/${client.id}`}>
+                                  <DropdownMenuItem>Configurar Trial</DropdownMenuItem>
+                                </Link>
+                              )}
+                              <DropdownMenuItem className="text-red-600">
+                                {client.active ? "Desativar Cliente" : "Ativar Cliente"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </tr>
