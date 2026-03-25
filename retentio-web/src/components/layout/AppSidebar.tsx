@@ -104,11 +104,8 @@ export function AppSidebar() {
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
       {/* Logo */}
-      <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-4 flex flex-col gap-3">
+      <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-4">
         <BrandLogo />
-        <div className="bg-red-600 text-white text-[10px] font-black uppercase text-center py-1 rounded border border-red-900 shadow-sm">
-          🚨 BUILD CHECK 2026-03-25 🚨
-        </div>
       </div>
 
       {/* Nav */}
