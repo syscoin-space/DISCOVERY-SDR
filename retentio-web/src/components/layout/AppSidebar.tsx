@@ -164,6 +164,8 @@ export function AppSidebar() {
               </>
             )}
             {sdrNav.map((item) => {
+              if (isGestor && item.label === "Meu Perfil") return null;
+              
               const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href + "/"));
               return (
                 <Link
