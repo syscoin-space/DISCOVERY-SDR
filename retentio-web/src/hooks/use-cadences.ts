@@ -60,8 +60,10 @@ export function useEnrollLead() {
       const { data } = await api.post(`/cadences/${cadenceId}/enroll`, { lead_id: leadId });
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, { leadId }) => {
       qc.invalidateQueries({ queryKey: [CADENCES_KEY] });
+      qc.invalidateQueries({ queryKey: ["leads", leadId] });
+      qc.invalidateQueries({ queryKey: ["leads"] });
     },
   });
 }
@@ -100,8 +102,10 @@ export function useUnenrollLead() {
     mutationFn: async ({ cadenceId, leadId }: { cadenceId: string; leadId: string }) => {
       await api.delete(`/cadences/${cadenceId}/enroll/${leadId}`);
     },
-    onSuccess: () => {
+    onSuccess: (_, { leadId }) => {
       qc.invalidateQueries({ queryKey: [CADENCES_KEY] });
+      qc.invalidateQueries({ queryKey: ["leads", leadId] });
+      qc.invalidateQueries({ queryKey: ["leads"] });
     },
   });
 }
