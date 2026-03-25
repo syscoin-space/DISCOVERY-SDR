@@ -13,7 +13,7 @@ const createTemplateSchema = z.object({
   subject: z.string().optional(),
   body: z.string().min(2),
   channel: z.string(),
-  purpose: z.enum(['DISCOVERY', 'PROSPECCAO', 'NUTRICAO', 'FOLLOW_UP']).default('PROSPECCAO'),
+  purpose: z.enum(['PRIMEIRO_CONTATO', 'FOLLOW_UP', 'NUTRICAO', 'CONFIRMACAO_REUNIAO', 'REATIVACAO']).default('PRIMEIRO_CONTATO'),
 });
 
 // GET /templates
@@ -47,25 +47,14 @@ templateRouter.post(
   '/',
   validate(createTemplateSchema),
   asyncHandler(async (req, res) => {
-    try {
-      const tenantId = getTenantId(req);
-      const template = await prisma.template.create({
-        data: {
-          ...req.body,
-          tenant_id: tenantId,
-        },
-      });
-      res.status(201).json(template);
-    } catch (error: any) {
-      console.error('[POST /templates] Error:', error);
-      res.status(500).json({ 
-        error: 'Internal Server Error', 
-        message: error.message,
-        stack: error.stack,
-        code: error.code,
-        meta: error.meta
-      });
-    }
+    const tenantId = getTenantId(req);
+    const template = await prisma.template.create({
+      data: {
+        ...req.body,
+        tenant_id: tenantId,
+      },
+    });
+    res.status(201).json(template);
   }),
 );
 
