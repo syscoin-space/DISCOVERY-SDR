@@ -6,14 +6,14 @@ import { Plus, Zap, RotateCcw, Rocket, Mail, MessageCircle, Phone, Linkedin, Sea
 import type { CadencePurpose, StepChannel } from "@/lib/types";
 
 const PURPOSE_CONFIG: Record<CadencePurpose, { label: string; icon: any; color: string }> = {
-  DISCOVERY: { label: "Discovery", icon: Search, color: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
+  DISCOVERY: { label: "Discovery", icon: Search, color: "text-accent bg-accent/10 border-accent/20" },
   PROSPECCAO: { label: "Prospecção", icon: Rocket, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
   NUTRICAO: { label: "Nutrição", icon: RotateCcw, color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
   CONFIRMACAO: { label: "Confirmação", icon: BellRing, color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
 };
 
 const CHANNEL_ICON: Record<StepChannel, { icon: any; color: string }> = {
-  EMAIL: { icon: Mail, color: "text-blue-500" },
+  EMAIL: { icon: Mail, color: "text-accent" },
   WHATSAPP: { icon: MessageCircle, color: "text-green-500" },
   LIGACAO: { icon: Phone, color: "text-amber-500" },
   LINKEDIN: { icon: Linkedin, color: "text-blue-700 dark:text-blue-400" },

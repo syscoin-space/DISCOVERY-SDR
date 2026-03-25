@@ -19,7 +19,7 @@ import type { EmailAuditItem } from "@/lib/types";
 
 const STATUS_CONFIG: Record<string, { label: string; icon: typeof Mail; color: string }> = {
   sent: { label: "Enviado", icon: Send, color: "text-gray-500 bg-gray-500/10" },
-  delivered: { label: "Entregue", icon: CheckCircle2, color: "text-blue-500 bg-blue-500/10" },
+  delivered: { label: "Entregue", icon: CheckCircle2, color: "text-accent bg-accent/10" },
   opened: { label: "Aberto", icon: MailOpen, color: "text-green-500 bg-green-500/10" },
   clicked: { label: "Clicado", icon: MousePointerClick, color: "text-purple-500 bg-purple-500/10" },
   bounced: { label: "Bounce", icon: Ban, color: "text-red-500 bg-red-500/10" },
@@ -68,7 +68,7 @@ export default function EmailsPage() {
           {stats && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
               <MiniStat label="Enviados" value={stats.total_sent} color="text-gray-600" />
-              <MiniStat label="Entregues" value={stats.delivered} color="text-blue-600" />
+              <MiniStat label="Entregues" value={stats.delivered} color="text-accent" />
               <MiniStat
                 label="Abertos"
                 value={`${stats.opened} (${stats.open_rate}%)`}

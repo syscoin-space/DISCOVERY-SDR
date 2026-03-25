@@ -274,12 +274,12 @@ export default function BillingPage() {
                 key={planInfo.id}
                 className={`relative p-8 rounded-3xl border transition-all ${
                   planInfo.key === safeSub.plan?.key 
-                    ? "border-blue-500 bg-blue-500/[0.02] shadow-xl shadow-blue-500/5 ring-1 ring-blue-500" 
+                    ? "border-accent bg-accent/[0.02] shadow-xl shadow-accent/5 ring-1 ring-accent" 
                     : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-surface"
                 }`}
               >
                 {planInfo.key === safeSub.plan?.key && (
-                  <div className="absolute top-0 right-12 translate-y-[-50%] bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+                  <div className="absolute top-0 right-12 translate-y-[-50%] bg-accent text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
                     Plano Atual
                   </div>
                 )}
@@ -295,7 +295,7 @@ export default function BillingPage() {
                     className={`w-full h-12 rounded-xl text-base font-bold transition-all ${
                       planInfo.key === safeSub.plan?.key
                         ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-default"
-                        : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                        : "bg-accent hover:bg-accent-hover text-white shadow-lg shadow-accent/20"
                     }`}
                     disabled={planInfo.key === safeSub.plan?.key}
                     onClick={() => handleUpgrade(planInfo.key)}

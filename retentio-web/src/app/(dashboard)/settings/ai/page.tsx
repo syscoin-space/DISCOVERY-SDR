@@ -342,7 +342,7 @@ export default function AISettingsPage() {
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                  <div className="flex items-center gap-2 p-3 bg-accent/5 rounded-lg border border-accent/20">
                      <Info className="h-3.5 w-3.5 text-accent" />
                      <p className="text-[10px] text-muted-foreground leading-snug">
                        Configurações de IA são isoladas para este tenant e não afetam outros clientes da plataforma.

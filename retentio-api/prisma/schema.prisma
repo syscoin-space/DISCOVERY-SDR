@@ -39,6 +39,15 @@ model Tenant {
   @@map("tenants")
 }
 
+model SystemConfig {
+  id         String   @id @default("GLOBAL")
+  branding   Json?
+  settings   Json?
+  updated_at DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
 model TenantAIProvider {
   id                String         @id @default(uuid())
   tenant_id         String

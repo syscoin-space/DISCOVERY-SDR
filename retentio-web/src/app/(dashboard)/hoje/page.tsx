@@ -32,7 +32,7 @@ interface StatusConf {
 
 const DEFAULT_STATUSES: Record<string, StatusConf> = {
   PENDENTE: { label: "Pendente", color: "text-amber-600 dark:text-amber-400", bg: "" },
-  EM_ANDAMENTO: { label: "Em andamento", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/5" },
+  EM_ANDAMENTO: { label: "Em andamento", color: "text-accent", bg: "bg-accent/5" },
   CONCLUIDA: { label: "Concluída", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/5", final: true },
   ATRASADA: { label: "Atrasada", color: "text-red-600 dark:text-red-400", bg: "bg-red-500/5" },
 };
@@ -43,14 +43,14 @@ const V2_OUTCOMES = [
   { key: "ATENDEU", label: "Atendeu", color: "text-emerald-600" },
   { key: "NAO_ATENDEU", label: "Não atendeu", color: "text-red-600" },
   { key: "REUNIAO_MARCADA", label: "Reunião Marcada", color: "text-amber-600" },
-  { key: "MENSAGEM_ENVIADA", label: "Msg Enviada", color: "text-blue-600" },
+  { key: "MENSAGEM_ENVIADA", label: "Msg Enviada", color: "text-accent" },
 ];
 
 const CUSTOM_STATUS_COLORS = [
   { name: "verde", class: "text-emerald-600 dark:text-emerald-400" },
   { name: "vermelho", class: "text-red-600 dark:text-red-400" },
   { name: "amarelo", class: "text-amber-600 dark:text-amber-400" },
-  { name: "azul", class: "text-blue-600 dark:text-blue-400" },
+  { name: "azul", class: "text-accent" },
   { name: "laranja", class: "text-orange-600 dark:text-orange-400" },
   { name: "roxo", class: "text-purple-600 dark:text-purple-400" },
 ];
@@ -143,7 +143,7 @@ function getContactStyle(dt: string | null): ContactStyle | null {
 const CANAL_ICON: Record<string, { icon: typeof Phone; color: string }> = {
   LIGACAO: { icon: Phone, color: "text-amber-500" },
   WHATSAPP: { icon: MessageCircle, color: "text-green-500" },
-  EMAIL: { icon: Mail, color: "text-blue-500" },
+  EMAIL: { icon: Mail, color: "text-accent" },
 };
 
 function formatDate(): string {
@@ -223,7 +223,7 @@ function ContactPills({
       {email && (
         <button
           onClick={onEmailClick}
-          className={`flex items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 transition-colors hover:bg-blue-500/20 ${isMobile ? "min-h-[36px]" : ""}`}
+          className={`flex items-center gap-1 rounded-full border border-accent/20 bg-accent/10 px-2 py-1 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20 ${isMobile ? "min-h-[36px]" : ""}`}
         >
           <Mail className="h-3 w-3" />
           <span className="truncate max-w-[80px]">{formatEmailDisplay(email)}</span>
@@ -430,7 +430,7 @@ export default function HojePage() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="flex flex-col items-center gap-3 opacity-70">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           <p className="text-sm font-medium text-muted-foreground">Sincronizando tarefas...</p>
         </div>
       </div>

@@ -199,7 +199,7 @@ export default function TeamPage() {
                           <SelectTrigger className="h-8 border-none bg-transparent hover:bg-surface-raised px-2">
                             <div className="flex items-center gap-1.5">
                               {member.role === "OWNER" ? <ShieldCheck className="h-3 w-3 text-amber-500" /> : 
-                               member.role === "MANAGER" ? <Shield className="h-3 w-3 text-blue-500" /> : 
+                               member.role === "MANAGER" ? <Shield className="h-3 w-3 text-accent" /> : 
                                <User className="h-3 w-3 text-muted-foreground" />}
                               <SelectValue />
                             </div>

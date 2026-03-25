@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
+import { BrandProvider } from "@/components/shared/BrandProvider";
 import { useAuthStore } from "@/lib/stores/auth.store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -30,7 +31,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem={false}
       disableTransitionOnChange
     >
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrandProvider />
+        {children}
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

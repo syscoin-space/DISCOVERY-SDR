@@ -69,6 +69,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/clientes", label: "Clientes", icon: Globe },
   { href: "/admin/plans", label: "Gestão de Planos", icon: CreditCard },
   { href: "/admin/financeiro", label: "Financeiro", icon: BarChart3 },
+  { href: "/admin/branding", label: "Marca Global", icon: Palette },
 ];
 
 export function AppSidebar() {

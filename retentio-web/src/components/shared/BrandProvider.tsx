@@ -1,35 +1,42 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useBrand } from "@/hooks/use-brand";
+import { useSearchParams } from "next/navigation";
 
-/**
- * Applies brand colors as CSS variables on :root so the entire app
- * picks them up via the existing Tailwind theme tokens.
- * Also updates favicon and manifest link dynamically.
- */
-export function BrandProvider() {
-  const { data: brand } = useBrand();
+function BrandManager() {
+  const searchParams = useSearchParams();
+  const slug = searchParams.get("tenant") || searchParams.get("s");
+  const { data: brand } = useBrand(slug || undefined);
 
   useEffect(() => {
     if (!brand) return;
 
     const root = document.documentElement;
 
-    // Light-mode accent colors
+    // Core Brand Colors
     root.style.setProperty("--accent", brand.color_accent);
     root.style.setProperty("--ring", brand.color_accent);
-    root.style.setProperty("--sidebar-primary", brand.color_accent);
-    root.style.setProperty("--sidebar-ring", brand.color_accent);
     root.style.setProperty("--navy", brand.color_navy);
     root.style.setProperty("--green", brand.color_green);
 
-    // Compute accent-hover (darken by 15%)
-    const accentHover = darkenHex(brand.color_accent || "#4F46E5", 15);
+    // Compute derived colors
+    const accentHover = darkenHex(brand.color_accent || "#2E86AB", 10);
+    const accentSoft = brand.color_accent + "1A"; // 10% opacity
+    
     root.style.setProperty("--accent-hover", accentHover);
+    root.style.setProperty("--accent-soft", accentSoft);
 
-    // Update document title
-    document.title = `${brand.app_name} — CRM de Prospecção`;
+    // Sidebar & Navigation specific vars (Shadcn/Retentio sync)
+    root.style.setProperty("--sidebar-primary", brand.color_accent);
+    root.style.setProperty("--sidebar-ring", brand.color_accent);
+    
+    // Update document title and elements
+    if (brand.app_name && brand.app_name !== "Discovery SDR") {
+      document.title = `${brand.app_name} — Discovery SDR`;
+    } else {
+      document.title = "Discovery SDR — CRM de Prospecção";
+    }
 
     // Update favicon if custom
     if (brand.favicon_url) {
@@ -61,6 +68,14 @@ export function BrandProvider() {
   }, [brand]);
 
   return null;
+}
+
+export function BrandProvider() {
+  return (
+    <Suspense fallback={null}>
+      <BrandManager />
+    </Suspense>
+  );
 }
 
 function darkenHex(hex: string, percent: number): string {

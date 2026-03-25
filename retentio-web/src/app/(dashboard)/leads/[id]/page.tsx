@@ -123,7 +123,7 @@ function ContactButton({ href, icon: Icon, label, color }: { href: string; icon:
 // ─── Timeline icons ─────────────────────────────────────────────────
 
 const TIMELINE_CONFIG: Record<string, { icon: typeof Mail; color: string; bg: string }> = {
-  EMAIL: { icon: Mail, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/30" },
+  EMAIL: { icon: Mail, color: "text-accent", bg: "bg-accent/10 border-accent/20" },
   WHATSAPP: { icon: MessageCircle, color: "text-green-500", bg: "bg-green-500/10 border-green-500/30" },
   LIGACAO: { icon: Phone, color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/30" },
   LINKEDIN: { icon: Linkedin, color: "text-blue-700", bg: "bg-blue-700/10 border-blue-700/30" },
@@ -238,7 +238,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               {/* Quick Action Buttons */}
               <div className="flex flex-wrap gap-2 pt-2">
                 {lead.email && (
-                  <ContactButton href={`mailto:${lead.email}`} icon={Mail} label="Email" color="hover:bg-blue-500/10 hover:text-blue-600" />
+                  <ContactButton href={`mailto:${lead.email}`} icon={Mail} label="Email" color="hover:bg-accent/10 hover:text-accent" />
                 )}
                 {lead.whatsapp && (
                   <ContactButton href={`https://wa.me/55${lead.whatsapp.replace(/\D/g, "")}`} icon={MessageCircle} label="WhatsApp" color="hover:bg-green-500/10 hover:text-green-600" />
@@ -487,7 +487,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                               <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
                                 inter.status === "clicked" ? "bg-purple-500/10 text-purple-500" :
                                 inter.status === "opened" ? "bg-green-500/10 text-green-500" :
-                                inter.status === "delivered" ? "bg-blue-500/10 text-blue-500" :
+                                inter.status === "delivered" ? "bg-accent/10 text-accent" :
                                 inter.status === "bounced" ? "bg-red-500/10 text-red-500" :
                                 "bg-gray-500/10 text-gray-500"
                               }`}>

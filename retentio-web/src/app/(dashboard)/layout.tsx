@@ -14,7 +14,6 @@ export default function DashboardLayout({
     <ToastProvider>
       <OnboardingGuard>
         <div className="flex h-screen overflow-hidden text-zinc-900 dark:text-zinc-100 bg-white dark:bg-gray-950">
-          <BrandProvider />
           {/* Desktop sidebar */}
           <div className="hidden lg:block">
             <AppSidebar />

@@ -45,25 +45,34 @@ brandRouter.get(
         where: { slug: slug as string },
         select: { id: true, branding: true, name: true }
       });
-    } else {
-      tenant = await prisma.tenant.findFirst({
-        where: { active: true },
-        select: { id: true, branding: true, name: true }
-      });
     }
 
     const branding = (tenant?.branding as any) || {};
+    
+    // Fetch global branding for fallback
+    const globalConfig = await prisma.systemConfig.findUnique({
+      where: { id: 'GLOBAL' }
+    });
+    const globalBranding = (globalConfig?.branding as any) || {};
+
+    // Standard product branding for absolute fallback
+    const PRODUCT_BRANDING = {
+      app_name: 'Discovery SDR',
+      color_accent: '#2E86AB',
+      color_navy: '#1E3A5F',
+      color_green: '#1A7A5E',
+    };
 
     res.json({
       id: tenant?.id || 'default',
-      app_name: branding.app_name || tenant?.name || 'Discovery SDR',
-      logo_url: branding.logo_url || null,
-      favicon_url: branding.favicon_url || null,
-      icon_192_url: branding.icon_192_url || null,
-      icon_512_url: branding.icon_512_url || null,
-      color_accent: branding.color_accent || branding.primaryColor || '#2E86AB',
-      color_navy: branding.color_navy || '#1E3A5F',
-      color_green: branding.color_green || '#1A7A5E',
+      app_name: branding.app_name || tenant?.name || globalBranding.app_name || PRODUCT_BRANDING.app_name,
+      logo_url: branding.logo_url || globalBranding.logo_url || null,
+      favicon_url: branding.favicon_url || globalBranding.favicon_url || null,
+      icon_192_url: branding.icon_192_url || globalBranding.icon_192_url || null,
+      icon_512_url: branding.icon_512_url || globalBranding.icon_512_url || null,
+      color_accent: branding.color_accent || branding.primaryColor || globalBranding.color_accent || PRODUCT_BRANDING.color_accent,
+      color_navy: branding.color_navy || globalBranding.color_navy || PRODUCT_BRANDING.color_navy,
+      color_green: branding.color_green || globalBranding.color_green || PRODUCT_BRANDING.color_green,
       updated_at: new Date().toISOString()
     });
   })

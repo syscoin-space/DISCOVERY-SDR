@@ -7,8 +7,8 @@ import { useState } from "react";
 import type { StepChannel } from "@/lib/types";
 
 const CHANNEL_BADGE: Record<StepChannel, { label: string; icon: any; classes: string }> = {
-  EMAIL: { label: "Email", icon: Mail, classes: "text-blue-600 bg-blue-500/10 border-blue-500/20 dark:text-blue-400" },
-  WHATSAPP: { label: "WhatsApp", icon: MessageCircle, classes: "text-green-600 bg-green-500/10 border-green-500/20 dark:text-green-400" },
+  EMAIL: { label: "Email", icon: Mail, classes: "text-accent bg-accent/10 border-accent/20" },
+  WHATSAPP: { icon: MessageCircle, label: "WhatsApp", classes: "text-green-600 bg-green-500/10 border-green-500/20 dark:text-green-400" },
   LIGACAO: { label: "Ligação", icon: Phone, classes: "text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400" },
   LINKEDIN: { label: "LinkedIn", icon: Mail, classes: "text-blue-700 bg-blue-700/10 border-blue-700/20 dark:text-blue-400" },
 };

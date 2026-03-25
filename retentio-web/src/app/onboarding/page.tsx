@@ -17,6 +17,8 @@ import api from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandLogo } from "@/components/shared/BrandLogo";
+
 
 type Step = "COMPANY" | "TEAM" | "AI" | "SUCCESS";
 
@@ -99,7 +101,7 @@ export default function OnboardingPage() {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="space-y-2">
               <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Confirmar sua Empresa</h2>
-              <p className="text-sm text-zinc-500">Sua conta foi criada como: <strong className="text-blue-600">{user?.tenant?.name}</strong></p>
+              <p className="text-sm text-zinc-500">Sua conta foi criada como: <strong className="text-accent">{user?.tenant?.name}</strong></p>
             </div>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -130,7 +132,7 @@ export default function OnboardingPage() {
                     onClick={() => setTeamSize(size)}
                     className={`p-4 rounded-2xl border-2 transition-all ${
                       teamSize === size 
-                      ? "border-blue-600 bg-blue-600/5 text-blue-600" 
+                      ? "border-accent bg-accent/5 text-accent" 
                       : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200"
                     }`}
                   >
@@ -159,11 +161,11 @@ export default function OnboardingPage() {
                   onClick={() => setAiProvider(p.id)}
                   className={`w-full p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-4 ${
                     aiProvider === p.id 
-                    ? "border-blue-600 bg-blue-600/5" 
+                    ? "border-accent bg-accent/5" 
                     : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200"
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${aiProvider === p.id ? "bg-blue-600 text-white" : "bg-zinc-100 dark:bg-zinc-900 text-zinc-400"}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${aiProvider === p.id ? "bg-accent text-white" : "bg-zinc-100 dark:bg-zinc-900 text-zinc-400"}`}>
                     <Zap className="w-5 h-5" />
                   </div>
                   <div>
@@ -208,11 +210,8 @@ export default function OnboardingPage() {
       <div className="hidden lg:flex w-80 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex-col justify-between p-8">
         <div className="space-y-8">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">D</div>
-              <span className="text-lg font-black tracking-tight">Discovery SDR</span>
-            </div>
-            <p className="text-xs text-zinc-400 font-medium pl-10">Configuração Inicial</p>
+            <BrandLogo size="sm" />
+            <p className="text-[10px] text-zinc-400 font-medium pl-9">Configuração Inicial</p>
           </div>
 
           {/* Steps */}
@@ -259,7 +258,7 @@ export default function OnboardingPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs font-bold">
             <span className="text-zinc-500">Progresso</span>
-            <span className="text-blue-600">{progress}%</span>
+            <span className="text-accent">{progress}%</span>
           </div>
           <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
             <div 
@@ -276,13 +275,12 @@ export default function OnboardingPage() {
       {/* Mobile progress bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 p-4 safe-area-top">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center text-white font-bold text-xs">D</div>
-          <span className="text-sm font-bold">Configuração Inicial</span>
-          <span className="ml-auto text-xs font-bold text-blue-600">{progress}%</span>
+          <BrandLogo size="sm" />
+          <span className="ml-auto text-xs font-bold text-accent">{progress}%</span>
         </div>
         <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full transition-all duration-700" 
+            className="h-full bg-accent transition-all duration-700" 
             style={{ width: `${progress}%` }} 
           />
         </div>
@@ -299,7 +297,7 @@ export default function OnboardingPage() {
                 <Button 
                   onClick={handleNext} 
                   disabled={loading}
-                  className="h-14 w-full rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold shadow-lg shadow-blue-600/20 transition-all"
+                  className="h-14 w-full rounded-2xl bg-accent hover:bg-accent-hover text-white text-lg font-bold shadow-lg shadow-accent/20 transition-all"
                 >
                   {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
                     <span className="flex items-center gap-2">

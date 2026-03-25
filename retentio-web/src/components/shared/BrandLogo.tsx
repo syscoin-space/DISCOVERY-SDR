@@ -40,34 +40,38 @@ export function BrandLogo({
 
   return (
     <div className="flex items-center gap-3">
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
         {logoUrl ? (
           <img
             src={logoUrl}
-            alt={productName}
+            alt={subText || productName}
             className={`${size === "sm" ? "h-6" : size === "lg" ? "h-10" : "h-8"} w-auto object-contain shrink-0`}
           />
         ) : (
           <div
-            className={`${sizeClass} flex items-center justify-center rounded-lg text-sm font-bold text-white shadow-sm shrink-0`}
+            className={`${sizeClass} flex items-center justify-center rounded-xl text-sm font-bold text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] shrink-0 relative overflow-hidden group`}
             style={{
               background: `linear-gradient(135deg, ${accent}, ${green})`,
             }}
           >
+            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             {productName.charAt(0).toUpperCase()}
           </div>
         )}
         
         {showName && (
-          <div className="flex flex-col leading-tight min-w-0">
+          <div className="flex flex-col leading-[1.1] min-w-0">
             <span
-              className={`font-bold tracking-tight text-foreground truncate ${size === "sm" ? "text-xs" : "text-sm"}`}
-              style={{ color: navy }}
+              className={`font-black tracking-tight uppercase truncate ${size === "sm" ? "text-[10px]" : "text-xs"} opacity-40`}
+              style={{ color: "var(--foreground)" }}
             >
               {productName}
             </span>
             {subText && (
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider truncate opacity-70">
+              <span 
+                className={`font-bold truncate ${size === "sm" ? "text-xs" : "text-sm"}`}
+                style={{ color: accent }}
+              >
                 {subText}
               </span>
             )}

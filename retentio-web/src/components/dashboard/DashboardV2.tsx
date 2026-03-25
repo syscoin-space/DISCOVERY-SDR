@@ -23,7 +23,7 @@ export function DashboardV2() {
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
       </div>
     );
   }
@@ -45,7 +45,7 @@ export function DashboardV2() {
       <div className="flex items-center justify-between border-b border-border pb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Activity className="w-5 h-5 text-brand-500" /> Comando Operacional
+            <Activity className="w-5 h-5 text-accent" /> Comando Operacional
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Métricas de Vendas, Discovery e Inteligência Artificial ({format(new Date(), "MMMM yyyy", { locale: ptBR })})
@@ -78,7 +78,7 @@ export function DashboardV2() {
           <StatCard 
             title="Conclusão de Tarefas" 
             value={`${operational.task_completion_rate.toFixed(0)}%`} 
-            icon={<CheckCircle2 className="w-4 h-4 text-brand-400" />} 
+            icon={<CheckCircle2 className="w-4 h-4 text-accent" />} 
           />
         </div>
       </section>
@@ -97,7 +97,7 @@ export function DashboardV2() {
             </div>
             <div className="w-full bg-neutral-800 rounded-full h-2">
               <div 
-                className="bg-brand-500 h-2 rounded-full" 
+                className="bg-accent h-2 rounded-full" 
                 style={{ width: `${Math.min(discovery.discovery_completion_rate, 100)}%` }} 
               />
             </div>
@@ -133,7 +133,7 @@ export function DashboardV2() {
           <div className="bg-surface border border-border rounded-xl p-5 shadow-sm col-span-1 md:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm text-muted-foreground font-medium">Adoção vs Rejeição Ativa</h3>
-              <Sparkles className="w-4 h-4 text-brand-400" />
+              <Sparkles className="w-4 h-4 text-accent" />
             </div>
             <div className="flex items-end gap-2 mb-2">
               <span className="text-4xl font-bold text-foreground">{ai_hil.adoption_rate.toFixed(1)}%</span>

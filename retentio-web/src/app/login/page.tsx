@@ -59,8 +59,8 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-navy via-accent to-green">
-      <div className="w-full max-w-sm rounded-2xl bg-white/95 p-8 shadow-2xl backdrop-blur-sm">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[var(--navy)] via-[var(--accent)] to-[var(--green)]">
+      <div className="w-full max-w-sm rounded-2xl bg-[var(--surface)]/95 p-8 shadow-2xl backdrop-blur-sm">
         {/* Logo */}
         <div className="mb-6 flex flex-col items-center">
           {brand?.logo_url ? (
