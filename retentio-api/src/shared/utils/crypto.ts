@@ -2,8 +2,8 @@ import * as crypto from 'crypto';
 import { env } from '../../config/env';
 
 const ALGORITHM = 'aes-256-cbc';
-const KEY = Buffer.from(env.ENCRYPTION_KEY || 'default-32-char-key-for-development-only', 'utf-8');
-const IV = Buffer.from(env.ENCRYPTION_IV || '1234567890123456', 'utf-8');
+const KEY = Buffer.from(env.ENCRYPTION_KEY?.padEnd(32, '0').substring(0, 32) || '12345678901234567890123456789012', 'utf-8');
+const IV = Buffer.from(env.ENCRYPTION_IV?.padEnd(16, '0').substring(0, 16) || '1234567890123456', 'utf-8');
 
 export function encrypt(text: string): string {
   const cipher = crypto.createCipheriv(ALGORITHM, KEY, IV);
