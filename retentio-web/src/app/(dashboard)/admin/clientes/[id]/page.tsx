@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/components/shared/Toast";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api/client";
 
@@ -81,6 +82,7 @@ export default function ClienteDetailPage() {
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
   const [newEndDate, setNewEndDate] = useState<string>("");
   const [isSavingTrial, setIsSavingTrial] = useState(false);
+  const { toast } = useToast();
 
   const loadTenant = useCallback(async () => {
     try {
@@ -99,18 +101,29 @@ export default function ClienteDetailPage() {
   useEffect(() => { loadTenant(); }, [loadTenant]);
 
   const handleSaveTrial = async () => {
-    if (!tenant) return;
+    if (!tenant || !newEndDate) return;
     try {
       setIsSavingTrial(true);
+      
+      // Validação básica de formato antes de enviar
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(newEndDate)) {
+        toast("Formato de data inválido. Use AAAA-MM-DD", "error");
+        return;
+      }
+
       await api.post('/admin/billing/trial/adjust', {
         tenant_id: tenant.id,
         new_end_date: `${newEndDate}T23:59:59.000Z`
       });
+
+      toast("Trial atualizado com sucesso!", "success");
       setIsTrialModalOpen(false);
       loadTenant();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Erro ao salvar trial:", err);
-      alert("Erro ao salvar data de trial");
+      const msg = err.response?.data?.error || "Erro ao salvar data de trial";
+      toast(msg, "error");
     } finally {
       setIsSavingTrial(false);
     }
