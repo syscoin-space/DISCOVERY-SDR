@@ -141,6 +141,11 @@ export class LeadService {
     // Check Plan Limits
     await planService.checkLimit(tenantId, 'leads_monthly');
 
+    // Check SDR Limit if assigned immediately
+    if (data.sdr_id) {
+      await this.checkSdrLeadLimit(data.sdr_id);
+    }
+
     // Check for duplicates within the same tenant
     if (data.domain) {
       const existing = await prisma.lead.findUnique({
@@ -173,6 +178,11 @@ export class LeadService {
     const lead = await prisma.lead.findFirst({ where });
     if (!lead) {
       throw new AppError(404, 'Lead não encontrado', 'LEAD_NOT_FOUND');
+    }
+
+    // Check SDR Limit if assignment is changing
+    if (data.sdr_id && data.sdr_id !== lead.sdr_id) {
+      await this.checkSdrLeadLimit(data.sdr_id);
     }
 
     const updatedLead = await prisma.lead.update({
@@ -282,6 +292,28 @@ export class LeadService {
       }
     }
     return counts;
+  }
+  private async checkSdrLeadLimit(sdrId: string) {
+    const activeStates: LeadStatus[] = [
+      LeadStatus.CONTA_FRIA,
+      LeadStatus.DISCOVERY,
+      LeadStatus.QUALIFICADO,
+      LeadStatus.PROSPECCAO,
+      LeadStatus.EM_PROSPECCAO,
+      LeadStatus.FOLLOW_UP,
+      LeadStatus.NUTRICAO
+    ];
+
+    const activeCount = await prisma.lead.count({
+      where: {
+        sdr_id: sdrId,
+        status: { in: activeStates }
+      }
+    });
+
+    if (activeCount >= 100) {
+      throw new AppError(403, 'SDR atingiu o limite de 100 leads ativos', 'SDR_LIMIT_REACHED');
+    }
   }
 }
 

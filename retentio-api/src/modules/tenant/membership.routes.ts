@@ -94,8 +94,10 @@ membershipRouter.delete(
     if (!existing) throw new AppError(404, 'Membro não encontrado');
     if (existing.role === Role.OWNER) throw new AppError(400, 'Não é possível remover o OWNER do tenant');
 
-    await prisma.membership.delete({
-      where: { id: membershipId }
+    // Soft delete: apenas desativa o membro para manter integridade referencial
+    await prisma.membership.update({
+      where: { id: membershipId },
+      data: { active: false }
     });
 
     res.status(204).send();
