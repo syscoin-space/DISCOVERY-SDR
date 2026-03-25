@@ -16,12 +16,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useUnreadCount } from "@/hooks/use-notifications";
-
-interface StoredUser {
-  name: string;
-  role: string;
-  email: string;
-}
+import { useAuthStore } from "@/lib/stores/auth.store";
 
 const MENU_ITEMS = [
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
@@ -46,16 +41,9 @@ interface MenuSheetProps {
 export function MenuSheet({ open, onOpenChange }: MenuSheetProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<StoredUser | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("retentio_user");
-      if (raw) setUser(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  const isGestor = user?.role === "GESTOR";
+  const role = useAuthStore((state) => state.role);
+  
+  const isGestor = role === "OWNER" || role === "MANAGER";
   const unreadCount = useUnreadCount();
 
   function navigate(path: string) {
