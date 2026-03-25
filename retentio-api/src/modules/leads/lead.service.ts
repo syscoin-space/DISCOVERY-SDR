@@ -6,6 +6,7 @@ import { eventBus } from '../../shared/events/event-bus';
 import { DomainEvent } from '../../shared/events/domain-events';
 import { discoveryService } from './discovery.service';
 import { planService } from '../billing/plan.service';
+import { logger } from '../../config/logger';
 
 // V2 Allowed Transitions based on methodology
 const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
@@ -82,7 +83,8 @@ export class LeadService {
   async getById(id: string, tenantId: string, membershipId?: string, role?: string) {
     const where: Prisma.LeadWhereInput = { id, tenant_id: tenantId };
     
-    // SDRs can only view leads assigned to them
+    // SDRs can only view leads assigned to them or unassigned (if we want to allow picking)
+    // For now, strict assignment as per user request
     if (role === 'SDR') {
       where.sdr_id = membershipId;
     }
@@ -125,6 +127,12 @@ export class LeadService {
     });
 
     if (!lead) {
+      // Diagnostic check: does it exist at all in this tenant?
+      const existsInTenant = await prisma.lead.findFirst({ where: { id, tenant_id: tenantId } });
+      if (existsInTenant && role === 'SDR') {
+        logger.warn(`[LeadService] SDR ${membershipId} attempted to access lead ${id} assigned to ${existsInTenant.sdr_id}`);
+        throw new AppError(403, 'Você não tem permissão para acessar este lead (atribuído a outro SDR)', 'LEAD_FORBIDDEN');
+      }
       throw new AppError(404, 'Lead não encontrado', 'LEAD_NOT_FOUND');
     }
 
