@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { invitationApi, type InvitationContext } from "@/lib/api/invitation.api";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth.store";
 
-export default function InviteAcceptPage() {
+function InviteAcceptForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const router = useRouter();
@@ -204,5 +204,13 @@ export default function InviteAcceptPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function InviteAcceptPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-surface"><Loader2 className="h-8 w-8 animate-spin text-accent" /></div>}>
+      <InviteAcceptForm />
+    </Suspense>
   );
 }
