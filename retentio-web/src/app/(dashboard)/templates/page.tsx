@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useTemplates, useDeleteTemplate } from "@/hooks/use-templates";
-import { Plus, Mail, MessageCircle, Pencil, Trash2 } from "lucide-react";
+import { Plus, Mail, MessageCircle, Pencil, Trash2, Phone } from "lucide-react";
 import { useState } from "react";
 import type { StepChannel } from "@/lib/types";
 
-const CHANNEL_BADGE: Record<StepChannel, { label: string; icon: typeof Mail; classes: string }> = {
+const CHANNEL_BADGE: Record<StepChannel, { label: string; icon: any; classes: string }> = {
   EMAIL: { label: "Email", icon: Mail, classes: "text-blue-600 bg-blue-500/10 border-blue-500/20 dark:text-blue-400" },
   WHATSAPP: { label: "WhatsApp", icon: MessageCircle, classes: "text-green-600 bg-green-500/10 border-green-500/20 dark:text-green-400" },
-  LIGACAO: { label: "Ligacao", icon: Mail, classes: "text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400" },
+  LIGACAO: { label: "Ligação", icon: Phone, classes: "text-amber-600 bg-amber-500/10 border-amber-500/20 dark:text-amber-400" },
   LINKEDIN: { label: "LinkedIn", icon: Mail, classes: "text-blue-700 bg-blue-700/10 border-blue-700/20 dark:text-blue-400" },
 };
 
@@ -117,7 +117,20 @@ export default function TemplatesPage() {
 
                   {/* Body preview */}
                   <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">
-                    {tpl.body.replace(/<[^>]*>/g, "").slice(0, 150)}
+                    {(() => {
+                      if (tpl.channel === "LIGACAO") {
+                        try {
+                          const parsed = JSON.parse(tpl.body);
+                          return [parsed.abertura, parsed.diagnostico, parsed.implicacao, parsed.convite]
+                            .filter(Boolean)
+                            .join(" — ")
+                            .slice(0, 150);
+                        } catch {
+                          return tpl.body.replace(/<[^>]*>/g, "").slice(0, 150);
+                        }
+                      }
+                      return tpl.body.replace(/<[^>]*>/g, "").slice(0, 150);
+                    })()}
                   </p>
 
                   {/* Footer */}

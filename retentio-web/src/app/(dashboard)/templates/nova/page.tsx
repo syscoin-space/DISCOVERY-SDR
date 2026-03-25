@@ -3,13 +3,14 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateTemplate } from "@/hooks/use-templates";
-import { ArrowLeft, Mail, MessageCircle } from "lucide-react";
+import { ArrowLeft, Mail, MessageCircle, Phone } from "lucide-react";
 import Handlebars from "handlebars";
 import type { StepChannel } from "@/lib/types";
 
-const CHANNELS: { value: StepChannel; label: string; icon: typeof Mail }[] = [
+const CHANNELS: { value: StepChannel; label: string; icon: any }[] = [
   { value: "EMAIL", label: "Email", icon: Mail },
   { value: "WHATSAPP", label: "WhatsApp", icon: MessageCircle },
+  { value: "LIGACAO", label: "Ligação", icon: Phone },
 ];
 
 const VARIABLES = ["empresa", "contato", "nome_cliente", "nicho", "cidade", "plataforma", "sdr_nome", "fit_tier"];
@@ -43,6 +44,12 @@ export default function NovoTemplatePage() {
   const [body, setBody] = useState("");
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
+  // States specíficos de Ligação
+  const [abertura, setAbertura] = useState("");
+  const [diagnostico, setDiagnostico] = useState("");
+  const [implicacao, setImplicacao] = useState("");
+  const [convite, setConvite] = useState("");
+
   function insertVariable(varName: string) {
     const textarea = bodyRef.current;
     if (!textarea) return;
@@ -59,14 +66,20 @@ export default function NovoTemplatePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !body.trim()) return;
+    if (!name.trim()) return;
+
+    const finalBody = channel === "LIGACAO"
+      ? JSON.stringify({ abertura, diagnostico, implicacao, convite })
+      : body.trim();
+
+    if (!finalBody) return;
 
     try {
       await createTemplate.mutateAsync({
         name: name.trim(),
         channel,
         subject: channel === "EMAIL" && subject.trim() ? subject.trim() : undefined,
-        body: body.trim(),
+        body: finalBody,
       });
       router.push("/templates");
     } catch {
@@ -155,33 +168,66 @@ export default function NovoTemplatePage() {
               )}
             </div>
 
-            <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
-              <h2 className="text-sm font-semibold text-foreground">Corpo da Mensagem</h2>
+            {channel === "LIGACAO" ? (
+              <div className="rounded-xl border border-border bg-surface p-4 space-y-4">
+                <h2 className="text-sm font-semibold text-foreground">Passo a Passo da Ligação</h2>
+                
+                <div className="flex flex-wrap gap-1 mb-2">
+                  <span className="text-xs text-muted-foreground mr-2 mt-1">Variáveis úteis (digite manualmente):</span>
+                  {VARIABLES.map((v) => (
+                    <span key={v} className="rounded border border-border bg-surface-raised px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      {`{{${v}}}`}
+                    </span>
+                  ))}
+                </div>
 
-              {/* Variable toolbar */}
-              <div className="flex flex-wrap gap-1">
-                {VARIABLES.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => insertVariable(v)}
-                    className="rounded-md border border-border bg-surface-raised px-2 py-1 text-[10px] font-medium text-muted-foreground hover:border-accent/30 hover:text-accent transition-colors"
-                  >
-                    + {v}
-                  </button>
-                ))}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wide text-muted-foreground mb-1 font-bold text-accent">1. Abertura - Conexão pela dor</label>
+                    <textarea value={abertura} onChange={(e) => setAbertura(e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none resize-none" placeholder="Ex: Vi que a {{empresa}} está..." required />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wide text-muted-foreground mb-1 font-bold text-blue-500">2. Pergunta de Diagnóstico</label>
+                    <textarea value={diagnostico} onChange={(e) => setDiagnostico(e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none resize-none" placeholder="Ex: Como vocês estão resolvendo..." required />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wide text-muted-foreground mb-1 font-bold text-purple-500">3. Pergunta de Implicação</label>
+                    <textarea value={implicacao} onChange={(e) => setImplicacao(e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none resize-none" placeholder="Ex: E qual o impacto disso na operação?" required />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wide text-muted-foreground mb-1 font-bold text-emerald-500">4. Convite</label>
+                    <textarea value={convite} onChange={(e) => setConvite(e.target.value)} rows={3} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none resize-none" placeholder="Ex: Faz sentido a gente bater um papo rápido segunda-feira?" required />
+                  </div>
+                </div>
               </div>
+            ) : (
+              <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
+                <h2 className="text-sm font-semibold text-foreground">Corpo da Mensagem</h2>
 
-              <textarea
-                ref={bodyRef}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Escreva sua mensagem aqui. Use {{empresa}}, {{nicho}}, etc. para variáveis..."
-                rows={12}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground font-mono placeholder:text-muted-foreground focus:border-accent focus:outline-none resize-none"
-                required
-              />
-            </div>
+                <div className="flex flex-wrap gap-1">
+                  {VARIABLES.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => insertVariable(v)}
+                      className="rounded-md border border-border bg-surface-raised px-2 py-1 text-[10px] font-medium text-muted-foreground hover:border-accent/30 hover:text-accent transition-colors"
+                    >
+                      + {v}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  ref={bodyRef}
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder="Escreva sua mensagem aqui. Use {{empresa}}, {{nicho}}, etc. para variáveis..."
+                  rows={12}
+                  className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground font-mono placeholder:text-muted-foreground focus:border-accent focus:outline-none resize-none"
+                  required
+                />
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pb-8">
@@ -194,7 +240,7 @@ export default function NovoTemplatePage() {
               </button>
               <button
                 type="submit"
-                disabled={!name.trim() || !body.trim() || createTemplate.isPending}
+                disabled={!name.trim() || createTemplate.isPending || (channel === "LIGACAO" ? (!abertura || !diagnostico || !implicacao || !convite) : !body.trim())}
                 className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-hover transition-colors disabled:opacity-50"
               >
                 {createTemplate.isPending ? "Salvando..." : "Salvar Template"}
@@ -227,9 +273,26 @@ export default function NovoTemplatePage() {
 
               <div className="rounded-lg border border-border bg-surface p-3">
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Corpo</p>
-                <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
-                  {body ? renderPreview(body, SAMPLE_CONTEXT) : (
-                    <span className="text-muted-foreground italic">Digite o corpo para ver o preview...</span>
+                <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed space-y-4">
+                  {channel === "LIGACAO" ? (
+                    <>
+                      {abertura || diagnostico || implicacao || convite ? (
+                        <div className="space-y-3">
+                          {abertura && <div><span className="text-[10px] uppercase font-bold text-accent">Abertura:</span><br/>{renderPreview(abertura, SAMPLE_CONTEXT)}</div>}
+                          {diagnostico && <div><span className="text-[10px] uppercase font-bold text-blue-500">Diagnóstico:</span><br/>{renderPreview(diagnostico, SAMPLE_CONTEXT)}</div>}
+                          {implicacao && <div><span className="text-[10px] uppercase font-bold text-purple-500">Implicação:</span><br/>{renderPreview(implicacao, SAMPLE_CONTEXT)}</div>}
+                          {convite && <div><span className="text-[10px] uppercase font-bold text-emerald-500">Convite:</span><br/>{renderPreview(convite, SAMPLE_CONTEXT)}</div>}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground italic">Preencha os campos para ver o preview...</span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {body ? renderPreview(body, SAMPLE_CONTEXT) : (
+                        <span className="text-muted-foreground italic">Digite o corpo para ver o preview...</span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
