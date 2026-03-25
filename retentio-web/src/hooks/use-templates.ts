@@ -32,13 +32,17 @@ export interface CreateTemplatePayload {
   subject?: string;
   body: string;
   channel: StepChannel;
+  purpose?: string;
 }
 
 export function useCreateTemplate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateTemplatePayload) => {
-      const { data } = await api.post<Template>("/templates", payload);
+      const { data } = await api.post<Template>("/templates", {
+        purpose: "PROSPECCAO",
+        ...payload,
+      });
       return data;
     },
     onSuccess: () => {
