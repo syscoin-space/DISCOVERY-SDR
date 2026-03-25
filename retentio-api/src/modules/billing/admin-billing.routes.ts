@@ -390,3 +390,73 @@ adminBillingRouter.get(
     });
   })
 );
+
+// ═══════════════════════════════════════════════════════════════
+// BLOCO 6 — GESTÃO DE PLANOS (CRUD)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/admin/billing/plans
+ * Cria um novo plano no banco
+ */
+adminBillingRouter.post(
+  '/plans',
+  asyncHandler(async (req, res) => {
+    const { name, key, description, price_monthly, trial_days, limits, features, is_active } = req.body;
+
+    const newPlan = await prisma.plan.create({
+      data: {
+        name,
+        key: key || name.toUpperCase().replace(/\s+/g, '_'),
+        description,
+        price_monthly: price_monthly ? Number(price_monthly) : null,
+        trial_days: trial_days ? Number(trial_days) : 7,
+        limits: limits || { sdr: 1, leads_monthly: 100 },
+        features: features || {},
+        is_active: is_active ?? true,
+      }
+    });
+
+    res.json(newPlan);
+  })
+);
+
+/**
+ * PUT /api/admin/billing/plans/:id
+ * Atualiza um plano existente
+ */
+adminBillingRouter.put(
+  '/plans/:id',
+  asyncHandler(async (req, res) => {
+    const id = req.params.id as string;
+    const { name, key, description, price_monthly, trial_days, limits, features, is_active } = req.body;
+
+    const updatedPlan = await prisma.plan.update({
+      where: { id },
+      data: {
+        name,
+        key,
+        description,
+        price_monthly: price_monthly !== undefined ? Number(price_monthly) : null,
+        trial_days: trial_days !== undefined ? Number(trial_days) : 7,
+        limits: limits || undefined,
+        features: features || undefined,
+        is_active,
+      }
+    });
+
+    res.json(updatedPlan);
+  })
+);
+
+/**
+ * DELETE /api/admin/billing/plans/:id
+ */
+adminBillingRouter.delete(
+  '/plans/:id',
+  asyncHandler(async (req, res) => {
+    const id = req.params.id as string;
+    await prisma.plan.delete({ where: { id } });
+    res.json({ message: "Plano deletado com sucesso" });
+  })
+);
