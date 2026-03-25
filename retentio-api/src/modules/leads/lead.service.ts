@@ -103,7 +103,18 @@ export class LeadService {
           }
         },
         interactions: { orderBy: { created_at: 'desc' }, take: 20 },
-        cadence_enrollments: { include: { cadence: true } },
+        cadence_enrollments: { 
+          include: { 
+            cadence: {
+              include: {
+                steps: {
+                  include: { template: true },
+                  orderBy: { step_order: 'asc' }
+                }
+              }
+            } 
+          } 
+        },
         tasks: { 
           where: { status: 'PENDENTE' },
           orderBy: { scheduled_at: 'asc' },

@@ -14,6 +14,7 @@ export class CadenceService {
           select: { enrollments: true, steps: true }
         },
         steps: {
+          include: { template: true },
           orderBy: { step_order: 'asc' }
         }
       },
@@ -28,7 +29,10 @@ export class CadenceService {
     const cadence = await prisma.cadence.findFirst({
       where: { id, tenant_id: tenantId },
       include: {
-        steps: { orderBy: { step_order: 'asc' } },
+        steps: { 
+          include: { template: true },
+          orderBy: { step_order: 'asc' } 
+        },
         enrollments: {
           take: 50,
           include: {
