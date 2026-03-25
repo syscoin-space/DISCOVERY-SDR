@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
+import { ActivationChecklist } from "../shared/ActivationChecklist";
+import { useUnreadCount } from "@/hooks/use-notifications";
+import { useEmailHealth } from "@/hooks/use-email-health";
+import { ThemeToggle } from "../shared/ThemeToggle";
+import { NotificationBell } from "../shared/NotificationBell";
+import { BrandLogo } from "../shared/BrandLogo";
+import { UserAvatar } from "../shared/UserAvatar";
+import { useEffect, useState } from "react";
+import { 
+  AlertCircle, 
+  ChevronRight, 
   LogOut,
   BarChart3,
   ClipboardList,
@@ -21,15 +31,8 @@ import {
   Users,
   Target,
   Palette,
-  User as UserAvatarIcon,
+  User as UserAvatarIcon, 
 } from "lucide-react";
-import { ThemeToggle } from "../shared/ThemeToggle";
-import { NotificationBell } from "../shared/NotificationBell";
-import { BrandLogo } from "../shared/BrandLogo";
-import { UserAvatar } from "../shared/UserAvatar";
-import { ActivationChecklist } from "../shared/ActivationChecklist";
-import { useUnreadCount } from "@/hooks/use-notifications";
-import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 
 interface StoredUser {
@@ -53,7 +56,8 @@ const sdrNav: NavItem[] = [
   { href: "/handoffs", label: "Handoffs", icon: ArrowRightLeft },
   { href: "/cadencias", label: "Cadências", icon: Zap },
   { href: "/templates", label: "Templates", icon: FileText },
-  { href: "/emails", label: "Emails", icon: Mail },
+  { href: "/emails", label: "Auditoria", icon: Mail },
+  { href: "/email-analytics", label: "Analytics Email", icon: BarChart3 },
   { href: "/notificacoes", label: "Notificações", icon: Bell, hasBadge: true },
   { href: "/glossario", label: "Glossário", icon: BookOpen },
   { href: "/settings/account", label: "Meu Perfil", icon: UserAvatarIcon },
@@ -61,6 +65,7 @@ const sdrNav: NavItem[] = [
 
 const gestorNav: NavItem[] = [
   { href: "/gestor", label: "Dashboard", icon: TrendingUp },
+  { href: "/email-analytics", label: "Analytics Email", icon: BarChart3 },
   { href: "/settings/account", label: "Configurações", icon: Settings },
 ];
 
@@ -76,6 +81,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<StoredUser | null>(null);
+  const { data: health } = useEmailHealth();
 
   useEffect(() => {
     try {
@@ -195,6 +201,27 @@ export function AppSidebar() {
           </>
         )}
       </nav>
+
+      {/* Email Health Alert (Owner/Manager Only) */}
+      {isGestor && health?.status === 'CRITICAL' && (
+        <div className="mx-3 mb-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 animate-pulse">
+          <div className="flex items-start gap-2 text-red-600">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-[11px] font-bold leading-tight">Canal de E-mail Bloqueado</p>
+              <p className="text-[10px] opacity-80 mt-1 leading-tight">
+                {health.blocked_cadences_count} cadência(s) paralisada(s).
+              </p>
+              <Link 
+                href="/settings/email"
+                className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold underline decoration-dotted underline-offset-2 hover:text-red-700"
+              >
+                Resolver Agora <ChevronRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ActivationChecklist />
 

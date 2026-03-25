@@ -8,17 +8,17 @@ datasource db {
 }
 
 model Tenant {
-  id                String             @id @default(uuid())
+  id                String                 @id @default(uuid())
   name              String
-  slug              String             @unique
-  discovery_enabled Boolean            @default(false)
-  active            Boolean            @default(true)
+  slug              String                 @unique
+  discovery_enabled Boolean                @default(false)
+  active            Boolean                @default(true)
   settings          Json?
   branding          Json?
-  created_at        DateTime           @default(now())
-  updated_at        DateTime           @updatedAt
-  onboarding_status OnboardingStatus   @default(PENDING)
-  onboarding_step   Int                @default(0)
+  created_at        DateTime               @default(now())
+  updated_at        DateTime               @updatedAt
+  onboarding_status OnboardingStatus       @default(PENDING)
+  onboarding_step   Int                    @default(0)
   plan_id           String?
   audit_logs        AuditLog[]
   cadences          Cadence[]
@@ -33,8 +33,11 @@ model Tenant {
   templates         Template[]
   ai_providers      TenantAIProvider[]
   ai_settings       TenantAISettings?
+  email_providers   TenantEmailProvider[]
   invitations       MembershipInvitation[]
-  plan              Plan?              @relation(fields: [plan_id], references: [id])
+  interactions      Interaction[]
+  email_events      EmailEvent[]
+  plan              Plan?                  @relation(fields: [plan_id], references: [id])
 
   @@map("tenants")
 }
@@ -117,9 +120,9 @@ model Membership {
   tenant             Tenant             @relation(fields: [tenant_id], references: [id])
   user               User               @relation(fields: [user_id], references: [id])
   push_subscriptions PushSubscription[]
-  resend_config      ResendConfig?
   tasks              Task[]
   touchpoints        Touchpoint[]
+  interactions       Interaction[]
 
   @@unique([user_id, tenant_id])
   @@index([tenant_id, role])
@@ -247,18 +250,19 @@ model Cadence {
 }
 
 model CadenceStep {
-  id           String    @id @default(uuid())
+  id           String        @id @default(uuid())
   cadence_id   String
   step_order   Int
   day_offset   Int
   channel      String
   template_id  String?
   instructions String?
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  cadence      Cadence   @relation(fields: [cadence_id], references: [id], onDelete: Cascade)
-  template     Template? @relation(fields: [template_id], references: [id])
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  cadence      Cadence       @relation(fields: [cadence_id], references: [id], onDelete: Cascade)
+  template     Template?     @relation(fields: [template_id], references: [id])
   tasks        Task[]
+  interactions Interaction[]
 
   @@unique([cadence_id, step_order])
   @@map("cadence_steps")
@@ -323,37 +327,55 @@ model Touchpoint {
 }
 
 model Interaction {
-  id           String            @id @default(uuid())
-  lead_id      String
-  type         InteractionType
-  source       InteractionSource @default(MANUAL)
-  channel      String?
-  external_id  String?
-  subject      String?
-  body         String?
-  status       String?
-  metadata     Json?
-  created_at   DateTime          @default(now())
-  email_events EmailEvent[]
-  lead         Lead              @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  id              String            @id @default(uuid())
+  tenant_id       String
+  lead_id         String
+  membership_id   String?
+  cadence_step_id String?
+  type            InteractionType
+  source          InteractionSource @default(MANUAL)
+  channel         String?
+  external_id     String?
+  subject         String?
+  body            String?
+  status          String?
+  error           String?
+  metadata        Json?
+  created_at      DateTime          @default(now())
+  email_events    EmailEvent[]
+  lead            Lead              @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  tenant          Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  cadence_step    CadenceStep?      @relation(fields: [cadence_step_id], references: [id])
+  membership      Membership?       @relation(fields: [membership_id], references: [id])
 
   @@index([lead_id, created_at(sort: Desc)])
+  @@index([tenant_id, created_at(sort: Desc)])
   @@index([external_id])
   @@map("interactions")
 }
 
 model EmailEvent {
-  id              String       @id @default(uuid())
-  interaction_id  String?
-  resend_email_id String
-  type            String
-  data            Json?
-  link            String?
-  created_at      DateTime     @default(now())
-  interaction     Interaction? @relation(fields: [interaction_id], references: [id])
+  id                  String       @id @default(uuid())
+  tenant_id           String
+  interaction_id      String?
+  lead_id             String?
+  cadence_step_id     String?
+  provider            EmailProviderType @default(RESEND)
+  external_message_id String
+  provider_event_id   String?
+  type                String
+  email               String?
+  payload             Json?
+  timestamp           DateTime?
+  created_at          DateTime     @default(now())
+  
+  interaction         Interaction? @relation(fields: [interaction_id], references: [id])
+  tenant              Tenant       @relation(fields: [tenant_id], references: [id])
 
-  @@index([resend_email_id])
+  @@unique([provider, provider_event_id])
+  @@index([external_message_id])
   @@index([interaction_id])
+  @@index([tenant_id])
   @@map("email_events")
 }
 
@@ -486,21 +508,22 @@ model CallScript {
   @@map("call_scripts")
 }
 
-model ResendConfig {
-  id                String     @id @default(uuid())
-  membership_id     String     @unique
-  from_email        String
-  from_name         String?
-  encrypted_api_key String
-  daily_limit       Int        @default(50)
-  sent_today        Int        @default(0)
-  last_reset_at     DateTime   @default(now())
-  active            Boolean    @default(true)
-  created_at        DateTime   @default(now())
-  updated_at        DateTime   @updatedAt
-  membership        Membership @relation(fields: [membership_id], references: [id])
+model TenantEmailProvider {
+  id                String            @id @default(uuid())
+  tenant_id         String
+  provider          EmailProviderType @default(RESEND)
+  is_enabled        Boolean           @default(false)
+  api_key_encrypted String?
+  sender_name       String?
+  sender_email      String?
+  reply_to          String?
+  webhook_secret    String?
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
+  tenant            Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 
-  @@map("resend_configs")
+  @@unique([tenant_id, provider])
+  @@map("tenant_email_providers")
 }
 
 model AuditLog {
@@ -659,6 +682,11 @@ enum TemplatePurpose {
   NUTRICAO
   CONFIRMACAO_REUNIAO
   REATIVACAO
+}
+
+enum EmailProviderType {
+  RESEND
+  SMTP
 }
 
 enum InteractionType {

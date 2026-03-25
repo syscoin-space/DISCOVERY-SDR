@@ -21,6 +21,9 @@ import { billingRouter } from './modules/billing/billing.routes';
 import { billingWebhookRouter } from './modules/billing/billing-webhook.routes';
 import { brandRouter } from './modules/brand/brand.routes';
 import { templateRouter } from './modules/cadences/template.routes';
+import { emailWebhookRouter } from './modules/email/webhook.routes';
+import { emailMetricsRouter } from './modules/email/email-metrics.routes';
+import { emailHealthRouter } from './modules/email/email-health.routes';
 import { authGuard, roleGuard } from './middlewares/auth';
 import { Role } from '@prisma/client';
 
@@ -51,6 +54,7 @@ import { aiSettingsRouter } from './modules/ai/ai-settings.routes';
 import { dashboardV2Router } from './modules/dashboard/dashboard.v2.routes';
 import { tenantRouter } from './modules/tenant/tenant.routes';
 import { membershipRouter } from './modules/tenant/membership.routes';
+import { emailConfigRouter } from './modules/tenant/email-config.routes';
 
 // ── V2 Routes ──
 app.use('/api/brand', brandRouter); // Público
@@ -69,11 +73,15 @@ app.use('/api/cadences', authGuard, cadenceRouter);
 app.use('/api/discovery', authGuard, discoveryRouter);
 app.use('/api/ai-settings', authGuard, aiSettingsRouter);
 app.use('/api/onboarding', authGuard, roleGuard(Role.ADMIN, Role.OWNER), onboardingRouter);
+app.use('/api/tenant/email-config', authGuard, emailConfigRouter);
+app.use('/api/tenant/email-health', authGuard, emailHealthRouter);
+app.use('/api/tenant/email-metrics', authGuard, emailMetricsRouter);
 app.use('/api/tenant', authGuard, tenantRouter);
 app.use('/api/memberships', authGuard, membershipRouter);
 app.use('/api/templates', authGuard, templateRouter);
 app.use('/api/billing', billingRouter);
 app.use('/api/webhooks', billingWebhookRouter); // Rota pública para gateways
+app.use('/api/webhooks/email', emailWebhookRouter); // Rota pública para tracking de e-mail
 
 // ── Admin Routes (SaaS Owner Only) ──
 import { adminBillingRouter } from './modules/billing/admin-billing.routes';

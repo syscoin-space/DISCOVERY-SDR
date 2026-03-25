@@ -111,6 +111,8 @@ adminTenantRouter.get(
   })
 );
 
+import { adminTenantService } from './admin-tenant.service';
+
 /**
  * GET /api/admin/tenants/:id
  * Detalhe de um cliente específico.
@@ -120,36 +122,12 @@ adminTenantRouter.get(
   asyncHandler(async (req, res) => {
     const { id } = req.params as { id: string };
 
-    const tenant = await prisma.tenant.findUnique({
-      where: { id },
-      include: {
-        plan: true,
-        subscription: true,
-        memberships: {
-          include: { user: { select: { id: true, name: true, email: true, avatar_url: true } } }
-        },
-        ai_settings: true,
-        ai_providers: true,
-        onboarding: true,
-      },
-    });
+    const profile = await adminTenantService.getCompleteTenantProfile(id);
 
-    if (!tenant) {
+    if (!profile) {
       return res.status(404).json({ message: 'Cliente não encontrado' });
     }
 
-    // Calcular algumas métricas rápidas de uso se necessário (ex: leads, cadências)
-    const [leadsCount, cadencesCount] = await Promise.all([
-      prisma.lead.count({ where: { tenant_id: id } }),
-      prisma.cadence.count({ where: { tenant_id: id } }),
-    ]);
-
-    res.json({
-      ...tenant,
-      stats: {
-        total_leads: leadsCount,
-        total_cadences: cadencesCount,
-      }
-    });
+    res.json(profile);
   })
 );

@@ -104,7 +104,13 @@ export class LeadService {
             user: { select: { name: true } }
           }
         },
-        interactions: { orderBy: { created_at: 'desc' }, take: 20 },
+        interactions: { 
+          include: { 
+            email_events: { orderBy: { created_at: 'asc' } } 
+          },
+          orderBy: { created_at: 'desc' }, 
+          take: 20 
+        },
         cadence_enrollments: { 
           include: { 
             cadence: {

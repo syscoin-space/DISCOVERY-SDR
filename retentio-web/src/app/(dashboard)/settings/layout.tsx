@@ -7,6 +7,7 @@ import {
   Palette, 
   Users, 
   Zap, 
+  Mail,
   CreditCard,
   Settings
 } from "lucide-react";
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Marca", href: "/settings/brand", icon: Palette },
   { name: "Equipe", href: "/settings/team", icon: Users },
   { name: "IA & Providers", href: "/settings/ai", icon: Zap },
+  { name: "E-mail", href: "/settings/email", icon: Mail },
   { name: "Faturamento", href: "/settings/billing", icon: CreditCard },
 ];
 

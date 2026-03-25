@@ -209,6 +209,7 @@ export interface Interaction {
   status: string | null;
   metadata: unknown;
   created_at: string;
+  email_events?: EmailEvent[];
 }
 
 export interface HandoffBriefing {
@@ -393,7 +394,10 @@ export interface ResendConfig {
 export interface EmailEvent {
   id: string;
   type: string;
-  link: string | null;
+  interaction_id: string | null;
+  external_message_id: string | null;
+  timestamp: string | null;
+  payload: any;
   created_at: string;
 }
 

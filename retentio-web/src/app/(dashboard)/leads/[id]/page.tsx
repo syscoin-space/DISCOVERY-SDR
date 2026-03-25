@@ -483,17 +483,6 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                             {inter.source === "CADENCIA" && (
                               <span className="text-[9px] bg-accent/10 text-accent px-1.5 py-0.5 rounded font-medium">Auto</span>
                             )}
-                            {inter.status && inter.type === "EMAIL" && (
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
-                                inter.status === "clicked" ? "bg-purple-500/10 text-purple-500" :
-                                inter.status === "opened" ? "bg-green-500/10 text-green-500" :
-                                inter.status === "delivered" ? "bg-accent/10 text-accent" :
-                                inter.status === "bounced" ? "bg-red-500/10 text-red-500" :
-                                "bg-gray-500/10 text-gray-500"
-                              }`}>
-                                {inter.status}
-                              </span>
-                            )}
                           </div>
                           <span className="text-[10px] text-muted-foreground">
                             {format(new Date(inter.created_at), "dd MMM, HH:mm", { locale: ptBR })}
@@ -504,6 +493,30 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                         )}
                         {inter.body && (
                           <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-4">{inter.body}</p>
+                        )}
+
+                        {/* Sub-Eventos de E-mail (Tracking) */}
+                        {inter.type === "EMAIL" && inter.email_events && inter.email_events.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {inter.email_events.map((evt: any) => (
+                              <div 
+                                key={evt.id} 
+                                className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium border ${
+                                  evt.type.includes('click') ? "bg-purple-500/10 text-purple-600 border-purple-500/20" :
+                                  evt.type.includes('open') ? "bg-green-500/10 text-green-600 border-green-500/20" :
+                                  evt.type.includes('deliver') ? "bg-accent/10 text-accent border-accent/20" :
+                                  evt.type.includes('bounce') ? "bg-red-500/10 text-red-600 border-red-500/20" :
+                                  "bg-muted/10 text-muted-foreground border-border"
+                                }`}
+                                title={format(new Date(evt.created_at), "dd/MM HH:mm:ss")}
+                              >
+                                {evt.type.includes('click') && <ExternalLink className="h-2.5 w-2.5" />}
+                                {evt.type.includes('open') && <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.5)]" />}
+                                {evt.type.includes('deliver') && <Check className="h-2.5 w-2.5" />}
+                                {evt.type.replace('email.', '').toUpperCase()}
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>
