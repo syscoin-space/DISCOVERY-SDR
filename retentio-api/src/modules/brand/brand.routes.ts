@@ -4,6 +4,8 @@ import { prisma } from '../../config/prisma';
 import { asyncHandler, authGuard, roleGuard, getTenantId } from '../../middlewares';
 import { Role } from '@prisma/client';
 import { AppError } from '../../shared/types';
+import jwt from 'jsonwebtoken';
+import { env } from '../../config/env';
 
 export const brandRouter = Router();
 
@@ -14,7 +16,23 @@ export const brandRouter = Router();
 brandRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { tenant_id, slug } = req.query;
+    let { tenant_id, slug } = req.query;
+
+    if (!tenant_id && !slug) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.split(' ')[1];
+          const decoded = jwt.verify(token, env.JWT_SECRET) as any;
+          if (decoded.tenantId) {
+            tenant_id = decoded.tenantId;
+          }
+        } catch (e) {
+          // ignore invalid tokens on public routes
+        }
+      }
+    }
+
     let tenant;
 
     if (tenant_id) {
