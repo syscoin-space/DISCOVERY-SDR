@@ -168,7 +168,6 @@ invitationRouter.post(
  * ROTA TEMPORÁRIA: GET /api/invitations/purge-vitoria
  * Hard delete dos emails para testes de qa
  */
-import { prisma } from "../../config/prisma";
 invitationRouter.get(
   "/purge-vitoria",
   asyncHandler(async (req, res) => {
