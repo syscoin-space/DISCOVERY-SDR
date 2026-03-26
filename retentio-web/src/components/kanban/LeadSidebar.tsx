@@ -76,7 +76,9 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
   const unenrollLead = useUnenrollLead();
 
   const activeEnrollment = lead?.cadence_enrollments?.find(e => e.status === "ACTIVE");
+  const priorityTask = lead?.tasks?.find(t => (t.status === "PENDENTE" || t.status === "EM_ANDAMENTO") && t.cadence_step_id);
   const currentStep = activeEnrollment?.cadence?.steps?.find(s => s.step_order === activeEnrollment.current_step);
+  const hasActiveCadenceTask = !!priorityTask;
 
   function renderScript(template: string) {
     if (!lead) return template;
@@ -222,7 +224,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
               );
             })()}
 
-            <Tabs key={lead?.id} defaultValue={activeEnrollment ? "script" : "perfil"} className="mt-4">
+            <Tabs key={lead?.id} defaultValue={activeEnrollment && hasActiveCadenceTask ? "script" : "perfil"} className="mt-4">
               <div className="px-6">
                 <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="perfil">Perfil</TabsTrigger>
@@ -300,12 +302,13 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                     {/* Script "Cola" */}
                     <div className="space-y-3">
                       <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <PlayCircle className="h-3.5 w-3.5 text-accent" /> Script de Prospecção
+                        <PlayCircle className="h-3.5 w-3.5 text-accent" /> Script Operacional (Passo Atual)
                       </h4>
                       
                       {!currentStep?.template ? (
-                        <div className="rounded-xl border border-border p-8 text-center bg-surface-raised">
-                          <p className="text-sm text-muted-foreground italic">Nenhum template vinculado a este passo.</p>
+                        <div className="rounded-xl border border-dashed border-border p-8 text-center bg-surface-raised/50">
+                          <p className="text-sm text-muted-foreground font-medium uppercase tracking-tight">Este passo não possui template vinculado.</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">Configure um template no menu de Cadências para habilitar a cola operacional.</p>
                         </div>
                       ) : (
                         <div className="rounded-xl border border-border bg-surface overflow-hidden">
@@ -518,7 +521,33 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                             </div>
 
                             {completingTaskId === task.id && (
-                              <div className="mt-4 pt-4 border-t border-border space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                              <div className="mt-4 pt-4 border-t border-border space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                {/* Script Preview inside Task completion (Cola Operacional Imediata) */}
+                                {(task as any).cadence_step?.template && (
+                                  <div className="rounded-lg border border-accent/20 bg-accent/5 overflow-hidden">
+                                     <div className="bg-accent/10 px-3 py-1.5 border-b border-accent/10 flex items-center justify-between">
+                                       <span className="text-[9px] font-bold text-accent uppercase tracking-wider flex items-center gap-1">
+                                          <PlayCircle className="h-3 w-3" /> Cola Operacional
+                                       </span>
+                                       <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0 border-accent/20 text-accent">Script Ativo</Badge>
+                                     </div>
+                                     <div className="p-3 text-[11px] leading-relaxed text-foreground/90 whitespace-pre-wrap max-h-[140px] overflow-y-auto custom-scrollbar italic bg-accent/[0.02]">
+                                       {(() => {
+                                          const template = (task as any).cadence_step.template;
+                                          if (task.channel === "LIGACAO") {
+                                            try {
+                                              const json = JSON.parse(template.body);
+                                              return json.abertura || template.body;
+                                            } catch {
+                                              return renderScript(template.body);
+                                            }
+                                          }
+                                          return renderScript(template.body);
+                                       })()}
+                                     </div>
+                                  </div>
+                                )}
+
                                 <div>
                                   <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">O que aconteceu?</label>
                                   <textarea

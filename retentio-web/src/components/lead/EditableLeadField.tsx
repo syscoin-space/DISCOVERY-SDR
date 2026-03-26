@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { Check, X, Pencil } from "lucide-react";
+import { Pencil, Loader2 } from "lucide-react";
 import { useUpdateLead } from "@/hooks/use-leads";
+import { useToast } from "@/components/shared/Toast";
 
 interface EditableLeadFieldProps {
   label: string;
@@ -27,16 +28,42 @@ export function EditableLeadField({
   const [editValue, setEditValue] = useState(value ?? "");
   const updateLead = useUpdateLead();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const isSavingRef = useRef(false);
+  const { toast } = useToast();
 
   const handleSave = useCallback(async () => {
-    if (editValue !== (value ?? "")) {
+    // 1. Evitar save duplicado ou se o valor não mudou
+    if (isSavingRef.current || !editing) return;
+    
+    const normalizedValue = editValue.trim();
+    const originalValue = (value ?? "").trim();
+
+    if (normalizedValue === originalValue) {
+      setEditing(false);
+      return;
+    }
+
+    // 2. Validação simples (pode ser expandida conforme a necessidade)
+    // Se o campo for obrigatório camuflado ou tiver formato específico, validar aqui.
+    // Para campos gerais, só evitamos salvar lixo se necessário.
+
+    isSavingRef.current = true;
+    try {
       await updateLead.mutateAsync({
         leadId,
-        payload: { [field]: editValue || null },
+        payload: { [field]: normalizedValue || null },
       });
+      // 3. Após sucesso, sair corretamente do modo de edição
+      setEditing(false);
+    } catch (err) {
+      // 4. Rollback em erro
+      toast(`Erro ao salvar ${label}. O valor original foi restaurado.`, "error");
+      setEditValue(value ?? "");
+      setEditing(false);
+    } finally {
+      isSavingRef.current = false;
     }
-    setEditing(false);
-  }, [editValue, value, field, leadId, updateLead]);
+  }, [editValue, value, field, leadId, updateLead, editing, label, toast]);
 
   const handleCancel = useCallback(() => {
     setEditValue(value ?? "");
@@ -52,13 +79,20 @@ export function EditableLeadField({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openOnMount, leadId]);
 
+  // Sincronizar editValue se o valor externo mudar (ex: reload)
+  useEffect(() => {
+    if (!editing) {
+      setEditValue(value ?? "");
+    }
+  }, [value, editing]);
+
   if (editing) {
     return (
       <div className={`w-full ${className}`}>
         <label className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider block truncate">
           {label}
         </label>
-        <div className="flex items-center gap-1.5 mt-1 w-full">
+        <div className="flex items-center gap-1.5 mt-1 w-full relative">
           <input
             ref={inputRef}
             type={type}
@@ -68,25 +102,19 @@ export function EditableLeadField({
               if (e.key === "Enter") handleSave();
               if (e.key === "Escape") handleCancel();
             }}
+            onBlur={() => {
+              // Delay suave para não conflitar com Enter/Esc
+              setTimeout(() => handleSave(), 100);
+            }}
             autoFocus
-            className="flex-1 min-w-0 rounded-md border border-accent/40 bg-surface-raised px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 transition-all"
+            disabled={updateLead.isPending}
+            className="flex-1 min-w-0 rounded-md border border-accent/40 bg-surface-raised px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 transition-all pr-8"
           />
-          <button
-            onClick={handleSave}
-            disabled={updateLead.isPending}
-            className="text-green-500 hover:text-green-600 p-1 shrink-0 rounded hover:bg-green-500/10 transition-colors disabled:opacity-50"
-            title="Salvar (Enter)"
-          >
-            <Check className="h-4 w-4" />
-          </button>
-          <button
-            onClick={handleCancel}
-            disabled={updateLead.isPending}
-            className="text-red-400 hover:text-red-500 p-1 shrink-0 rounded hover:bg-red-500/10 transition-colors disabled:opacity-50"
-            title="Cancelar (Esc)"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {updateLead.isPending && (
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
+            </div>
+          )}
         </div>
       </div>
     );

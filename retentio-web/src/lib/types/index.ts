@@ -276,6 +276,8 @@ export interface Task {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  cadence_step_id?: string | null;
+  cadence_step?: CadenceStep;
   lead?: Pick<Lead, "id" | "company_name" | "icp_score" | "whatsapp" | "email" | "phone" | "state" | "city" | "status" | "contact_name" | "niche" | "operational_score" | "fit_tier">;
 }
 

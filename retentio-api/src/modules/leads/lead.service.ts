@@ -149,7 +149,12 @@ export class LeadService {
         tasks: { 
           where: { status: 'PENDENTE' },
           orderBy: { scheduled_at: 'asc' },
-          take: 10 
+          take: 10,
+          include: {
+            cadence_step: {
+              include: { template: true }
+            }
+          }
         },
         _count: { select: { interactions: true, tasks: true, handoffs: true } },
       },
