@@ -100,7 +100,7 @@ export function BulkAssignModal({ open, onOpenChange, selectedIds, onSuccess }: 
 
           {assignMutation.isError && (
             <p className="text-xs text-red-500 bg-red-500/10 p-2 rounded-md">
-              Erro na atribuição. Verifique a conexão ou limites do SDR.
+              {(assignMutation.error as any)?.response?.data?.message || "Erro na atribuição. Verifique a conexão ou limites do SDR."}
             </p>
           )}
           {assignMutation.isSuccess && (

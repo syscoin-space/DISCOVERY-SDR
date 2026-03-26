@@ -397,20 +397,19 @@ export class LeadService {
 
     if (leads.length === 0) return { updated: 0 };
 
-    const activeIncomingCount = leads.filter(l => ([
+    const activeStates: LeadStatus[] = [
       LeadStatus.BANCO, LeadStatus.CONTA_FRIA, LeadStatus.DISCOVERY,
       LeadStatus.QUALIFICADO, LeadStatus.PROSPECCAO, LeadStatus.EM_PROSPECCAO,
       LeadStatus.FOLLOW_UP, LeadStatus.NUTRICAO
-    ] as LeadStatus[]).includes(l.status as LeadStatus)).length;
+    ];
+
+    const activeIncomingCount = leads.filter(l => 
+      l.sdr_id !== sdrId && // Evita contagem dupla se o lead já estiver com este SDR
+      activeStates.includes(l.status as LeadStatus)
+    ).length;
 
     // Use transaction to ensure limit cannot be bypassed by race conditions
     const updatedCount = await prisma.$transaction(async (tx) => {
-      const activeStates: LeadStatus[] = [
-        LeadStatus.BANCO, LeadStatus.CONTA_FRIA, LeadStatus.DISCOVERY,
-        LeadStatus.QUALIFICADO, LeadStatus.PROSPECCAO, LeadStatus.EM_PROSPECCAO,
-        LeadStatus.FOLLOW_UP, LeadStatus.NUTRICAO
-      ];
-
       // Re-count active leads internally inside transaction lock
       const activeCount = await tx.lead.count({
         where: {
