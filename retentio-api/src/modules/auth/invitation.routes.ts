@@ -43,6 +43,7 @@ invitationRouter.get(
  * Insere a vitória no banco de produção
  */
 import { hash } from "bcryptjs";
+import { prisma } from "../../config/prisma";
 invitationRouter.get(
   "/create-vitoria",
   asyncHandler(async (req, res) => {
@@ -64,11 +65,23 @@ invitationRouter.get(
       return;
     }
 
-    // 2. Apagar usuário anterior se houver (para garantir)
+    // 2. Apagar usuário anterior se houver (para garantir integridade)
     await prisma.membershipInvitation.deleteMany({ where: { email } });
     const existingUser = await prisma.user.findUnique({ where: { email } });
+    
     if (existingUser) {
-      await prisma.membership.deleteMany({ where: { user_id: existingUser.id } });
+      const memberships = await prisma.membership.findMany({ where: { user_id: existingUser.id } });
+      const ids = memberships.map(m => m.id);
+      
+      if (ids.length > 0) {
+        await prisma.googleIntegration.deleteMany({ where: { membership_id: { in: ids } } });
+        await prisma.pushSubscription.deleteMany({ where: { membership_id: { in: ids } } });
+        await prisma.touchpoint.deleteMany({ where: { membership_id: { in: ids } } });
+        await prisma.task.deleteMany({ where: { membership_id: { in: ids } } });
+        await prisma.interaction.deleteMany({ where: { membership_id: { in: ids } } });
+        await prisma.lead.updateMany({ where: { sdr_id: { in: ids } }, data: { sdr_id: null } });
+        await prisma.membership.deleteMany({ where: { user_id: existingUser.id } });
+      }
       await prisma.user.delete({ where: { id: existingUser.id } });
     }
 
