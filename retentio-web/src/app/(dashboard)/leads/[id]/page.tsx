@@ -137,7 +137,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               <ScoreCard label="Score Potencial" value={lead.operational_score != null ? Math.round(lead.operational_score) : "—"}>
                 <PotentialScoreBadge tier={lead.fit_tier} score={lead.operational_score} />
               </ScoreCard>
-              <ScoreCard label="ICP Score" value={`${lead.icp_score ?? "—"}/14`}>
+              <ScoreCard label="ICP Score" value={lead.icp_score ?? "—"}>
                 <ICPBadge score={lead.icp_score} />
               </ScoreCard>
               <ScoreCard label="Plataforma" value={lead.ecommerce_platform ?? "N/A"}>

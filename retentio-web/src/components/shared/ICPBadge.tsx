@@ -17,11 +17,20 @@ export function ICPBadge({ score, total = 14, size = "sm" }: ICPBadgeProps) {
     );
   }
 
+  const getColors = (s: number) => {
+    if (s <= 50) return "text-red-500 bg-red-500/10 border-red-500/20";
+    if (s <= 74) return "text-orange-500 bg-orange-500/10 border-orange-500/20";
+    if (s <= 89) return "text-blue-500 bg-blue-500/10 border-blue-500/20";
+    return "text-green-500 bg-green-500/10 border-green-500/20";
+  };
+
+  const colorClasses = getColors(score);
+
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border border-accent/20 bg-accent/10 font-medium text-accent ${sizeClasses}`}
+      className={`inline-flex items-center gap-1 rounded-full border font-medium transition-colors ${colorClasses} ${sizeClasses}`}
     >
-      ICP {score}/{total}
+      ICP {score}
     </span>
   );
 }

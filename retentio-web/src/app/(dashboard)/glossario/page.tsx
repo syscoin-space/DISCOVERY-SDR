@@ -60,7 +60,7 @@ const GLOSSARY: Record<CategoryId, GlossaryItemData[]> = {
   siglas: [
     {
       title: "ICP — Ideal Customer Profile",
-      body: "Perfil de Cliente Ideal. Os 14 critérios que definem se um e-commerce tem fit com a solução da Retentio. Score de 0-14.\n\n9+: Contrato Certo — priorize agora\n7-8: Quente — vale o esforço\n5-6: Parcial — qualifique mais antes de avançar\n<5: Fora do ICP — considere remover do funil",
+      body: "Perfil de Cliente Ideal. Critérios que definem se um e-commerce tem fit com a solução da Retentio. Agora em escala de 0-100.\n\n90-100: Verde (Contrato Certo) — priorize agora\n75-89: Azul (Quente) — vale o esforço\n51-74: Laranja (Parcial) — qualifique mais antes de avançar\n0-50: Vermelho (Fora do ICP) — considere remover do funil",
       tag: "Sistema",
       highlight: true,
     },

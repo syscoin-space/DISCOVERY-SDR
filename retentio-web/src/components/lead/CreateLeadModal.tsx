@@ -27,7 +27,7 @@ const createLeadFormSchema = z.object({
   email: z.string().email("E-mail inválido").optional().nullable().or(z.literal("")),
   whatsapp: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  icp_score: z.preprocess((val) => Number(val), z.number().int().min(0).max(10)),
+  icp_score: z.preprocess((val) => Number(val), z.number().int().min(0).max(100)),
   sdr_id: z.string().uuid("Selecione um responsável válido").optional().nullable().or(z.literal("")),
 });
 
@@ -141,13 +141,13 @@ export function CreateLeadModal({ open, onOpenChange }: CreateLeadModalProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="icp_score" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Score ICP (0-10)
+                  Score ICP (0-100)
                 </Label>
                 <Input
                   id="icp_score"
                   type="number"
                   min="0"
-                  max="10"
+                  max="100"
                   {...register("icp_score", { valueAsNumber: true })}
                   className={cn(errors.icp_score && "border-red-500")}
                 />
