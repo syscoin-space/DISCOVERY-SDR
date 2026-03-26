@@ -36,6 +36,7 @@ import {
   useGoogleConnect,
   useGoogleDisconnect,
 } from "@/hooks/use-google";
+import { useTenantSettings, useUpdateTenantSettings } from "@/hooks/use-tenant";
 
 export default function ConfiguracoesPage() {
   const { data: config, isLoading: loadingConfig } = useResendConfig();
@@ -54,6 +55,26 @@ export default function ConfiguracoesPage() {
   const { data: googleStatus, isLoading: loadingGoogle } = useGoogleStatus();
   const googleConnect = useGoogleConnect();
   const googleDisconnect = useGoogleDisconnect();
+
+  // Tenant Settings
+  const { data: tenantData } = useTenantSettings();
+  const updateTenant = useUpdateTenantSettings();
+  const [sdrVisibility, setSdrVisibility] = useState<"ALL" | "OWN_ONLY">(
+    () => (tenantData?.settings?.sdrVisibility) || "ALL"
+  );
+
+  useEffect(() => {
+    if (tenantData?.settings) {
+      setSdrVisibility(tenantData.settings.sdrVisibility || "ALL");
+    }
+  }, [tenantData]);
+
+  const handleSdrVisibilitySave = async () => {
+    const currentSettings = tenantData?.settings || {};
+    await updateTenant.mutateAsync({
+      settings: { ...currentSettings, sdrVisibility },
+    });
+  };
 
   const [fromEmail, setFromEmail] = useState("");
   const [fromName, setFromName] = useState("");
@@ -225,6 +246,32 @@ export default function ConfiguracoesPage() {
               </div>
             </div>
           )}
+
+          {/* SDR Visibility Toggle */}
+          <div className="rounded-xl border border-border bg-surface p-6 space-y-4">
+            <h3 className="text-sm font-semibold text-foreground">Visibilidade entre SDRs</h3>
+            <p className="text-xs text-muted-foreground">
+              Define se os SDRs podem ver todos os leads do pipeline ou apenas os atribuídos a si mesmos. (Gerentes ou Owners podem ver tudo).
+            </p>
+            <div className="flex items-center gap-3">
+              <select
+                value={sdrVisibility}
+                onChange={(e) => setSdrVisibility(e.target.value as any)}
+                className="w-full sm:w-1/2 rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
+              >
+                <option value="ALL">Visualizar e editar todos</option>
+                <option value="OWN_ONLY">Visualizar/Editar Apenas os Seus</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleSdrVisibilitySave}
+                disabled={updateTenant.isPending || (tenantData?.settings?.sdrVisibility || "ALL") === sdrVisibility}
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-accent-hover disabled:opacity-50"
+              >
+                {updateTenant.isPending ? "Salvando..." : "Salvar Configuração"}
+              </button>
+            </div>
+          </div>
 
           {/* Resend Config Form */}
           <form onSubmit={handleSave} className="rounded-xl border border-border bg-surface p-6 space-y-4">

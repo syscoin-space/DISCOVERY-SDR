@@ -9,6 +9,8 @@ import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
 import { ChannelIcons } from "@/components/shared/ChannelIcons";
 import { AiSuggestionReview } from "@/components/lead/AiSuggestionReview";
+import { LeadHistoryTimeline } from "@/components/lead/LeadHistoryTimeline";
+import { EditableLeadField } from "@/components/lead/EditableLeadField";
 import {
   Sheet,
   SheetContent,
@@ -35,100 +37,7 @@ interface LeadSidebarProps {
   onClose: () => void;
 }
 
-// ─── Inline Editable Field ──────────────────────────────────────────
-
-function EditableField({
-  label,
-  value,
-  field,
-  leadId,
-  type = "text",
-  placeholder = "—",
-  openOnMount = false,
-}: {
-  label: string;
-  value: string | null | undefined;
-  field: string;
-  leadId: string;
-  type?: string;
-  placeholder?: string;
-  openOnMount?: boolean;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value ?? "");
-  const updateLead = useUpdateLead();
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
-  const handleSave = useCallback(async () => {
-    if (editValue !== (value ?? "")) {
-      await updateLead.mutateAsync({
-        leadId,
-        payload: { [field]: editValue || null },
-      });
-    }
-    setEditing(false);
-  }, [editValue, value, field, leadId, updateLead]);
-
-  const handleCancel = () => {
-    setEditValue(value ?? "");
-    setEditing(false);
-  };
-
-  useEffect(() => {
-    if ((typeof (arguments) !== 'undefined') && (arguments as any)) {
-      // noop to satisfy lint in TSX-only file
-    }
-  }, []);
-
-  useEffect(() => {
-    if ((openOnMount as any) && !editing) {
-      setEditValue(value ?? "");
-      setEditing(true);
-      // focus after render
-      setTimeout(() => inputRef?.current?.focus(), 50);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openOnMount, leadId]);
-
-  if (editing) {
-    return (
-      <div>
-        <label className="text-[10px] text-muted-foreground uppercase font-medium">{label}</label>
-        <div className="flex items-center gap-1 mt-0.5">
-          <input
-            ref={inputRef}
-            type={type}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave();
-              if (e.key === "Escape") handleCancel();
-            }}
-            className="flex-1 rounded border border-accent/40 bg-surface-raised px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-          <button onClick={handleSave} className="text-green-500 hover:text-green-600 p-0.5">
-            <Check className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={handleCancel} className="text-red-400 hover:text-red-500 p-0.5">
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="group cursor-pointer" onClick={() => { setEditValue(value ?? ""); setEditing(true); }}>
-      <label className="text-[10px] text-muted-foreground uppercase font-medium">{label}</label>
-      <div className="flex items-center gap-1.5 mt-0.5">
-        <p className="text-sm font-medium text-foreground truncate">
-          {value || <span className="text-muted-foreground italic">{placeholder}</span>}
-        </p>
-        <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-      </div>
-    </div>
-  );
-}
+// ─── Inline Editable Field (Removed, using EditableLeadField) ──────────────────────────────────────────
 
 // ─── Interaction type config ────────────────────────────────────────
 
@@ -516,12 +425,12 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                     <UserRound className="h-3.5 w-3.5" /> Decisor / Contato Ideal
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <EditableField openOnMount label="Nome" value={lead.contact_name} field="contact_name" leadId={lead.id} placeholder="Quem é o decisor?" />
-                    <EditableField label="Cargo" value={lead.contact_role} field="contact_role" leadId={lead.id} placeholder="Ex: Head de E-commerce" />
-                    <EditableField label="Email" value={lead.email} field="email" leadId={lead.id} type="email" placeholder="email@empresa.com" />
-                    <EditableField label="WhatsApp" value={lead.whatsapp} field="whatsapp" leadId={lead.id} type="tel" placeholder="(11) 99999-9999" />
-                    <EditableField label="LinkedIn" value={lead.linkedin_url} field="linkedin_url" leadId={lead.id} placeholder="linkedin.com/in/..." />
-                    <EditableField label="Telefone" value={lead.phone} field="phone" leadId={lead.id} type="tel" placeholder="(11) 3333-3333" />
+                    <EditableLeadField openOnMount label="Nome" value={lead.contact_name} field="contact_name" leadId={lead.id} placeholder="Quem é o decisor?" />
+                    <EditableLeadField label="Cargo" value={lead.contact_role} field="contact_role" leadId={lead.id} placeholder="Ex: Head de E-commerce" />
+                    <EditableLeadField label="Email" value={lead.email} field="email" leadId={lead.id} type="email" placeholder="email@empresa.com" />
+                    <EditableLeadField label="WhatsApp" value={lead.whatsapp} field="whatsapp" leadId={lead.id} type="tel" placeholder="(11) 99999-9999" />
+                    <EditableLeadField label="LinkedIn" value={lead.linkedin_url} field="linkedin_url" leadId={lead.id} placeholder="linkedin.com/in/..." />
+                    <EditableLeadField label="Telefone" value={lead.phone} field="phone" leadId={lead.id} type="tel" placeholder="(11) 3333-3333" />
                   </div>
                 </div>
 
@@ -529,10 +438,10 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Informações da Empresa</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <EditableField label="CNPJ" value={lead.cnpj} field="cnpj" leadId={lead.id} placeholder="Não informado" />
-                    <EditableField label="Website" value={lead.website_url} field="website_url" leadId={lead.id} placeholder="www.empresa.com" />
-                    <EditableField label="Instagram" value={lead.instagram_handle} field="instagram_handle" leadId={lead.id} placeholder="@empresa" />
-                    <EditableField label="Nicho" value={lead.niche} field="niche" leadId={lead.id} />
+                    <EditableLeadField label="CNPJ" value={lead.cnpj} field="cnpj" leadId={lead.id} placeholder="Não informado" />
+                    <EditableLeadField label="Website" value={lead.website_url} field="website_url" leadId={lead.id} placeholder="www.empresa.com" />
+                    <EditableLeadField label="Instagram" value={lead.instagram_handle} field="instagram_handle" leadId={lead.id} placeholder="@empresa" />
+                    <EditableLeadField label="Nicho" value={lead.niche} field="niche" leadId={lead.id} />
                   </div>
                   <div className="pt-1">
                     <ChannelIcons
@@ -724,11 +633,22 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 </div>
 
                 {/* Timeline */}
-                <div className="space-y-3">
+                <div className="space-y-6">
+                  {/* Lead Movement History */}
                   <div className="pt-2">
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Movimentações do Funil</h4>
+                    {lead?.id && <LeadHistoryTimeline leadId={lead.id} />}
+                  </div>
+
+                  {/* Touchpoint Timeline */}
+                  <div className="pt-4 border-t border-border">
                     <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Touchpoints</h4>
                     {lead?.id && <TouchpointTimeline leadId={lead.id} />}
                   </div>
+                  
+                  {/* Interactions */}
+                  <div className="pt-4 border-t border-border">
+                    <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Anotações e Envios</h4>
                   {interactions?.length === 0 ? (
                     <p className="text-center py-8 text-sm text-muted-foreground italic">Nenhuma interação registrada ainda</p>
                   ) : (
@@ -770,6 +690,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                       );
                     })
                   )}
+                  </div>
                 </div>
               </TabsContent>
 

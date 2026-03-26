@@ -12,6 +12,7 @@ export interface TenantSettings {
   onboarding_step: number;
   active: boolean;
   branding?: any;
+  settings?: any;
 }
 
 const TENANT_KEY = "tenant-settings";
@@ -29,7 +30,7 @@ export function useTenantSettings() {
 export function useUpdateTenantSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: Partial<Pick<TenantSettings, "name" | "discovery_enabled">>) => {
+    mutationFn: async (payload: Partial<Pick<TenantSettings, "name" | "discovery_enabled" | "settings">>) => {
       try {
         const { data } = await api.patch<{ success: boolean; tenant: Partial<TenantSettings> }>("/tenant", payload);
         return data;

@@ -10,6 +10,7 @@ export const tenantRouter = Router();
 const updateTenantSchema = z.object({
   name: z.string().min(2).optional(),
   discovery_enabled: z.boolean().optional(),
+  settings: z.any().optional(),
 });
 
 /**
@@ -34,6 +35,7 @@ tenantRouter.get(
         created_at: true,
         updated_at: true,
         branding: true,
+        settings: true,
       }
     });
 
@@ -54,9 +56,9 @@ tenantRouter.patch(
   validate(updateTenantSchema),
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
-    const { name, discovery_enabled } = req.body;
+    const { name, discovery_enabled, settings } = req.body;
 
-    console.log('[TenantPatch] Updating tenant:', { tenantId, name, discovery_enabled });
+    console.log('[TenantPatch] Updating tenant:', { tenantId, name, discovery_enabled, settings });
 
     try {
       const updated = await prisma.tenant.update({
@@ -64,6 +66,7 @@ tenantRouter.patch(
         data: {
           name: name ?? undefined,
           discovery_enabled: discovery_enabled ?? undefined,
+          settings: settings === undefined ? undefined : settings,
         },
       });
 
@@ -75,6 +78,7 @@ tenantRouter.patch(
           id: updated.id,
           name: updated.name,
           discovery_enabled: updated.discovery_enabled,
+          settings: updated.settings,
         }
       });
     } catch (error: any) {

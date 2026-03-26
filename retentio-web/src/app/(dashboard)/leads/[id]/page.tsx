@@ -3,6 +3,7 @@
 import { use, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useLead, useInteractions, useCreateInteraction, useUpdateLead, useLeadStack, useAddToStack, useRemoveFromStack } from "@/hooks/use-leads";
+import { EditableLeadField } from "@/components/lead/EditableLeadField";
 import { PotentialScoreBadge } from "@/components/shared/PotentialScoreBadge";
 import { ICPBadge } from "@/components/shared/ICPBadge";
 import { IntegrabilityBadge } from "@/components/shared/IntegrabilityBadge";
@@ -31,78 +32,7 @@ import {
 } from "lucide-react";
 import type { Lead } from "@/lib/types";
 
-// ─── Inline Editable Field ──────────────────────────────────────────
-
-function EditableField({
-  label,
-  value,
-  field,
-  leadId,
-  type = "text",
-  placeholder = "Não informado",
-  className = "",
-}: {
-  label: string;
-  value: string | null | undefined;
-  field: string;
-  leadId: string;
-  type?: string;
-  placeholder?: string;
-  className?: string;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value ?? "");
-  const updateLead = useUpdateLead();
-
-  const handleSave = useCallback(async () => {
-    if (editValue !== (value ?? "")) {
-      await updateLead.mutateAsync({
-        leadId,
-        payload: { [field]: editValue || null },
-      });
-    }
-    setEditing(false);
-  }, [editValue, value, field, leadId, updateLead]);
-
-  if (editing) {
-    return (
-      <div className={className}>
-        <label className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider">{label}</label>
-        <div className="flex items-center gap-1 mt-1">
-          <input
-            type={type}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave();
-              if (e.key === "Escape") { setEditValue(value ?? ""); setEditing(false); }
-            }}
-            autoFocus
-            className="flex-1 rounded-md border border-accent/40 bg-surface-raised px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
-          />
-          <button onClick={handleSave} className="text-green-500 hover:text-green-600 p-1">
-            <Check className="h-4 w-4" />
-          </button>
-          <button onClick={() => { setEditValue(value ?? ""); setEditing(false); }} className="text-red-400 hover:text-red-500 p-1">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`group cursor-pointer ${className}`} onClick={() => { setEditValue(value ?? ""); setEditing(true); }}>
-      <label className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider">{label}</label>
-      <div className="flex items-center gap-1.5 mt-1">
-        <p className="text-sm font-medium text-foreground">
-          {value || <span className="text-muted-foreground italic">{placeholder}</span>}
-        </p>
-        <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-      </div>
-    </div>
-  );
-}
+// ─── Inline Editable Field (Removed, using EditableLeadField) ──────────────────────────────────────────
 
 // ─── Contact action button ──────────────────────────────────────────
 
@@ -227,12 +157,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <EditableField label="Nome" value={lead.contact_name} field="contact_name" leadId={id} placeholder="Quem é o decisor?" />
-                <EditableField label="Cargo" value={lead.contact_role} field="contact_role" leadId={id} placeholder="Ex: Head de Marketing" />
-                <EditableField label="Email" value={lead.email} field="email" leadId={id} type="email" placeholder="email@empresa.com" />
-                <EditableField label="WhatsApp" value={lead.whatsapp} field="whatsapp" leadId={id} type="tel" placeholder="(11) 99999-9999" />
-                <EditableField label="Telefone" value={lead.phone} field="phone" leadId={id} type="tel" placeholder="(11) 3333-3333" />
-                <EditableField label="LinkedIn" value={lead.linkedin_url} field="linkedin_url" leadId={id} placeholder="linkedin.com/in/..." />
+                <EditableLeadField label="Nome" value={lead.contact_name} field="contact_name" leadId={id} placeholder="Quem é o decisor?" />
+                <EditableLeadField label="Cargo" value={lead.contact_role} field="contact_role" leadId={id} placeholder="Ex: Head de Marketing" />
+                <EditableLeadField label="Email" value={lead.email} field="email" leadId={id} type="email" placeholder="email@empresa.com" />
+                <EditableLeadField label="WhatsApp" value={lead.whatsapp} field="whatsapp" leadId={id} type="tel" placeholder="(11) 99999-9999" />
+                <EditableLeadField label="Telefone" value={lead.phone} field="phone" leadId={id} type="tel" placeholder="(11) 3333-3333" />
+                <EditableLeadField label="LinkedIn" value={lead.linkedin_url} field="linkedin_url" leadId={id} placeholder="linkedin.com/in/..." />
               </div>
 
               {/* Quick Action Buttons */}
@@ -261,12 +191,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 <h3 className="text-sm font-bold text-foreground">Informações da Empresa</h3>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <EditableField label="CNPJ" value={lead.cnpj} field="cnpj" leadId={id} />
-                <EditableField label="Website" value={lead.website_url} field="website_url" leadId={id} />
-                <EditableField label="Instagram" value={lead.instagram_handle} field="instagram_handle" leadId={id} placeholder="@empresa" />
-                <EditableField label="Nicho" value={lead.niche} field="niche" leadId={id} />
-                <EditableField label="Cidade" value={lead.city} field="city" leadId={id} />
-                <EditableField label="Estado" value={lead.state} field="state" leadId={id} />
+                <EditableLeadField label="CNPJ" value={lead.cnpj} field="cnpj" leadId={id} />
+                <EditableLeadField label="Website" value={lead.website_url} field="website_url" leadId={id} />
+                <EditableLeadField label="Instagram" value={lead.instagram_handle} field="instagram_handle" leadId={id} placeholder="@empresa" />
+                <EditableLeadField label="Nicho" value={lead.niche} field="niche" leadId={id} />
+                <EditableLeadField label="Cidade" value={lead.city} field="city" leadId={id} />
+                <EditableLeadField label="Estado" value={lead.state} field="state" leadId={id} />
               </div>
               {lead.website_url && (
                 <a href={lead.website_url.startsWith("http") ? lead.website_url : `https://${lead.website_url}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">

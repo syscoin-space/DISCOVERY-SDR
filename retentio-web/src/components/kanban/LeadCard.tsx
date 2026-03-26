@@ -65,11 +65,24 @@ export function LeadCard({ lead, onSelect }: LeadCardProps) {
         </span>
       )}
 
-      {/* LINHA 1: Empresa + Nicho */}
+      {/* LINHA 1: Empresa + Nicho + SDR Avatar */}
       <div className="flex items-start justify-between gap-1">
         <h4 className="truncate text-sm font-semibold text-foreground">
           {lead.company_name}
         </h4>
+        {lead.sdr?.user && (
+          <div
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/10 text-[9px] font-bold text-accent shadow-sm ring-1 ring-border"
+            title={`Responsável: ${lead.sdr.user.name}`}
+          >
+            {lead.sdr.user.avatar_url ? (
+               // eslint-disable-next-line @next/next/no-img-element
+              <img src={lead.sdr.user.avatar_url} alt={lead.sdr.user.name} className="h-full w-full rounded-full object-cover" />
+            ) : (
+              lead.sdr.user.name.substring(0, 2).toUpperCase()
+            )}
+          </div>
+        )}
       </div>
       {lead.niche && (
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{lead.niche}</p>

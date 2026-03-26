@@ -58,3 +58,9 @@ export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
 export type LeadFilters = z.infer<typeof leadFiltersSchema>;
 export type CreateInteractionInput = z.infer<typeof createInteractionSchema>;
+
+export const bulkAssignLeadSchema = z.object({
+  leadIds: z.array(z.string().uuid()).min(1),
+  sdrId: z.string().uuid(),
+});
+export type BulkAssignLeadInput = z.infer<typeof bulkAssignLeadSchema>;

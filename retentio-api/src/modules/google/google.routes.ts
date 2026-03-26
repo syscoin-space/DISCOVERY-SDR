@@ -141,6 +141,7 @@ googleRouter.post(
     // Interaction inside the tenant
     await prisma.interaction.create({
       data: {
+        tenant_id: tenantId,
         lead_id: leadId,
         type: InteractionType.REUNIAO,
         source: InteractionSource.MANUAL,
@@ -207,6 +208,7 @@ googleRouter.post(
     // Create interaction
     await prisma.interaction.create({
       data: {
+        tenant_id: getTenantId(req),
         lead_id: leadId,
         type: InteractionType.EMAIL,
         source: InteractionSource.MANUAL,

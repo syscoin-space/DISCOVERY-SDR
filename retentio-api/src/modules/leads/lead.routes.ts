@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { asyncHandler, validate, authGuard, getTenantId, getMembershipId } from '../../middlewares';
+import { roleGuard } from '../../middlewares/auth';
 import { leadService } from './lead.service';
 import { prisma } from '../../config/prisma';
-import { LeadStatus } from '@prisma/client';
-import { createLeadSchema, updateLeadSchema, updateLeadStatusSchema, leadFiltersSchema, createInteractionSchema } from './lead.schema';
+import { LeadStatus, Role } from '@prisma/client';
+import { createLeadSchema, updateLeadSchema, updateLeadStatusSchema, leadFiltersSchema, createInteractionSchema, bulkAssignLeadSchema } from './lead.schema';
 import { AppError } from '../../shared/types';
 import { importFromBuffer } from './lead.import';
 import { createTouchpoint } from './touchpoint.service';
@@ -34,6 +35,7 @@ const upload = multer({
 // POST /leads/import
 leadRouter.post(
   '/import',
+  roleGuard(Role.MANAGER, Role.OWNER, Role.ADMIN),
   upload.single('file'),
   asyncHandler(async (req, res) => {
     if (!req.file) throw new AppError(400, 'Arquivo ausente (field: "file")', 'FILE_MISSING');
@@ -70,7 +72,8 @@ leadRouter.get(
   asyncHandler(async (req, res) => {
     const tenantId = getTenantId(req);
     const membershipId = getMembershipId(req);
-    const counts = await leadService.pipelineCounts(tenantId, membershipId, req.user!.role);
+    const filteredSdrId = req.query.sdr_id as string | undefined;
+    const counts = await leadService.pipelineCounts(tenantId, membershipId, req.user!.role, filteredSdrId);
     res.json(counts);
   }),
 );
@@ -86,6 +89,48 @@ leadRouter.get(
   }),
 );
 
+// GET /leads/:id/history
+leadRouter.get(
+  '/:id/history',
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+    const id = req.params.id as string;
+    
+    // Check access constraint if SDR
+    if (req.user?.role === 'SDR') {
+      const membershipId = getMembershipId(req);
+      const lead = await prisma.lead.findFirst({ where: { id, tenant_id: tenantId } });
+      if (!lead || lead.sdr_id !== membershipId) {
+        throw new AppError(403, 'Você não tem permissão para acessar o histórico deste lead', 'LEAD_FORBIDDEN');
+      }
+    }
+
+    const logs = await prisma.auditLog.findMany({
+      where: {
+        tenant_id: tenantId,
+        lead_id: id,
+        action: 'LEAD_STATUS_CHANGED'
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    const membershipIds = Array.from(new Set(logs.map(l => l.user_id).filter(Boolean))) as string[];
+    const memberships = await prisma.membership.findMany({
+      where: { id: { in: membershipIds } },
+      include: { user: { select: { name: true, avatar_url: true } } }
+    });
+    
+    const usersMap = new Map(memberships.map(m => [m.id, { name: m.user.name, avatar_url: m.user.avatar_url }]));
+
+    const enrichedLogs = logs.map(log => ({
+      ...log,
+      user: log.user_id ? usersMap.get(log.user_id) : null,
+    }));
+
+    res.json(enrichedLogs);
+  }),
+);
+
 // POST /leads
 leadRouter.post(
   '/',
@@ -95,6 +140,19 @@ leadRouter.post(
     const membershipId = getMembershipId(req);
     const lead = await leadService.create(tenantId, membershipId, req.body);
     res.status(201).json(lead);
+  }),
+);
+
+// POST /leads/bulk-assign
+leadRouter.post(
+  '/bulk-assign',
+  roleGuard(Role.MANAGER, Role.OWNER, Role.ADMIN),
+  validate(bulkAssignLeadSchema),
+  asyncHandler(async (req, res) => {
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
+    const result = await leadService.bulkAssign(tenantId, req.body.leadIds, req.body.sdrId, membershipId);
+    res.json(result);
   }),
 );
 
@@ -140,10 +198,14 @@ leadRouter.post(
   asyncHandler(async (req, res) => {
     const lead_id = req.params.id as string;
     const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
     
-    // Check if lead belongs to tenant
-    const lead = await prisma.lead.findFirst({ where: { id: lead_id, tenant_id: tenantId } });
-    if (!lead) throw new AppError(404, 'Lead não encontrado');
+    // Check if lead belongs to tenant and SDR
+    const whereClause: any = { id: lead_id, tenant_id: tenantId };
+    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+
+    const lead = await prisma.lead.findFirst({ where: whereClause });
+    if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
 
     const interaction = await prisma.interaction.create({
       data: {
@@ -165,8 +227,11 @@ leadRouter.post(
     const tenantId = getTenantId(req);
     const membershipId = getMembershipId(req);
 
-    const lead = await prisma.lead.findFirst({ where: { id: lead_id, tenant_id: tenantId } });
-    if (!lead) throw new AppError(404, 'Lead não encontrado');
+    const whereClause: any = { id: lead_id, tenant_id: tenantId };
+    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+
+    const lead = await prisma.lead.findFirst({ where: whereClause });
+    if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
 
     const tp = await createTouchpoint({
       ...req.body,
@@ -186,10 +251,14 @@ leadRouter.post(
   asyncHandler(async (req, res) => {
     const { id } = req.params as { id: string };
     const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
     const { aiService } = await import('../ai/ai.service');
 
-    const lead = await prisma.lead.findFirst({ where: { id, tenant_id: tenantId } });
-    if (!lead) throw new AppError(404, 'Lead não encontrado');
+    const whereClause: any = { id, tenant_id: tenantId };
+    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+
+    const lead = await prisma.lead.findFirst({ where: whereClause });
+    if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
 
     const notes = lead.discovery_notes || lead.notes || '';
     const suggestion = await aiService.analyzeDiscovery(id, tenantId, notes);
@@ -204,10 +273,14 @@ leadRouter.post(
   asyncHandler(async (req, res) => {
     const { id } = req.params as { id: string };
     const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
     const { edited_data } = req.body;
 
-    const lead = await prisma.lead.findFirst({ where: { id, tenant_id: tenantId } });
-    if (!lead || !lead.ai_metadata) throw new AppError(404, 'Lead ou sugestões não encontrados');
+    const whereClause: any = { id, tenant_id: tenantId };
+    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+
+    const lead = await prisma.lead.findFirst({ where: whereClause });
+    if (!lead || !lead.ai_metadata) throw new AppError(404, 'Lead ou sugestões não encontrados ou acesso restrito');
 
     const metadata = lead.ai_metadata as any;
     const suggestion = metadata.last_suggestion;
@@ -272,9 +345,13 @@ leadRouter.post(
   asyncHandler(async (req, res) => {
     const { id } = req.params as { id: string };
     const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
 
-    const lead = await prisma.lead.findFirst({ where: { id, tenant_id: tenantId } });
-    if (!lead || !lead.ai_metadata) throw new AppError(404, 'Lead ou sugestões não encontrados');
+    const whereClause: any = { id, tenant_id: tenantId };
+    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+
+    const lead = await prisma.lead.findFirst({ where: whereClause });
+    if (!lead || !lead.ai_metadata) throw new AppError(404, 'Lead ou sugestões não encontrados ou acesso restrito');
 
     const metadata = lead.ai_metadata as any;
     const suggestion = metadata.last_suggestion;

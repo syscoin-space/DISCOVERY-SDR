@@ -22,13 +22,32 @@ const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   PERDIDO: ['CONTA_FRIA', 'BANCO'],
 };
 
+const STATUS_WEIGHT: Record<LeadStatus, number> = {
+  BANCO: 0,
+  CONTA_FRIA: 1,
+  DISCOVERY: 2,
+  QUALIFICADO: 3,
+  PROSPECCAO: 4,
+  EM_PROSPECCAO: 5,
+  FOLLOW_UP: 6,
+  NUTRICAO: 7,
+  REUNIAO_MARCADA: 8,
+  PERDIDO: 99,
+};
+
 export class LeadService {
   async list(tenantId: string, filters: LeadFilters, membershipId?: string, role?: string): Promise<PaginatedResult<any>> {
     // If SDR, only see their assigned leads. If Manager/Owner, can see all or filter by sdr_id.
     const where: Prisma.LeadWhereInput = { tenant_id: tenantId };
 
     if (role === 'SDR') {
-      where.sdr_id = membershipId;
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility === 'ALL') {
+        if (filters.sdr_id) where.sdr_id = filters.sdr_id;
+      } else {
+        where.sdr_id = membershipId;
+      }
     } else if (filters.sdr_id) {
       where.sdr_id = filters.sdr_id;
     }
@@ -86,7 +105,11 @@ export class LeadService {
     // SDRs can only view leads assigned to them or unassigned (if we want to allow picking)
     // For now, strict assignment as per user request
     if (role === 'SDR') {
-      where.sdr_id = membershipId;
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        where.sdr_id = membershipId;
+      }
     }
 
     const lead = await prisma.lead.findFirst({
@@ -157,7 +180,7 @@ export class LeadService {
 
     // Check SDR Limit if assigned immediately
     if (data.sdr_id) {
-      await this.checkSdrLeadLimit(data.sdr_id);
+      await this.checkSdrLeadLimit(data.sdr_id, 1);
     }
 
     // Check for duplicates within the same tenant
@@ -196,13 +219,34 @@ export class LeadService {
 
     // Check SDR Limit if assignment is changing
     if (data.sdr_id && data.sdr_id !== lead.sdr_id) {
-      await this.checkSdrLeadLimit(data.sdr_id);
+      const isActive = ([
+        LeadStatus.BANCO, LeadStatus.CONTA_FRIA, LeadStatus.DISCOVERY,
+        LeadStatus.QUALIFICADO, LeadStatus.PROSPECCAO, LeadStatus.EM_PROSPECCAO,
+        LeadStatus.FOLLOW_UP, LeadStatus.NUTRICAO
+      ] as LeadStatus[]).includes(lead.status as LeadStatus);
+      await this.checkSdrLeadLimit(data.sdr_id, isActive ? 1 : 0);
     }
 
     const updatedLead = await prisma.lead.update({
       where: { id },
       data: data as any,
     });
+
+    // Sub-task: AuditLog for status change
+    if (data.status && data.status !== lead.status) {
+      await prisma.auditLog.create({
+        data: {
+          tenant_id: tenantId,
+          user_id: membershipId || null,
+          lead_id: id,
+          action: 'LEAD_STATUS_CHANGED',
+          entity_type: 'Lead',
+          entity_id: id,
+          old_value: { status: lead.status } as any,
+          new_value: { status: data.status, origin: 'UPDATE_FORM' } as any,
+        }
+      });
+    }
 
     // If SDR was changed (assigned), emit event
     if (data.sdr_id && data.sdr_id !== lead.sdr_id) {
@@ -239,6 +283,14 @@ export class LeadService {
       );
     }
 
+    if (role === 'SDR') {
+      const oldWeight = STATUS_WEIGHT[lead.status];
+      const newWeight = STATUS_WEIGHT[newStatus];
+      if (newWeight < oldWeight) {
+        throw new AppError(403, 'SDR não pode retroceder a etapa do lead', 'BACKWARD_MOVE_FORBIDDEN');
+      }
+    }
+
     // Rule: Discovery Disabled
     if (newStatus === 'DISCOVERY') {
       const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
@@ -250,6 +302,19 @@ export class LeadService {
     const updatedLead = await prisma.lead.update({
       where: { id },
       data: { status: newStatus },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        tenant_id: tenantId,
+        user_id: membershipId || null,
+        lead_id: id,
+        action: 'LEAD_STATUS_CHANGED',
+        entity_type: 'Lead',
+        entity_id: id,
+        old_value: { status: lead.status } as any,
+        new_value: { status: newStatus, origin: 'KANBAN' } as any,
+      }
     });
 
     eventBus.publish(DomainEvent.LEAD_STATUS_CHANGED, {
@@ -280,9 +345,19 @@ export class LeadService {
   }
 
   // ── Kanban: counts por status ──
-  async pipelineCounts(tenantId: string, membershipId?: string, role?: string) {
+  async pipelineCounts(tenantId: string, membershipId?: string, role?: string, filteredSdrId?: string) {
     const where: Prisma.LeadWhereInput = { tenant_id: tenantId };
-    if (role === 'SDR') where.sdr_id = membershipId;
+    if (role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility === 'ALL') {
+        if (filteredSdrId) where.sdr_id = filteredSdrId;
+      } else {
+        where.sdr_id = membershipId;
+      }
+    } else if (filteredSdrId) {
+      where.sdr_id = filteredSdrId;
+    }
 
     const raw = await prisma.lead.groupBy({
       by: ['status'],
@@ -307,8 +382,91 @@ export class LeadService {
     }
     return counts;
   }
-  private async checkSdrLeadLimit(sdrId: string) {
+
+  async bulkAssign(tenantId: string, leadIds: string[], sdrId: string, membershipId?: string) {
+    // We only count the leads that are actively taking up slots (not PERDIDO/REUNIAO)
+    const leads = await prisma.lead.findMany({
+      where: { id: { in: leadIds }, tenant_id: tenantId },
+      select: { id: true, sdr_id: true, status: true, contact_name: true, company_name: true }
+    });
+
+    if (leads.length === 0) return { updated: 0 };
+
+    const activeIncomingCount = leads.filter(l => ([
+      LeadStatus.BANCO, LeadStatus.CONTA_FRIA, LeadStatus.DISCOVERY,
+      LeadStatus.QUALIFICADO, LeadStatus.PROSPECCAO, LeadStatus.EM_PROSPECCAO,
+      LeadStatus.FOLLOW_UP, LeadStatus.NUTRICAO
+    ] as LeadStatus[]).includes(l.status as LeadStatus)).length;
+
+    // Use transaction to ensure limit cannot be bypassed by race conditions
+    const updatedCount = await prisma.$transaction(async (tx) => {
+      const activeStates: LeadStatus[] = [
+        LeadStatus.BANCO, LeadStatus.CONTA_FRIA, LeadStatus.DISCOVERY,
+        LeadStatus.QUALIFICADO, LeadStatus.PROSPECCAO, LeadStatus.EM_PROSPECCAO,
+        LeadStatus.FOLLOW_UP, LeadStatus.NUTRICAO
+      ];
+
+      // Re-count active leads internally inside transaction lock
+      const activeCount = await tx.lead.count({
+        where: {
+          sdr_id: sdrId,
+          status: { in: activeStates }
+        }
+      });
+
+      if (activeCount + activeIncomingCount > 100) {
+        throw new AppError(403, `SDR atingiu o limite de 100 leads ativos (Atuais: ${activeCount}, Tentando adicionar: ${activeIncomingCount})`, 'SDR_LIMIT_REACHED');
+      }
+
+      // Perform update batch
+      const result = await tx.lead.updateMany({
+        where: { id: { in: leads.map(l => l.id) } },
+        data: { sdr_id: sdrId }
+      });
+
+      // Insert AuditLog for the entire Bulk operation
+      await tx.auditLog.create({
+        data: {
+          tenant_id: tenantId,
+          user_id: membershipId || null,
+          entity_type: 'Lead',
+          entity_id: 'BULK', // Special identifier for bulk
+          action: 'BULK_ASSIGN_LEADS',
+          old_value: { count: leads.length } as any,
+          new_value: { 
+            target_sdr: sdrId, 
+            count: leads.length, 
+            lead_ids: leads.map(l => l.id) 
+          } as any,
+        }
+      });
+
+      return result.count;
+    }, {
+      isolationLevel: 'Serializable' // Prevents phantom reads
+    });
+
+    for (const lead of leads) {
+      if (lead.sdr_id !== sdrId) {
+        eventBus.publish(DomainEvent.LEAD_ASSIGNED, {
+          tenant_id: tenantId,
+          membership_id: membershipId || 'SYSTEM',
+          timestamp: new Date().toISOString(),
+          data: {
+            lead_id: lead.id,
+            lead_name: lead.contact_name || lead.company_name,
+            sdr_id: sdrId,
+          },
+        });
+      }
+    }
+
+    return { updated: updatedCount };
+  }
+
+  private async checkSdrLeadLimit(sdrId: string, incomingCount: number = 1) {
     const activeStates: LeadStatus[] = [
+      LeadStatus.BANCO,
       LeadStatus.CONTA_FRIA,
       LeadStatus.DISCOVERY,
       LeadStatus.QUALIFICADO,
@@ -325,8 +483,8 @@ export class LeadService {
       }
     });
 
-    if (activeCount >= 100) {
-      throw new AppError(403, 'SDR atingiu o limite de 100 leads ativos', 'SDR_LIMIT_REACHED');
+    if (activeCount + incomingCount > 100) {
+      throw new AppError(403, `SDR atingiu o limite de 100 leads ativos (Atuais: ${activeCount}, Tentando adicionar: ${incomingCount})`, 'SDR_LIMIT_REACHED');
     }
   }
 }

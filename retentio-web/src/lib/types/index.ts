@@ -110,7 +110,7 @@ export interface Lead {
   created_at: string;
   updated_at: string;
   // Relations (populated when included)
-  sdr?: User;
+  sdr?: { id: string; user: { name: string; avatar_url?: string | null } };
   prr_inputs?: any;
   icp_answers?: IcpAnswer[];
   discovered_stack?: DiscoveredStack[];

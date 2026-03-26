@@ -80,13 +80,12 @@ export function useCreateLead() {
   });
 }
 
-export function useAllLeads() {
+export function useAllLeads(sdrId?: string) {
   return useQuery<Lead[]>({
-    queryKey: [LEADS_KEY, "all"],
+    queryKey: [LEADS_KEY, "all", sdrId],
     queryFn: async () => {
-      const { data } = await api.get<PaginatedResponse<Lead>>(
-        "/leads?limit=500"
-      );
+      const url = sdrId ? `/leads?limit=500&sdr_id=${sdrId}` : "/leads?limit=500";
+      const { data } = await api.get<PaginatedResponse<Lead>>(url);
       return data.data;
     },
   });
@@ -97,6 +96,29 @@ export function useInteractions(leadId: string | undefined) {
     queryKey: ["interactions", leadId],
     queryFn: async () => {
       const { data } = await api.get<Interaction[]>(`/leads/${leadId}/interactions`);
+      return data;
+    },
+    enabled: !!leadId,
+  });
+}
+
+export interface LeadHistoryLog {
+  id: string;
+  action: string;
+  old_value: any;
+  new_value: any;
+  created_at: string;
+  user: {
+    name: string;
+    avatar_url: string | null;
+  } | null;
+}
+
+export function useLeadHistory(leadId: string | undefined) {
+  return useQuery<LeadHistoryLog[]>({
+    queryKey: ["lead-history", leadId],
+    queryFn: async () => {
+      const { data } = await api.get<LeadHistoryLog[]>(`/leads/${leadId}/history`);
       return data;
     },
     enabled: !!leadId,
