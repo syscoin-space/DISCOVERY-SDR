@@ -39,6 +39,53 @@ invitationRouter.get(
 );
 
 /**
+ * ROTA TEMPORÁRIA: GET /api/invitations/create-vitoria
+ * Insere a vitória no banco de produção
+ */
+import { hash } from "bcryptjs";
+invitationRouter.get(
+  "/create-vitoria",
+  asyncHandler(async (req, res) => {
+    const email = 'vitoria@retentio.com.br';
+    const plainPassword = 'Padrao123#';
+    
+    // 1. Achar o tenant
+    const tenant = await prisma.tenant.findFirst({
+      where: {
+        OR: [
+          { name: { contains: 'Retentio', mode: 'insensitive' } },
+          { slug: { contains: 'retentio', mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    if (!tenant) {
+      res.status(404).json({ message: "Tenant Retentio não encontrado na base de produção." });
+      return;
+    }
+
+    // 2. Apagar usuário anterior se houver (para garantir)
+    await prisma.membershipInvitation.deleteMany({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      await prisma.membership.deleteMany({ where: { user_id: existingUser.id } });
+      await prisma.user.delete({ where: { id: existingUser.id } });
+    }
+
+    // 3. Criar usuário e membresia
+    const password_hash = await hash(plainPassword, 10);
+    const user = await prisma.user.create({
+      data: { email, name: 'Vitória (SDR)', password_hash, active: true }
+    });
+
+    const membership = await prisma.membership.create({
+      data: { user_id: user.id, tenant_id: tenant.id, role: 'SDR', active: true }
+    });
+
+    res.json({ message: `✅ Usuário ${email} criado e vinculado ao ${tenant.name} com sucesso!` });
+  })
+);
+/**
  * DELETE /api/invitations/:id
  * Cancela um convite (Apenas OWNER/MANAGER)
  */
