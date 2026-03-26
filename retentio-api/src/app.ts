@@ -30,7 +30,7 @@ import { Role } from '@prisma/client';
 export const app = express();
 
 // ── Global Middlewares ──
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
