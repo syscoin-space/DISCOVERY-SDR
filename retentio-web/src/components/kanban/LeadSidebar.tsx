@@ -107,23 +107,33 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
   const handleCreateInteraction = async () => {
     if (!leadId || !note.trim()) return;
-    await createInteraction.mutateAsync({
-      leadId,
-      payload: { type, body: note },
-    });
-    setNote("");
+    try {
+      await createInteraction.mutateAsync({
+        leadId,
+        payload: { type, body: note },
+      });
+      setNote("");
+    } catch (err) {
+      console.error("Erro ao registrar interação:", err);
+      alert("Erro ao registrar interação. Por favor, tente novamente.");
+    }
   };
 
   const createTouchpoint = useCreateTouchpoint();
 
   const handleCreateTouchpoint = async () => {
     if (!leadId) return;
-    await createTouchpoint.mutateAsync({
-      leadId,
-      payload: { channel: tpChannel, outcome: tpOutcome || null, notes: tpNotes || null },
-    });
-    setTpNotes("");
-    setTpOutcome("");
+    try {
+      await createTouchpoint.mutateAsync({
+        leadId,
+        payload: { channel: tpChannel, outcome: tpOutcome || null, notes: tpNotes || null },
+      });
+      setTpNotes("");
+      setTpOutcome("");
+    } catch (err) {
+      console.error("Erro ao registrar touchpoint:", err);
+      alert("Erro ao registrar touchpoint. Por favor, tente novamente.");
+    }
   };
   
   const handleDeleteLead = async () => {
@@ -570,13 +580,18 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                                     className="h-8 text-[10px] font-bold bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20 shadow-lg"
                                     disabled={updateTask.isPending}
                                     onClick={async () => {
-                                      await updateTask.mutateAsync({
-                                        id: task.id,
-                                        status: "CONCLUIDA" as any,
-                                        outcome: taskOutcome
-                                      });
-                                      setCompletingTaskId(null);
-                                      setTaskOutcome("");
+                                      try {
+                                        await updateTask.mutateAsync({
+                                          id: task.id,
+                                          status: "CONCLUIDA" as any,
+                                          outcome: taskOutcome
+                                        });
+                                        setCompletingTaskId(null);
+                                        setTaskOutcome("");
+                                      } catch (err) {
+                                        console.error("Erro ao concluir tarefa:", err);
+                                        alert("Erro ao concluir tarefa. Por favor, tente novamente.");
+                                      }
                                     }}
                                   >
                                     {updateTask.isPending ? "Salvando..." : "Salvar e Avançar"}
@@ -616,7 +631,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                       onKeyDown={(e) => e.key === 'Enter' && handleCreateInteraction()}
                     />
                     <Button size="sm" onClick={handleCreateInteraction} disabled={createInteraction.isPending}>
-                      Salvar
+                      {createInteraction.isPending ? "Salvando..." : "Salvar"}
                     </Button>
                   </div>
                 </div>

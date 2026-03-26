@@ -81,8 +81,13 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleCreate = async () => {
     if (!note.trim()) return;
-    await createInteraction.mutateAsync({ leadId: id, payload: { type: interType, body: note } });
-    setNote("");
+    try {
+      await createInteraction.mutateAsync({ leadId: id, payload: { type: interType, body: note } });
+      setNote("");
+    } catch (err) {
+      console.error("Erro ao registrar interação:", err);
+      alert("Erro ao registrar interação. Por favor, tente novamente.");
+    }
   };
 
   if (isLoading) {
@@ -377,7 +382,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 disabled={createInteraction.isPending || !note.trim()}
               >
                 <Send className="h-3.5 w-3.5 mr-1.5" />
-                Registrar
+                {createInteraction.isPending ? "Registrando..." : "Registrar"}
               </Button>
             </div>
 

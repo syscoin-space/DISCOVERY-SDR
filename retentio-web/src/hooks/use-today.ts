@@ -63,9 +63,14 @@ export function useUpdateTask() {
       const { data } = await api.patch<Task>(`/today/${id}`, payload);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: [TODAY_KEY] });
       qc.invalidateQueries({ queryKey: [TODAY_SUMMARY_KEY] });
+      // Invalidate the specific lead and the global leads list to reflect task completion
+      if (data.lead_id) {
+        qc.invalidateQueries({ queryKey: ["leads", data.lead_id] });
+      }
+      qc.invalidateQueries({ queryKey: ["leads"] });
     },
   });
 }
