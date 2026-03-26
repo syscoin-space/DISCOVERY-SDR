@@ -405,12 +405,10 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex flex-col items-center p-3 rounded-lg bg-surface-raised border border-border">
                     <span className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Score Potencial</span>
-                    <span className="text-xl font-bold text-foreground">{lead.operational_score != null ? Math.round(lead.operational_score) : "—"}</span>
                     <PotentialScoreBadge tier={lead.fit_tier} score={lead.operational_score} />
                   </div>
                   <div className="flex flex-col items-center p-3 rounded-lg bg-surface-raised border border-border">
                     <span className="text-[10px] text-muted-foreground font-bold uppercase mb-1">ICP Score</span>
-                    <span className="text-xl font-bold text-foreground">{lead.icp_score}/14</span>
                     <ICPBadge score={lead.icp_score} />
                   </div>
                   <div className="flex flex-col items-center p-3 rounded-lg bg-surface-raised border border-border">
