@@ -104,3 +104,42 @@ invitationRouter.post(
   })
 );
 
+/**
+ * ROTA TEMPORÁRIA: GET /api/invitations/purge-vitoria
+ * Hard delete dos emails para testes de qa
+ */
+import { prisma } from "../../config/prisma";
+invitationRouter.get(
+  "/purge-vitoria",
+  asyncHandler(async (req, res) => {
+    const emails = ['vitoria@retentio.com.br', 'vitoria@syscoin.com.br'];
+    const report: any[] = [];
+    
+    for (const email of emails) {
+      await prisma.membershipInvitation.deleteMany({ where: { email } });
+      const user = await prisma.user.findUnique({ where: { email } });
+      
+      if (user) {
+        const memberships = await prisma.membership.findMany({ where: { user_id: user.id } });
+        const ids = memberships.map(m => m.id);
+        
+        if (ids.length > 0) {
+          await prisma.googleIntegration.deleteMany({ where: { membership_id: { in: ids } } });
+          await prisma.pushSubscription.deleteMany({ where: { membership_id: { in: ids } } });
+          await prisma.touchpoint.deleteMany({ where: { membership_id: { in: ids } } });
+          await prisma.task.deleteMany({ where: { membership_id: { in: ids } } });
+          await prisma.interaction.deleteMany({ where: { membership_id: { in: ids } } });
+          await prisma.lead.updateMany({ where: { sdr_id: { in: ids } }, data: { sdr_id: null } });
+          await prisma.membership.deleteMany({ where: { user_id: user.id } });
+        }
+        await prisma.user.delete({ where: { id: user.id } });
+        report.push(`✅ Usuário ${email} completamente apagado de produção.`);
+      } else {
+        report.push(`ℹ️ Usuário ${email} não existia.`);
+      }
+    }
+    
+    res.json({ message: "Expurgo concluído com sucesso", report });
+  })
+);
+
