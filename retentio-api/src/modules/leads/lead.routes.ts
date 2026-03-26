@@ -200,9 +200,15 @@ leadRouter.post(
     const tenantId = getTenantId(req);
     const membershipId = getMembershipId(req);
     
-    // Check if lead belongs to tenant and SDR
+    // Check if lead belongs to tenant and SDR (honoring visibility)
     const whereClause: any = { id: lead_id, tenant_id: tenantId };
-    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+    if (req.user?.role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        whereClause.sdr_id = membershipId;
+      }
+    }
 
     const lead = await prisma.lead.findFirst({ where: whereClause });
     if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
@@ -211,6 +217,8 @@ leadRouter.post(
       data: {
         ...req.body,
         lead_id,
+        tenant_id: tenantId,
+        membership_id: membershipId,
         source: 'MANUAL',
       },
     });
@@ -228,7 +236,13 @@ leadRouter.post(
     const membershipId = getMembershipId(req);
 
     const whereClause: any = { id: lead_id, tenant_id: tenantId };
-    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+    if (req.user?.role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        whereClause.sdr_id = membershipId;
+      }
+    }
 
     const lead = await prisma.lead.findFirst({ where: whereClause });
     if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
@@ -255,7 +269,13 @@ leadRouter.post(
     const { aiService } = await import('../ai/ai.service');
 
     const whereClause: any = { id, tenant_id: tenantId };
-    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+    if (req.user?.role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        whereClause.sdr_id = membershipId;
+      }
+    }
 
     const lead = await prisma.lead.findFirst({ where: whereClause });
     if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
@@ -277,7 +297,13 @@ leadRouter.post(
     const { edited_data } = req.body;
 
     const whereClause: any = { id, tenant_id: tenantId };
-    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+    if (req.user?.role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        whereClause.sdr_id = membershipId;
+      }
+    }
 
     const lead = await prisma.lead.findFirst({ where: whereClause });
     if (!lead || !lead.ai_metadata) throw new AppError(404, 'Lead ou sugestões não encontrados ou acesso restrito');
@@ -348,7 +374,13 @@ leadRouter.post(
     const membershipId = getMembershipId(req);
 
     const whereClause: any = { id, tenant_id: tenantId };
-    if (req.user?.role === 'SDR') whereClause.sdr_id = membershipId;
+    if (req.user?.role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        whereClause.sdr_id = membershipId;
+      }
+    }
 
     const lead = await prisma.lead.findFirst({ where: whereClause });
     if (!lead || !lead.ai_metadata) throw new AppError(404, 'Lead ou sugestões não encontrados ou acesso restrito');

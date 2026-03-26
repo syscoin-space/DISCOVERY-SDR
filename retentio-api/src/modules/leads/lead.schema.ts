@@ -18,7 +18,7 @@ export const createLeadSchema = z.object({
   state: z.string().max(100).optional().nullable(),
   source: z.string().max(100).optional().nullable(),
   notes: z.string().optional().nullable(),
-  icp_score: z.number().int().min(0).max(10).optional().nullable(),
+  icp_score: z.number().int().min(0).max(100).optional().nullable(),
   dm_name: z.string().max(150).optional().nullable(),
   dm_role: z.string().max(100).optional().nullable(),
   direct_phone: z.string().max(20).optional().nullable(),
