@@ -15,6 +15,9 @@ export interface Member {
   };
   active: boolean;
   created_at: string;
+  _count?: {
+    assigned_leads: number;
+  };
 }
 
 export interface Invitation {

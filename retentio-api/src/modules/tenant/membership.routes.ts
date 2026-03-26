@@ -35,6 +35,21 @@ membershipRouter.get(
             email: true,
             avatar_url: true,
           }
+        },
+        _count: {
+          select: {
+            assigned_leads: {
+              where: {
+                status: {
+                  in: [
+                    Role.SDR ? 'BANCO' : 'BANCO', // placeholder logic check
+                    'BANCO', 'CONTA_FRIA', 'DISCOVERY', 'QUALIFICADO', 
+                    'PROSPECCAO', 'EM_PROSPECCAO', 'FOLLOW_UP', 'NUTRICAO'
+                  ]
+                }
+              }
+            }
+          }
         }
       },
       orderBy: { created_at: 'asc' }
