@@ -24,6 +24,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 import { ExternalLink, Pencil, Check, X, Mail, Phone, Linkedin, MessageCircle, Calendar, Video, XCircle, Search, UserRound, Target, Trash2, ListChecks, PlayCircle, StopCircle, Clock } from "lucide-react";
 import { getTierAInsight, getNextChannelSuggestion } from "@/lib/insights";
 import { InsightBanner } from "@/components/shared/InsightToast";
@@ -169,34 +171,43 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
         {lead && (
           <>
             <div className="px-6 py-5 border-b border-border">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-4">
+                {/* Actions Group (Loosely grouped on the left, far from the close button) */}
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
+                  <Link
+                    href={`/leads/${lead.id}`}
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                      "h-7 gap-1.5 text-[10px] uppercase font-bold border-accent/20 text-accent hover:bg-accent hover:text-white transition-all shadow-sm"
+                    )}
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Ver Página
+                  </Link>
+
+                  {(user?.role === "MANAGER" || user?.role === "OWNER") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 gap-1.5 text-[10px] uppercase font-bold text-destructive hover:bg-destructive hover:text-white border-destructive/20 transition-all shadow-sm"
+                      onClick={handleDeleteLead}
+                      disabled={deleteLead.isPending}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Excluir
+                    </Button>
+                  )}
+                </div>
+
+                {/* Status Badges (Further from the buttons, closer to the right but before the X) */}
+                <div className="flex items-center gap-2 pr-6">
+                  <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider py-1 border-muted-foreground/20 text-muted-foreground">
                     {lead.status.replace(/_/g, " ")}
                   </Badge>
                   {lead.bloqueio_status === "ALERTA" && (
                     <Badge variant="destructive" className="animate-pulse text-[10px]">ALERTA</Badge>
                   )}
                 </div>
-                <Link
-                  href={`/leads/${lead.id}`}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-accent hover:bg-accent/10 transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Ver página
-                </Link>
-                {(user?.role === "MANAGER" || user?.role === "OWNER") && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 gap-1 text-[10px] uppercase font-bold"
-                    onClick={handleDeleteLead}
-                    disabled={deleteLead.isPending}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Excluir
-                  </Button>
-                )}
               </div>
               {isMobile ? (
                 <Drawer.Title className="text-xl font-bold text-foreground">
