@@ -787,7 +787,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
 
   return (
     <Sheet open={!!leadId} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-[100vw] sm:w-[600px] sm:max-w-[600px] lg:sm:w-[700px] lg:sm:max-w-[700px] overflow-y-auto p-0 border-l border-border shadow-2xl transition-all duration-300">
+      <SheetContent className="w-[100vw] lg:w-[33vw] lg:min-w-[520px] lg:max-w-[680px] overflow-y-auto p-0 border-l border-border shadow-2xl transition-all duration-300">
         {sidebarContent}
       </SheetContent>
     </Sheet>
