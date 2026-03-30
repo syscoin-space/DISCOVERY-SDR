@@ -364,13 +364,20 @@ leadRouter.post(
     const lead = await prisma.lead.findFirst({ where: whereClause });
     if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
 
-    const tp = await createTouchpoint({
-      ...req.body,
-      lead_id,
-      membership_id: membershipId,
-    });
-
-    res.status(201).json(tp);
+    try {
+      const tp = await createTouchpoint({
+        ...req.body,
+        touchpoint_type: req.body.touchpoint_type || 'MANUAL',
+        lead_id,
+        membership_id: membershipId,
+      });
+      res.status(201).json(tp);
+    } catch (error: any) {
+      if (error.code === 'P2002' || error.name === 'PrismaClientValidationError') {
+        throw new AppError(400, 'Dados inválidos para o touchpoint. Verifique o resultado selecionado.');
+      }
+      throw error;
+    }
   }),
 );
 

@@ -66,7 +66,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
   const [note, setNote] = useState("");
   const [type, setType] = useState("NOTA");
   const [tpChannel, setTpChannel] = useState("EMAIL");
-  const [tpOutcome, setTpOutcome] = useState("");
+  const [tpOutcome, setTpOutcome] = useState("RESPONDED");
   const [tpNotes, setTpNotes] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
@@ -128,7 +128,12 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
     try {
       await createTouchpoint.mutateAsync({
         leadId,
-        payload: { channel: tpChannel, outcome: tpOutcome || null, notes: tpNotes || null },
+        payload: { 
+          channel: tpChannel, 
+          outcome: tpOutcome, 
+          notes: tpNotes || null,
+          touchpoint_type: "MANUAL"
+        },
       });
       setTpNotes("");
       setTpOutcome("");
@@ -662,13 +667,21 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                         <option value="LIGACAO">Ligação</option>
                         <option value="LINKEDIN">LinkedIn</option>
                       </select>
-                      <input
-                        type="text"
-                        placeholder="Outcome (ex: interested)"
-                        className="flex-1 text-xs border border-border rounded px-2 py-1.5 bg-surface text-foreground placeholder:text-muted-foreground"
+                      <select
                         value={tpOutcome}
                         onChange={(e) => setTpOutcome(e.target.value)}
-                      />
+                        className="flex-1 text-xs border border-border rounded px-2 py-1.5 bg-surface text-foreground"
+                      >
+                        <option value="RESPONDED">Respondeu</option>
+                        <option value="NO_ANSWER">Não atendeu</option>
+                        <option value="VOICEMAIL">Caixa postal</option>
+                        <option value="SEEN_NO_REPLY">Viu e não respondeu</option>
+                        <option value="SPOKE_DECISION_MAKER">Falou com decisor</option>
+                        <option value="ASKED_FOLLOW_UP">Pediu retorno</option>
+                        <option value="NOT_INTERESTED">Sem interesse</option>
+                        <option value="BOOKED">Reunião agendada</option>
+                        <option value="LOST">Perdido</option>
+                      </select>
                     </div>
                     <textarea
                       placeholder="Notas sobre o touchpoint..."
