@@ -9,7 +9,6 @@ import { createLeadSchema, updateLeadSchema, updateLeadStatusSchema, leadFilters
 import { AppError } from '../../shared/types';
 import { importFromBuffer } from './lead.import';
 import { createTouchpoint } from './touchpoint.service';
-import { interactionRouter } from './interaction.routes';
 
 export const leadRouter = Router();
 leadRouter.use(authGuard);
