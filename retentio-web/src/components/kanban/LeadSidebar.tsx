@@ -230,7 +230,7 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
             {/* Tier A stale insight + channel suggestion */}
             {(() => {
               const tierInsight = getTierAInsight(lead.fit_tier, lead.updated_at);
-              const channelSuggestion = interactions ? getNextChannelSuggestion(interactions) : null;
+              const channelSuggestion = interactions?.items ? getNextChannelSuggestion(interactions.items) : null;
               if (!tierInsight && !channelSuggestion) return null;
               return (
                 <div className="px-6 pt-4 space-y-2">
@@ -702,10 +702,10 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   {/* Interactions */}
                   <div className="pt-4 border-t border-border">
                     <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Anotações e Envios</h4>
-                  {interactions?.length === 0 ? (
+                  {interactions?.items?.length === 0 ? (
                     <p className="text-center py-8 text-sm text-muted-foreground italic">Nenhuma interação registrada ainda</p>
                   ) : (
-                    interactions?.map((inter) => {
+                    interactions?.items?.map((inter) => {
                       const config = INTERACTION_ICONS[inter.type] ?? INTERACTION_ICONS.NOTA;
                       const Icon = config.icon;
                       return (

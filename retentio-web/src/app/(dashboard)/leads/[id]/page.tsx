@@ -388,15 +388,15 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
             {/* Timeline items */}
             <div className="space-y-0">
-              {!interactions?.length ? (
+              {!interactions?.items?.length ? (
                 <p className="text-center py-8 text-sm text-muted-foreground italic">
                   Nenhuma interação registrada
                 </p>
               ) : (
-                interactions.map((inter, i) => {
+                interactions.items.map((inter, i) => {
                   const cfg = TIMELINE_CONFIG[inter.type] ?? TIMELINE_CONFIG.NOTA;
                   const Icon = cfg.icon;
-                  const isLast = i === interactions.length - 1;
+                  const isLast = i === interactions.items.length - 1;
 
                   return (
                     <div key={inter.id} className="relative flex gap-3">

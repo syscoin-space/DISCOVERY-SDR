@@ -92,10 +92,12 @@ export function useAllLeads(sdrId?: string) {
 }
 
 export function useInteractions(leadId: string | undefined) {
-  return useQuery<Interaction[]>({
+  return useQuery<{ items: Interaction[]; next_cursor: string | null; count: number }>({
     queryKey: ["interactions", leadId],
     queryFn: async () => {
-      const { data } = await api.get<Interaction[]>(`/leads/${leadId}/interactions`);
+      const { data } = await api.get<{ items: Interaction[]; next_cursor: string | null; count: number }>(
+        `/leads/${leadId}/interactions`
+      );
       return data;
     },
     enabled: !!leadId,
