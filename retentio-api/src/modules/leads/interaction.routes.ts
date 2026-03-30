@@ -27,14 +27,36 @@ const listQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+import { getTenantId, getMembershipId } from '../../middlewares';
+
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-async function assertLeadOwnership(leadId: string, sdrId: string) {
+async function assertLeadAccess(req: any, leadId: string) {
+  const tenantId = getTenantId(req);
+  const membershipId = getMembershipId(req);
+  const role = req.user?.role;
+
+  const where: any = { id: leadId, tenant_id: tenantId };
+
+  if (role === 'SDR') {
+    const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    const settings = tenant?.settings as any;
+    // Se sdrVisibility !== 'ALL', o SDR só acessa o que é DELE ou o que está no BANCO (esperando)
+    if (settings?.sdrVisibility !== 'ALL') {
+      where.OR = [
+        { sdr_id: membershipId },
+        { status: 'BANCO' },
+        { sdr_id: null }
+      ];
+    }
+  }
+
   const lead = await prisma.lead.findFirst({
-    where: { id: leadId, sdr_id: sdrId },
+    where,
     select: { id: true },
   });
-  if (!lead) throw new AppError(404, 'Lead não encontrado');
+  
+  if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
 }
 
 // ─── Routes ──────────────────────────────────────────────────────────
@@ -46,7 +68,7 @@ interactionRouter.get(
   validate(listQuerySchema, 'query'),
   asyncHandler(async (req, res) => {
     const { leadId } = req.params as { leadId: string };
-    await assertLeadOwnership(leadId, req.user!.sub);
+    await assertLeadAccess(req, leadId);
 
     const { type, cursor, limit } = req.query as unknown as z.infer<typeof listQuerySchema>;
 
@@ -86,10 +108,19 @@ interactionRouter.post(
   validate(createInteractionSchema),
   asyncHandler(async (req, res) => {
     const { leadId } = req.params as { leadId: string };
-    await assertLeadOwnership(leadId, req.user!.sub);
+    await assertLeadAccess(req, leadId);
+
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
 
     const interaction = await prisma.interaction.create({
-      data: { lead_id: leadId, ...req.body },
+      data: { 
+        ...req.body, 
+        lead_id: leadId,
+        tenant_id: tenantId,
+        membership_id: membershipId,
+        source: req.body.source || 'MANUAL'
+      },
     });
 
     res.status(201).json(interaction);
@@ -101,7 +132,7 @@ interactionRouter.get(
   '/:id',
   asyncHandler(async (req, res) => {
     const { leadId, id } = req.params as { leadId: string; id: string };
-    await assertLeadOwnership(leadId, req.user!.sub);
+    await assertLeadAccess(req, leadId);
 
     const interaction = await prisma.interaction.findFirst({
       where: { id, lead_id: leadId },
@@ -117,7 +148,7 @@ interactionRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {
     const { leadId, id } = req.params as { leadId: string; id: string };
-    await assertLeadOwnership(leadId, req.user!.sub);
+    await assertLeadAccess(req, leadId);
 
     const interaction = await prisma.interaction.findFirst({
       where: { id, lead_id: leadId, source: 'MANUAL' },
@@ -135,7 +166,7 @@ interactionRouter.get(
   '/summary/counts',
   asyncHandler(async (req, res) => {
     const { leadId } = req.params as { leadId: string };
-    await assertLeadOwnership(leadId, req.user!.sub);
+    await assertLeadAccess(req, leadId);
 
     const counts = await prisma.interaction.groupBy({
       by: ['type'],

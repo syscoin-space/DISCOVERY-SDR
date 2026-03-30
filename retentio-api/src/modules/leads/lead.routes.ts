@@ -9,6 +9,7 @@ import { createLeadSchema, updateLeadSchema, updateLeadStatusSchema, leadFilters
 import { AppError } from '../../shared/types';
 import { importFromBuffer } from './lead.import';
 import { createTouchpoint } from './touchpoint.service';
+import { interactionRouter } from './interaction.routes';
 
 export const leadRouter = Router();
 leadRouter.use(authGuard);
@@ -131,6 +132,9 @@ leadRouter.get(
   }),
 );
 
+// ─── Interactions ───────────────────────────────────────────────
+leadRouter.use('/:leadId/interactions', interactionRouter);
+
 // POST /leads
 leadRouter.post(
   '/',
@@ -191,41 +195,6 @@ leadRouter.delete(
   }),
 );
 
-// POST /leads/:id/interactions
-leadRouter.post(
-  '/:id/interactions',
-  validate(createInteractionSchema),
-  asyncHandler(async (req, res) => {
-    const lead_id = req.params.id as string;
-    const tenantId = getTenantId(req);
-    const membershipId = getMembershipId(req);
-    
-    // Check if lead belongs to tenant and SDR (honoring visibility)
-    const whereClause: any = { id: lead_id, tenant_id: tenantId };
-    if (req.user?.role === 'SDR') {
-      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
-      const settings = tenant?.settings as any;
-      if (settings?.sdrVisibility !== 'ALL') {
-        whereClause.sdr_id = membershipId;
-      }
-    }
-
-    const lead = await prisma.lead.findFirst({ where: whereClause });
-    if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
-
-    const interaction = await prisma.interaction.create({
-      data: {
-        ...req.body,
-        lead_id,
-        tenant_id: tenantId,
-        membership_id: membershipId,
-        source: 'MANUAL',
-      },
-    });
-
-    res.status(201).json(interaction);
-  }),
-);
 
 // POST /leads/:id/touchpoints
 leadRouter.post(
