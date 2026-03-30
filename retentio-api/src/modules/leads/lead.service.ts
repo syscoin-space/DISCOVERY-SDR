@@ -9,18 +9,11 @@ import { planService } from '../billing/plan.service';
 import { logger } from '../../config/logger';
 
 // V2 Allowed Transitions based on methodology
-const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  BANCO: ['CONTA_FRIA'],
-  CONTA_FRIA: ['DISCOVERY', 'QUALIFICADO', 'EM_PROSPECCAO', 'PERDIDO'],
-  DISCOVERY: ['QUALIFICADO', 'EM_PROSPECCAO', 'PERDIDO'],
-  QUALIFICADO: ['PROSPECCAO', 'REUNIAO_MARCADA', 'PERDIDO'],
-  PROSPECCAO: ['FOLLOW_UP', 'REUNIAO_MARCADA', 'NUTRICAO', 'PERDIDO'],
-  EM_PROSPECCAO: ['FOLLOW_UP', 'REUNIAO_MARCADA', 'NUTRICAO', 'PERDIDO'],
-  FOLLOW_UP: ['REUNIAO_MARCADA', 'EM_PROSPECCAO', 'NUTRICAO', 'PERDIDO'],
-  NUTRICAO: ['EM_PROSPECCAO', 'PERDIDO', 'CONTA_FRIA'],
-  REUNIAO_MARCADA: ['PERDIDO'],
-  PERDIDO: ['CONTA_FRIA', 'BANCO'],
-};
+const ALL_STATUSES = Object.values(LeadStatus);
+const ALLOWED_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = ALL_STATUSES.reduce((acc, status) => {
+  acc[status] = ALL_STATUSES.filter(s => s !== status);
+  return acc;
+}, {} as any);
 
 const STATUS_WEIGHT: Record<LeadStatus, number> = {
   BANCO: 0,
@@ -288,6 +281,9 @@ export class LeadService {
       );
     }
 
+    /* 
+    // SDR can skip forward but ideally not go back. 
+    // Removed for "Livremente" requirement.
     if (role === 'SDR') {
       const oldWeight = STATUS_WEIGHT[lead.status];
       const newWeight = STATUS_WEIGHT[newStatus];
@@ -295,6 +291,7 @@ export class LeadService {
         throw new AppError(403, 'SDR não pode retroceder a etapa do lead', 'BACKWARD_MOVE_FORBIDDEN');
       }
     }
+    */
 
     // Rule: Discovery Disabled
     if (newStatus === 'DISCOVERY') {
