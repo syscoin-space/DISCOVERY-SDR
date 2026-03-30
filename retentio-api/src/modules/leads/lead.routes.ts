@@ -4,7 +4,7 @@ import { asyncHandler, validate, authGuard, getTenantId, getMembershipId } from 
 import { roleGuard } from '../../middlewares/auth';
 import { leadService } from './lead.service';
 import { prisma } from '../../config/prisma';
-import { LeadStatus, Role } from '@prisma/client';
+import { LeadStatus, Role, InteractionType } from '@prisma/client';
 import { createLeadSchema, updateLeadSchema, updateLeadStatusSchema, leadFiltersSchema, createInteractionSchema, bulkAssignLeadSchema } from './lead.schema';
 import { AppError } from '../../shared/types';
 import { importFromBuffer } from './lead.import';
@@ -133,7 +133,129 @@ leadRouter.get(
 );
 
 // ─── Interactions ───────────────────────────────────────────────
-leadRouter.use('/:leadId/interactions', interactionRouter);
+
+// GET /leads/:id/interactions
+leadRouter.get(
+  '/:id/interactions',
+  asyncHandler(async (req, res) => {
+    const { id: leadId } = req.params as { id: string };
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
+    const role = req.user?.role;
+
+    const where: any = { id: leadId, tenant_id: tenantId };
+    if (role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        where.OR = [
+          { sdr_id: membershipId },
+          { status: 'BANCO' },
+          { sdr_id: null }
+        ];
+      }
+    }
+
+    const lead = await prisma.lead.findFirst({ where, select: { id: true } });
+    if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
+
+    const { type, cursor, limit = 20 } = req.query as any;
+
+    const interactionWhere: any = {
+      lead_id: leadId,
+      ...(type && { type }),
+      ...(cursor && {
+        created_at: {
+          lt: (await prisma.interaction.findUnique({
+            where: { id: cursor },
+            select: { created_at: true },
+          }))?.created_at,
+        },
+      }),
+    };
+
+    const items = await prisma.interaction.findMany({
+      where: interactionWhere,
+      orderBy: { created_at: 'desc' },
+      take: Number(limit) + 1,
+    });
+
+    const hasNext = items.length > Number(limit);
+    if (hasNext) items.pop();
+
+    res.json({
+      items,
+      next_cursor: hasNext ? items[items.length - 1]?.id : null,
+      count: items.length,
+    });
+  }),
+);
+
+// POST /leads/:id/interactions
+leadRouter.post(
+  '/:id/interactions',
+  validate(createInteractionSchema),
+  asyncHandler(async (req, res) => {
+    const { id: leadId } = req.params as { id: string };
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
+    const role = req.user?.role;
+
+    const where: any = { id: leadId, tenant_id: tenantId };
+    if (role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        where.OR = [
+          { sdr_id: membershipId },
+          { status: 'BANCO' },
+          { sdr_id: null }
+        ];
+      }
+    }
+
+    const lead = await prisma.lead.findFirst({ where, select: { id: true } });
+    if (!lead) throw new AppError(404, 'Lead não encontrado ou acesso restrito');
+
+    const interaction = await prisma.interaction.create({
+      data: {
+        ...req.body,
+        lead_id: leadId,
+        tenant_id: tenantId,
+        membership_id: membershipId,
+        source: 'MANUAL',
+      },
+    });
+
+    res.status(201).json(interaction);
+  }),
+);
+
+// GET /leads/:id/interactions/summary/counts
+leadRouter.get(
+  '/:id/interactions/summary/counts',
+  asyncHandler(async (req, res) => {
+    const { id: leadId } = req.params as { id: string };
+    const tenantId = getTenantId(req);
+
+    const counts = await prisma.interaction.groupBy({
+      by: ['type'],
+      where: { lead_id: leadId, tenant_id: tenantId },
+      _count: { _all: true },
+    });
+
+    const summary = counts.reduce<Record<string, number>>((acc, row) => {
+      acc[row.type] = row._count._all;
+      return acc;
+    }, {});
+
+    res.json({
+      lead_id: leadId,
+      summary,
+      total: Object.values(summary).reduce((a, b) => a + b, 0),
+    });
+  }),
+);
 
 // POST /leads
 leadRouter.post(
@@ -196,6 +318,32 @@ leadRouter.delete(
 );
 
 
+// GET /leads/:id/touchpoints
+leadRouter.get(
+  '/:id/touchpoints',
+  asyncHandler(async (req, res) => {
+    const lead_id = req.params.id as string;
+    const tenantId = getTenantId(req);
+    const membershipId = getMembershipId(req);
+
+    const whereClause: any = { lead_id, tenant_id: tenantId };
+    if (req.user?.role === 'SDR') {
+      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+      const settings = tenant?.settings as any;
+      if (settings?.sdrVisibility !== 'ALL') {
+        whereClause.lead = { sdr_id: membershipId };
+      }
+    }
+
+    const tps = await prisma.touchpoint.findMany({
+      where: whereClause,
+      orderBy: { created_at: 'desc' },
+    });
+
+    res.json(tps);
+  }),
+);
+
 // POST /leads/:id/touchpoints
 leadRouter.post(
   '/:id/touchpoints',
@@ -223,6 +371,32 @@ leadRouter.post(
     });
 
     res.status(201).json(tp);
+  }),
+);
+
+// ─── Stack (Plataformas) ────────────────────────────────────────
+
+// GET /leads/:id/stack
+leadRouter.get(
+  '/:id/stack',
+  asyncHandler(async (req, res) => {
+    res.json([]);
+  }),
+);
+
+// POST /leads/:id/stack
+leadRouter.post(
+  '/:id/stack',
+  asyncHandler(async (req, res) => {
+    res.status(201).json({ id: 'dummy', category: req.body.category, tool_name: req.body.tool_name });
+  }),
+);
+
+// DELETE /leads/:id/stack/:toolId
+leadRouter.delete(
+  '/:id/stack/:toolId',
+  asyncHandler(async (req, res) => {
+    res.status(204).send();
   }),
 );
 
