@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+// import rateLimit from 'express-rate-limit'; // Desativado globalmente
 import { env } from './config/env';
 import { errorHandler } from './middlewares';
 import { authRouter } from './modules/auth/auth.routes';
