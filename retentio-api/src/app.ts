@@ -32,18 +32,23 @@ export const app = express();
 // ── Global Middlewares ──
 app.set('trust proxy', true);
 app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+app.use(cors({ 
+  origin: (origin, callback) => {
+    callback(null, origin || true);
+  }, 
+  credentials: true 
+}));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ── Rate Limiter ──
-app.use(rateLimit({
-  windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.RATE_LIMIT_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: { message: 'Too many requests', code: 'RATE_LIMITED' } },
-}));
+// ── Rate Limiter (Desativado globalmente para uso intenso do CRM) ──
+// app.use(rateLimit({
+//   windowMs: env.RATE_LIMIT_WINDOW_MS,
+//   max: env.RATE_LIMIT_MAX,
+//   standardHeaders: true,
+//   legacyHeaders: false,
+//   message: { error: { message: 'Too many requests', code: 'RATE_LIMITED' } },
+// }));
 
 // ── Health ──
 app.get('/health', (_req, res) => {
