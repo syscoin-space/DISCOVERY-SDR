@@ -29,51 +29,61 @@ export function EditableLeadField({
   const updateLead = useUpdateLead();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const isSavingRef = useRef(false);
+  // Refs espelho para evitar stale closures nos callbacks de timer
+  const editingRef = useRef(false);
+  const editValueRef = useRef(editValue);
   const { toast } = useToast();
 
+  // Mantém as refs sempre sincronizadas com o estado
+  useEffect(() => {
+    editingRef.current = editing;
+  }, [editing]);
+
+  useEffect(() => {
+    editValueRef.current = editValue;
+  }, [editValue]);
+
   const handleSave = useCallback(async () => {
-    // 1. Evitar save duplicado ou se o valor não mudou
-    if (isSavingRef.current || !editing) return;
-    
-    const normalizedValue = editValue.trim();
+    // Usa refs para ler o estado atual — evita stale closures em setTimeout
+    if (isSavingRef.current || !editingRef.current) return;
+
+    const normalizedValue = editValueRef.current.trim();
     const originalValue = (value ?? "").trim();
 
     if (normalizedValue === originalValue) {
       setEditing(false);
+      editingRef.current = false;
       return;
     }
 
-    // 2. Validação simples (pode ser expandida conforme a necessidade)
-    // Se o campo for obrigatório camuflado ou tiver formato específico, validar aqui.
-    // Para campos gerais, só evitamos salvar lixo se necessário.
-
     isSavingRef.current = true;
+    setEditing(false);
+    editingRef.current = false;
+
     try {
       await updateLead.mutateAsync({
         leadId,
         payload: { [field]: normalizedValue || null },
       });
-      // 3. Após sucesso, sair corretamente do modo de edição
-      setEditing(false);
     } catch (err) {
-      // 4. Rollback em erro
       toast(`Erro ao salvar ${label}. O valor original foi restaurado.`, "error");
       setEditValue(value ?? "");
-      setEditing(false);
     } finally {
       isSavingRef.current = false;
     }
-  }, [editValue, value, field, leadId, updateLead, editing, label, toast]);
+  }, [value, field, leadId, updateLead, label, toast]);
 
   const handleCancel = useCallback(() => {
     setEditValue(value ?? "");
     setEditing(false);
+    editingRef.current = false;
   }, [value]);
 
   useEffect(() => {
     if (openOnMount && !editing) {
       setEditValue(value ?? "");
       setEditing(true);
+      editingRef.current = true;
       setTimeout(() => inputRef.current?.focus(), 50);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,6 +93,7 @@ export function EditableLeadField({
   useEffect(() => {
     if (!editing) {
       setEditValue(value ?? "");
+      editValueRef.current = value ?? "";
     }
   }, [value, editing]);
 
@@ -97,14 +108,20 @@ export function EditableLeadField({
             ref={inputRef}
             type={type}
             value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
+            onChange={(e) => {
+              setEditValue(e.target.value);
+              editValueRef.current = e.target.value;
+            }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave();
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSave();
+              }
               if (e.key === "Escape") handleCancel();
             }}
             onBlur={() => {
-              // Delay suave para não conflitar com Enter/Esc
-              setTimeout(() => handleSave(), 100);
+              // Delay suave para não conflitar com cliques no botão Salvar
+              setTimeout(() => handleSave(), 150);
             }}
             autoFocus
             disabled={updateLead.isPending}
@@ -126,6 +143,7 @@ export function EditableLeadField({
       onClick={() => {
         setEditValue(value ?? "");
         setEditing(true);
+        editingRef.current = true;
         setTimeout(() => inputRef.current?.focus(), 50);
       }}
     >

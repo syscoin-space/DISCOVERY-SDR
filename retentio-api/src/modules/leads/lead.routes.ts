@@ -386,7 +386,18 @@ leadRouter.post(
 leadRouter.get(
   '/:id/stack',
   asyncHandler(async (req, res) => {
-    res.json([]);
+    const { id: leadId } = req.params as { id: string };
+    const tenantId = getTenantId(req);
+
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, tenant_id: tenantId }, select: { id: true } });
+    if (!lead) throw new AppError(404, 'Lead não encontrado');
+
+    const stack = await prisma.discoveredStack.findMany({
+      where: { lead_id: leadId, tenant_id: tenantId },
+      orderBy: { created_at: 'asc' },
+    });
+
+    res.json(stack);
   }),
 );
 
@@ -394,7 +405,27 @@ leadRouter.get(
 leadRouter.post(
   '/:id/stack',
   asyncHandler(async (req, res) => {
-    res.status(201).json({ id: 'dummy', category: req.body.category, tool_name: req.body.tool_name });
+    const { id: leadId } = req.params as { id: string };
+    const tenantId = getTenantId(req);
+    const { category, tool_name } = req.body;
+
+    if (!category || !tool_name) {
+      throw new AppError(400, 'category e tool_name são obrigatórios');
+    }
+
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, tenant_id: tenantId }, select: { id: true } });
+    if (!lead) throw new AppError(404, 'Lead não encontrado');
+
+    const entry = await prisma.discoveredStack.create({
+      data: {
+        lead_id: leadId,
+        tenant_id: tenantId,
+        category: category.trim(),
+        tool_name: tool_name.trim(),
+      },
+    });
+
+    res.status(201).json(entry);
   }),
 );
 
@@ -402,6 +433,16 @@ leadRouter.post(
 leadRouter.delete(
   '/:id/stack/:toolId',
   asyncHandler(async (req, res) => {
+    const { id: leadId, toolId } = req.params as { id: string; toolId: string };
+    const tenantId = getTenantId(req);
+
+    const entry = await prisma.discoveredStack.findFirst({
+      where: { id: toolId, lead_id: leadId, tenant_id: tenantId },
+    });
+    if (!entry) throw new AppError(404, 'Entrada de stack não encontrada');
+
+    await prisma.discoveredStack.delete({ where: { id: toolId } });
+
     res.status(204).send();
   }),
 );

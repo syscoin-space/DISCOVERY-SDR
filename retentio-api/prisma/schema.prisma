@@ -187,6 +187,7 @@ model Lead {
   calendar_events     CalendarEvent[]
   handoffs            HandoffBriefing[]
   interactions        Interaction[]
+  discovered_stack    DiscoveredStack[]
   distributor         Membership?         @relation("DistributedBy", fields: [distributed_by], references: [id])
   sdr                 Membership?         @relation("AssignedSDR", fields: [sdr_id], references: [id])
   tenant              Tenant              @relation(fields: [tenant_id], references: [id])
@@ -200,6 +201,20 @@ model Lead {
   @@index([tenant_id, sdr_id, status])
   @@index([company_name])
   @@map("leads")
+}
+
+model DiscoveredStack {
+  id         String   @id @default(uuid())
+  lead_id    String
+  tenant_id  String
+  category   String
+  tool_name  String
+  created_at DateTime @default(now())
+  lead       Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+
+  @@index([lead_id])
+  @@index([tenant_id, lead_id])
+  @@map("discovered_stacks")
 }
 
 model Task {
