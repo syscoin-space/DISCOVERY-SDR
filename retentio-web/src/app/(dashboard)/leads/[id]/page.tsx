@@ -116,7 +116,15 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-0.5">
-            <h1 className="text-xl font-bold text-foreground">{lead.company_name}</h1>
+            <EditableLeadField
+              label=""
+              value={lead.company_name}
+              field="company_name"
+              leadId={id}
+              placeholder="Nome da empresa"
+              className="!w-auto"
+              titleMode
+            />
             <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
               {lead.status.replace(/_/g, " ")}
             </Badge>

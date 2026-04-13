@@ -12,6 +12,8 @@ interface EditableLeadFieldProps {
   placeholder?: string;
   className?: string;
   openOnMount?: boolean;
+  /** Exibe como título h1 grande (ex: nome da empresa no header) */
+  titleMode?: boolean;
 }
 
 export function EditableLeadField({
@@ -23,6 +25,7 @@ export function EditableLeadField({
   placeholder = "Não informado",
   className = "",
   openOnMount = false,
+  titleMode = false,
 }: EditableLeadFieldProps) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value ?? "");
@@ -66,7 +69,7 @@ export function EditableLeadField({
         payload: { [field]: normalizedValue || null },
       });
     } catch (err) {
-      toast(`Erro ao salvar ${label}. O valor original foi restaurado.`, "error");
+      toast(`Erro ao salvar ${label || field}. O valor original foi restaurado.`, "error");
       setEditValue(value ?? "");
     } finally {
       isSavingRef.current = false;
@@ -97,12 +100,64 @@ export function EditableLeadField({
     }
   }, [value, editing]);
 
+  // ── titleMode: aparência de h1 editável no header ────────────────
+  if (titleMode) {
+    if (editing) {
+      return (
+        <div className={`relative flex items-center ${className}`}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={editValue}
+            onChange={(e) => {
+              setEditValue(e.target.value);
+              editValueRef.current = e.target.value;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); handleSave(); }
+              if (e.key === "Escape") handleCancel();
+            }}
+            onBlur={() => setTimeout(() => handleSave(), 150)}
+            autoFocus
+            disabled={updateLead.isPending}
+            style={{ minWidth: "8ch", width: `${Math.max(editValue.length, 8)}ch` }}
+            className="text-xl font-bold text-foreground bg-transparent border-b-2 border-accent outline-none focus:border-accent pr-6 transition-all"
+          />
+          {updateLead.isPending && (
+            <Loader2 className="h-4 w-4 animate-spin text-accent ml-1.5 shrink-0" />
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`group flex items-center gap-1.5 cursor-pointer ${className}`}
+        onClick={() => {
+          setEditValue(value ?? "");
+          setEditing(true);
+          editingRef.current = true;
+          setTimeout(() => inputRef.current?.focus(), 50);
+        }}
+        title="Clique para editar"
+      >
+        <h1 className="text-xl font-bold text-foreground">
+          {value || <span className="text-muted-foreground italic font-normal">{placeholder}</span>}
+        </h1>
+        <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+      </div>
+    );
+  }
+
+  // ── modo normal: label + campo ───────────────────────────────────
   if (editing) {
     return (
       <div className={`w-full ${className}`}>
-        <label className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider block truncate">
-          {label}
-        </label>
+        {label && (
+          <label className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider block truncate">
+            {label}
+          </label>
+        )}
         <div className="flex items-center gap-1.5 mt-1 w-full relative">
           <input
             ref={inputRef}
@@ -147,9 +202,11 @@ export function EditableLeadField({
         setTimeout(() => inputRef.current?.focus(), 50);
       }}
     >
-      <label className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider block truncate">
-        {label}
-      </label>
+      {label && (
+        <label className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider block truncate">
+          {label}
+        </label>
+      )}
       <div className="flex items-center gap-1.5 mt-1 w-full relative">
         <p className="text-sm font-medium text-foreground truncate min-w-0">
           {value || <span className="text-muted-foreground italic">{placeholder}</span>}
