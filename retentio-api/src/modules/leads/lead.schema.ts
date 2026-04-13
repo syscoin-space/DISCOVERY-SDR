@@ -33,6 +33,7 @@ export const updateLeadSchema = createLeadSchema.partial().extend({
   sdr_id: z.string().uuid().optional().nullable(),
   best_channel: z.string().max(100).optional().nullable(),
   discovery_status: z.string().optional(), // DiscoveryStatus enum string
+  prr_inputs: z.record(z.any()).optional().nullable(), // JSON livre para Diagnóstico Comercial
 });
 
 export const updateLeadStatusSchema = z.object({

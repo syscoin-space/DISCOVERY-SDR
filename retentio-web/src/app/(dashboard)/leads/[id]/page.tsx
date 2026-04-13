@@ -73,11 +73,36 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const addToStack = useAddToStack();
   const removeFromStack = useRemoveFromStack();
 
+  const updateLead = useUpdateLead();
+
   const [note, setNote] = useState("");
   const [interType, setInterType] = useState("NOTA");
   const [showAddStack, setShowAddStack] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [newTool, setNewTool] = useState("");
+
+  // ─── Diagnóstico Comercial: edição inline ──────────────────────
+  const [editingDiag, setEditingDiag] = useState<string | null>(null);
+  const [diagValues, setDiagValues] = useState({ base: "", ticket: "", ciclo: "" });
+
+  const openDiag = (field: "base" | "ticket" | "ciclo", currentVal: any) => {
+    setDiagValues(v => ({ ...v, [field]: currentVal != null ? String(currentVal) : "" }));
+    setEditingDiag(field);
+  };
+
+  const saveDiag = async (field: "base" | "ticket" | "ciclo") => {
+    if (!lead) return;
+    const current = lead.prr_inputs as any ?? {};
+    const numVal = diagValues[field] === "" ? null : Number(diagValues[field].replace(/\D/g, "") || "0");
+    const keyMap = { base: "base_estimada", ticket: "ticket_medio", ciclo: "recompra_cycle_days" };
+    try {
+      await updateLead.mutateAsync({
+        leadId: id,
+        payload: { prr_inputs: { ...current, [keyMap[field]]: numVal } } as any,
+      });
+    } catch {}
+    setEditingDiag(null);
+  };
 
   const handleCreate = async () => {
     if (!note.trim()) return;
@@ -338,22 +363,87 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 Diagnóstico Comercial
+                <span className="ml-auto text-[10px] text-muted-foreground font-normal italic">Clique nos valores para editar</span>
               </h3>
               <div className="grid grid-cols-3 gap-4">
-                <div className="p-3 rounded-lg bg-surface-raised border border-border text-center">
+
+                {/* Base Estimada */}
+                <div
+                  className="group relative p-3 rounded-lg bg-surface-raised border border-border text-center cursor-pointer hover:border-accent/40 transition-colors"
+                  onClick={() => openDiag("base", (lead.prr_inputs as any)?.base_estimada ?? (lead as any).estimated_base_size)}
+                >
                   <p className="text-[10px] text-muted-foreground uppercase">Base Estimada</p>
-                  <p className="text-lg font-bold text-foreground">{lead.estimated_base_size?.toLocaleString('pt-BR') ?? "—"}</p>
+                  {editingDiag === "base" ? (
+                    <input
+                      autoFocus
+                      type="number"
+                      value={diagValues.base}
+                      onChange={e => setDiagValues(v => ({ ...v, base: e.target.value }))}
+                      onBlur={() => saveDiag("base")}
+                      onKeyDown={e => { if (e.key === "Enter") saveDiag("base"); if (e.key === "Escape") setEditingDiag(null); }}
+                      className="w-full text-center text-lg font-bold bg-transparent border-b-2 border-accent outline-none text-foreground"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <p className="text-lg font-bold text-foreground">
+                      {((lead.prr_inputs as any)?.base_estimada ?? (lead as any).estimated_base_size)?.toLocaleString('pt-BR') ?? "—"}
+                    </p>
+                  )}
                   <p className="text-[10px] text-muted-foreground">contatos</p>
+                  <Pencil className="absolute top-2 right-2 h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <div className="p-3 rounded-lg bg-surface-raised border border-border text-center">
+
+                {/* Ticket Médio */}
+                <div
+                  className="group relative p-3 rounded-lg bg-surface-raised border border-border text-center cursor-pointer hover:border-accent/40 transition-colors"
+                  onClick={() => openDiag("ticket", (lead.prr_inputs as any)?.ticket_medio ?? (lead as any).avg_ticket_estimated)}
+                >
                   <p className="text-[10px] text-muted-foreground uppercase">Ticket Médio</p>
-                  <p className="text-lg font-bold text-foreground">R$ {lead.avg_ticket_estimated?.toLocaleString('pt-BR') ?? "—"}</p>
+                  {editingDiag === "ticket" ? (
+                    <input
+                      autoFocus
+                      type="number"
+                      value={diagValues.ticket}
+                      onChange={e => setDiagValues(v => ({ ...v, ticket: e.target.value }))}
+                      onBlur={() => saveDiag("ticket")}
+                      onKeyDown={e => { if (e.key === "Enter") saveDiag("ticket"); if (e.key === "Escape") setEditingDiag(null); }}
+                      className="w-full text-center text-lg font-bold bg-transparent border-b-2 border-accent outline-none text-foreground"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <p className="text-lg font-bold text-foreground">
+                      R$ {((lead.prr_inputs as any)?.ticket_medio ?? (lead as any).avg_ticket_estimated)?.toLocaleString('pt-BR') ?? "—"}
+                    </p>
+                  )}
+                  <Pencil className="absolute top-2 right-2 h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <div className="p-3 rounded-lg bg-surface-raised border border-border text-center">
+
+                {/* Ciclo Recompra */}
+                <div
+                  className="group relative p-3 rounded-lg bg-surface-raised border border-border text-center cursor-pointer hover:border-accent/40 transition-colors"
+                  onClick={() => openDiag("ciclo", (lead.prr_inputs as any)?.recompra_cycle_days)}
+                >
                   <p className="text-[10px] text-muted-foreground uppercase">Ciclo Recompra</p>
-                  <p className="text-lg font-bold text-foreground">{lead.prr_inputs?.recompra_cycle_days ?? "—"}</p>
+                  {editingDiag === "ciclo" ? (
+                    <input
+                      autoFocus
+                      type="number"
+                      value={diagValues.ciclo}
+                      onChange={e => setDiagValues(v => ({ ...v, ciclo: e.target.value }))}
+                      onBlur={() => saveDiag("ciclo")}
+                      onKeyDown={e => { if (e.key === "Enter") saveDiag("ciclo"); if (e.key === "Escape") setEditingDiag(null); }}
+                      className="w-full text-center text-lg font-bold bg-transparent border-b-2 border-accent outline-none text-foreground"
+                      placeholder="0"
+                    />
+                  ) : (
+                    <p className="text-lg font-bold text-foreground">
+                      {(lead.prr_inputs as any)?.recompra_cycle_days ?? "—"}
+                    </p>
+                  )}
                   <p className="text-[10px] text-muted-foreground">dias</p>
+                  <Pencil className="absolute top-2 right-2 h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
+
               </div>
             </div>
           </div>
