@@ -466,9 +466,9 @@ export function LeadSidebar({ leadId, onClose }: LeadSidebarProps) {
                   <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Informações da Empresa</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <EditableLeadField label="CNPJ" value={lead.cnpj} field="cnpj" leadId={lead.id} placeholder="Não informado" />
-                    <EditableLeadField label="Website" value={lead.website_url} field="website_url" leadId={lead.id} placeholder="www.empresa.com" />
-                    <EditableLeadField label="Instagram" value={lead.instagram_handle} field="instagram_handle" leadId={lead.id} placeholder="@empresa" />
-                    <EditableLeadField label="Nicho" value={lead.niche} field="niche" leadId={lead.id} />
+                    <EditableLeadField label="Website" value={(lead as any).domain} field="domain" leadId={lead.id} placeholder="www.empresa.com" />
+                    <EditableLeadField label="Instagram" value={(lead as any).instagram} field="instagram" leadId={lead.id} placeholder="@empresa" />
+                    <EditableLeadField label="Nicho" value={(lead as any).segment} field="segment" leadId={lead.id} />
                   </div>
                   <div className="pt-1">
                     <ChannelIcons

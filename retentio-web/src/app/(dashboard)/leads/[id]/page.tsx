@@ -205,14 +205,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <EditableLeadField label="CNPJ" value={lead.cnpj} field="cnpj" leadId={id} />
-                <EditableLeadField label="Website" value={lead.website_url} field="website_url" leadId={id} />
-                <EditableLeadField label="Instagram" value={lead.instagram_handle} field="instagram_handle" leadId={id} placeholder="@empresa" />
-                <EditableLeadField label="Nicho" value={lead.niche} field="niche" leadId={id} />
+                <EditableLeadField label="Website" value={(lead as any).domain} field="domain" leadId={id} />
+                <EditableLeadField label="Instagram" value={(lead as any).instagram} field="instagram" leadId={id} placeholder="@empresa" />
+                <EditableLeadField label="Nicho" value={(lead as any).segment} field="segment" leadId={id} />
                 <EditableLeadField label="Cidade" value={lead.city} field="city" leadId={id} />
                 <EditableLeadField label="Estado" value={lead.state} field="state" leadId={id} />
               </div>
-              {lead.website_url && (
-                <a href={lead.website_url.startsWith("http") ? lead.website_url : `https://${lead.website_url}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+              {(lead as any).domain && (
+                <a href={(lead as any).domain.startsWith("http") ? (lead as any).domain : `https://${(lead as any).domain}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
                   <Globe className="h-3 w-3" /> Abrir website
                 </a>
               )}
